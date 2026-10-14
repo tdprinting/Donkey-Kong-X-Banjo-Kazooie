@@ -36,6 +36,19 @@ The foundation every later step needs: reading both games' files from the player
   and shown in DK Isles. A dialogue string or HUD sprite is the simplest place to start
   before tackling 3D models.
 
+## Updates and releases (done)
+
+- [x] Updater core (`updater/`): reads GitHub's latest-release JSON, compares versions,
+      picks the download for the platform, and unpacks .zip/.tar.gz releases into the
+      install folder with rollback on failure.
+- [x] Launcher entry in the host: checks on launch, then installs in place on Windows and
+      Linux, or opens the release page on Flatpak and macOS.
+- [x] `release.yml`: builds Windows and Linux packages and publishes the release. It needs
+      the `JIGGY_ROM_REPO` / `JIGGY_ROM_TOKEN` secrets, since the game code is generated
+      from a decompressed ROM, as upstream does.
+- [ ] Android: download the APK from the release and hand it to the system installer
+      (milestone 3), and add the APK to `release.yml`.
+
 ## 3. Android
 
 *Size: weeks to a few months, depending on device issues.*
@@ -45,6 +58,7 @@ The foundation every later step needs: reading both games' files from the player
 - ROM selection with Android's file picker, passed to `jiggy_bridge_open_memory`.
 - On-screen touch controls and controller support; replace the desktop file dialog.
 - Save data and config in app storage.
+- In-app updates: download the release APK and install it with Android's package installer.
 
 ## 4. Banjo content in the DK64 engine
 

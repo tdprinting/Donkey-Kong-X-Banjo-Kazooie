@@ -33,6 +33,8 @@ project is shaped this way.
 | DK64 Recompiled host (`host/`) with the bridge linked in | Done |
 | Launcher option to load the Banjo-Kazooie ROM | Done |
 | Game-side imports (`jiggy_bk_asset_read` and friends) | Done |
+| Auto-updater from GitHub Releases (Windows and Linux install in place) | Done |
+| Release workflow publishing Windows and Linux builds | Done (needs ROM secrets, see below) |
 | First Banjo asset visible in DK Isles | Next |
 | Android app | Planned |
 
@@ -71,6 +73,31 @@ the ROM, running N64Recomp, then CMake). The executable is still called `DK64Rec
 
 When the launcher opens, pick **Load DK64 ROM** and **Load Banjo-Kazooie ROM**. Both are
 stored in the app's own folder (`JiggyJungle`), separate from DK64 Recompiled's saves.
+
+## Updates
+
+On launch the game checks this repository's
+[latest release](https://github.com/tdprinting/Donkey-Kong-X-Banjo-Kazooie/releases/latest).
+When a newer version exists, the launcher shows **Install Update x.y.z**. On Windows and
+Linux that downloads the build for your platform, installs it next to the current one
+and asks you to restart. If anything fails, the old version is left as it was. Flatpak
+and macOS builds open the release page instead, and the Android app will install the APK
+through the system installer.
+
+### Publishing a release
+
+[`release.yml`](.github/workflows/release.yml) builds Windows and Linux packages and
+publishes them as a GitHub Release that the updater picks up:
+
+1. Put your **decompressed** DK64 ROM (`donkeykong64.decompressed.us.z64`) in a separate
+   **private** repository. Never add it to this one.
+2. In this repository's settings, add the secrets `JIGGY_ROM_REPO` (that repo's
+   `owner/name`) and `JIGGY_ROM_TOKEN` (a fine-grained token that can read it).
+3. Bump `JIGGY_VERSION` in `host/include/jiggy_version.h`, then tag and push:
+   `git tag v0.1.0 && git push origin v0.1.0`.
+
+This is the same setup upstream DK64 Recompiled uses for its own releases. The packages
+contain the compiled game but no ROM data, and players still load their own ROMs.
 
 ## Checking your ROMs
 

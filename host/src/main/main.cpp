@@ -53,6 +53,8 @@
 #include "../../patches/graphics.h"
 #include "../../patches/jiggy.h"
 #include "jiggy_host.h"
+#include "jiggy_updates.h"
+#include "jiggy_version.h"
 #include "../../patches/input.h"
 #include "../../patches/sound.h"
 #include "../../patches/options.h"
@@ -639,6 +641,55 @@ void reorder_texture_pack(recomp::mods::ModContext&) {
     recompui::renderer::trigger_texture_pack_update();
 }
 
+// Launcher entry that shows the updater's state; refreshed from on_launcher_update.
+recompui::GameOption *jiggy_update_option = nullptr;
+
+void refresh_update_option() {
+    using jiggy_host::updates::State;
+    static std::optional<State> shown_state;
+    const State state = jiggy_host::updates::state();
+    if (jiggy_update_option == nullptr || shown_state == state) {
+        return;
+    }
+    shown_state = state;
+
+    std::string title;
+    switch (state) {
+        case State::Checking:
+            title = "Checking for Updates...";
+            break;
+        case State::UpToDate:
+        case State::CheckFailed:
+            title = "Version " JIGGY_VERSION;
+            break;
+        case State::Available:
+            title = (jiggy_host::updates::can_self_install() ? "Install Update " : "Get Update ") +
+                    jiggy_host::updates::available_version();
+            break;
+        case State::Installing:
+            title = "Updating...";
+            break;
+        case State::Installed:
+            title = "Restart to Finish Update";
+            recompui::message_box(("Jiggy Jungle " + jiggy_host::updates::available_version() +
+                                   " is installed. Close and reopen the game to use it.").c_str());
+            break;
+        case State::InstallFailed:
+            title = "Retry Update " + jiggy_host::updates::available_version();
+            recompui::message_box(jiggy_host::updates::last_error().c_str());
+            break;
+    }
+    if (state == State::CheckFailed) {
+        fprintf(stderr, "[Jiggy] %s\n", jiggy_host::updates::last_error().c_str());
+    }
+    jiggy_update_option->set_title(title);
+}
+
+void on_launcher_update(recompui::LauncherMenu *menu) {
+    dk64::launcher_animation_update(menu);
+    refresh_update_option();
+}
+
 void on_launcher_init(recompui::LauncherMenu *menu) {
     auto game_options_menu = menu->init_game_options_menu(
         supported_games[0].game_id,
@@ -673,6 +724,9 @@ void on_launcher_init(recompui::LauncherMenu *menu) {
     game_options_menu->add_setup_controls_option();
     game_options_menu->add_settings_option();
     game_options_menu->add_mods_option();
+    jiggy_update_option = game_options_menu->add_option("Checking for Updates...", []() {
+        jiggy_host::updates::install_or_open();
+    });
     game_options_menu->add_exit_option();
     game_options_menu->set_width(30, recompui::Unit::Percent);
 
@@ -849,7 +903,8 @@ int main(int argc, char** argv) {
     dk64::init_config();
 
     recompui::register_launcher_init_callback(on_launcher_init);
-    recompui::register_launcher_update_callback(dk64::launcher_animation_update);
+    recompui::register_launcher_update_callback(on_launcher_update);
+    jiggy_host::updates::start();
 
     recomp::rsp::callbacks_t rsp_callbacks{
         .get_rsp_microcode = get_rsp_microcode,

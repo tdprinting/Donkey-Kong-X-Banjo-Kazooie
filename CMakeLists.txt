@@ -26,6 +26,7 @@ if (NOT TARGET miniz)
 endif()
 
 add_subdirectory(bridge)
+add_subdirectory(updater)
 
 if (JIGGY_BUILD_TOOLS)
     add_executable(jiggy-inspect tools/jiggy-inspect/main.cpp)
@@ -37,4 +38,8 @@ if (JIGGY_BUILD_TESTS)
     add_executable(jiggy_bridge_tests tests/test_main.cpp)
     target_link_libraries(jiggy_bridge_tests PRIVATE jiggy_bridge miniz)
     add_test(NAME jiggy_bridge_tests COMMAND jiggy_bridge_tests)
+
+    add_executable(jiggy_updater_tests tests/updater_tests.cpp)
+    target_link_libraries(jiggy_updater_tests PRIVATE jiggy_updater miniz)
+    add_test(NAME jiggy_updater_tests COMMAND jiggy_updater_tests)
 endif()

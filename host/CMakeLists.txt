@@ -69,6 +69,9 @@ target_include_directories(rt64 PRIVATE ${CMAKE_BINARY_DIR}/rt64/src)
 
 # Jiggy Bridge: Banjo-Kazooie assets from the player's ROM. Uses the runtime's miniz target.
 add_subdirectory(${CMAKE_SOURCE_DIR}/../bridge ${CMAKE_BINARY_DIR}/jiggy_bridge)
+# Self-updater, sharing the runtime's copy of nlohmann/json.
+set(JIGGY_JSON_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime/thirdparty)
+add_subdirectory(${CMAKE_SOURCE_DIR}/../updater ${CMAKE_BINARY_DIR}/jiggy_updater)
 
 # RecompiledFuncs - Library containing the primary recompiler output
 add_library(RecompiledFuncs STATIC)
@@ -164,6 +167,7 @@ set (SOURCES
     ${CMAKE_SOURCE_DIR}/src/game/config.cpp
     ${CMAKE_SOURCE_DIR}/src/game/debug.cpp
     ${CMAKE_SOURCE_DIR}/src/game/jiggy_api.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/jiggy_updates.cpp
     ${CMAKE_SOURCE_DIR}/src/game/recomp_api.cpp
     ${CMAKE_SOURCE_DIR}/src/game/recomp_extension_api.cpp
     ${CMAKE_SOURCE_DIR}/src/game/recomp_data_api.cpp
@@ -361,7 +365,12 @@ target_link_libraries(DK64Recompiled PRIVATE
     rt64
     nfd
     jiggy_bridge
+    jiggy_updater
 )
+
+# The updater talks to GitHub with libcurl, which RecompFrontend already requires.
+find_package(CURL REQUIRED)
+target_link_libraries(DK64Recompiled PRIVATE CURL::libcurl)
 
 # Embed all .nrm files in the "mods" directory
 file(GLOB NRM_FILES "${CMAKE_SOURCE_DIR}/mods/*.nrm")
