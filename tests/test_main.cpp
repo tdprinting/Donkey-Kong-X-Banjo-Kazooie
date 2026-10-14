@@ -373,7 +373,7 @@ TEST(bridge_cpp_api) {
     // With the default options, unknown dumps are refused.
     auto strict = jiggy::Bridge::open(to_rom(bkf.rom), to_rom(dkf.rom), {}, &error);
     CHECK(strict == nullptr);
-    CHECK(error.find("not a supported US dump") != std::string::npos);
+    CHECK(error.find("not the US 1.0 dump") != std::string::npos);
 }
 
 TEST(bridge_c_api_rejects_unknown_dumps) {
@@ -383,7 +383,7 @@ TEST(bridge_c_api_rejects_unknown_dumps) {
     JiggyBridge* bridge =
         jiggy_bridge_open_memory(bkf.rom.data(), bkf.rom.size(), dkf.rom.data(), dkf.rom.size(), error, sizeof(error));
     CHECK(bridge == nullptr);
-    CHECK(std::strstr(error, "not a supported US dump") != nullptr);
+    CHECK(std::strstr(error, "not the US 1.0 dump") != nullptr);
     CHECK(jiggy_bk_asset_count(nullptr) == 0);
     CHECK(jiggy_dk64_file_read(nullptr, 0, 0, nullptr, 0) == -1);
     CHECK(jiggy_bridge_open("/nonexistent/bk.z64", "/nonexistent/dk.z64", error, sizeof(error)) == nullptr);

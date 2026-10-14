@@ -18,9 +18,9 @@ The foundation every later step needs: reading both games' files from the player
 - [x] C API for the host and for Android
 - [x] `jiggy-inspect` for checking ROMs and browsing assets locally
 - [x] Tests on synthetic ROMs, CI on Linux and an Android arm64 cross-build
-- [x] Run on real dumps: every one of the 3619 Banjo-Kazooie assets loads and decompresses
-      (checked on US Rev 1, which shares 1.0's asset bank, so both are accepted), and all 32
-      DK64 tables read from the US dump. Banjo's portrait decodes correctly.
+- [x] Run on real US 1.0 dumps: all 5574 Banjo-Kazooie assets load and all 32 DK64 tables read,
+      Banjo's portrait and models decode correctly. (US Rev 1 shares the bank's layout but
+      not its contents, so it stays unsupported.)
 
 ## 2. DK64 Recompiled as the host
 

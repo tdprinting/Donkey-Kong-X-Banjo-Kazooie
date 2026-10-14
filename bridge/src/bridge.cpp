@@ -25,7 +25,7 @@ bool check_rom(const Rom& rom, Game expected, const char* expected_sha1, const B
         return false;
     }
     if (options.require_known_dumps && !info.supported) {
-        set_error(error, std::string(game_name(expected)) + " ROM is not a supported US dump (SHA-1 " + info.sha1 +
+        set_error(error, std::string(game_name(expected)) + " ROM is not the US 1.0 dump (SHA-1 " + info.sha1 +
                              ", expected " + expected_sha1 + ")");
         return false;
     }

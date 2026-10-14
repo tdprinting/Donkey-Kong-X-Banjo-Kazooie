@@ -56,7 +56,7 @@ bool usable(const jiggy::Rom& rom, const std::string& path) {
         return false;
     }
     if (!info.supported && !g_allow_unverified) {
-        std::fprintf(stderr, "%s: not a supported US dump (SHA-1 %s); pass --allow-unverified to try anyway\n",
+        std::fprintf(stderr, "%s: not the US 1.0 dump (SHA-1 %s); pass --allow-unverified to try anyway\n",
                      path.c_str(), info.sha1.c_str());
         return false;
     }
@@ -79,7 +79,7 @@ int cmd_info(const std::vector<std::string>& paths) {
         std::printf("  byte order: %s\n", jiggy::byte_order_name(info.original_order));
         std::printf("  size:       %zu bytes\n", rom->data().size());
         std::printf("  sha1:       %s\n", info.sha1.c_str());
-        std::printf("  supported:  %s\n", info.supported ? "yes (a US dump Jiggy Jungle supports)" : "no");
+        std::printf("  supported:  %s\n", info.supported ? "yes (matches the US 1.0 dump the recomps target)" : "no");
         if (!info.supported) {
             status = 1;
         }

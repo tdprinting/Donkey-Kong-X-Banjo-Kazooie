@@ -54,10 +54,6 @@ std::string sha1_hex(std::span<const uint8_t> data);
 
 // Expected SHA-1 of the supported US 1.0 dumps (from the recomps' build guides).
 inline constexpr const char* kBanjoKazooieUs10Sha1 = "1fe1632098865f639e22c11b9a81ee8f29c75d7a";
-// Banjo-Kazooie US Rev 1 is accepted too: Jiggy Jungle only reads its asset bank, which sits
-// at the same offset and decodes the same way (checked against a real dump: all 3619
-// assets load). The game code differs between revisions, but we never run it.
-inline constexpr const char* kBanjoKazooieUsRev1Sha1 = "ded6ee166e740ad1bc810fd678a84b48e245ab80";
 inline constexpr const char* kDonkeyKong64UsSha1 = "cf806ff2603640a748fca5026ded28802f1f4a50";
 
 // Identifies a big-endian image. Call normalize_to_big_endian first.

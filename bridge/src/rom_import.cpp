@@ -41,9 +41,7 @@ RomImportResult import_rom(std::vector<uint8_t> bytes, Game expected, const std:
     }
     if (require_known_dump && !info.supported) {
         result.message = std::string("That's ") + game_name(expected) +
-                         ", but not the version Jiggy Jungle needs. " +
-                         (expected == Game::BanjoKazooie ? "Use the NTSC-U (US) N64 release, 1.0 or Rev 1."
-                                                         : "Use the NTSC-U (US) 1.0 N64 release.");
+                         ", but not the version Jiggy Jungle needs. Use the NTSC-U (US) 1.0 N64 release.";
         return result;
     }
 
