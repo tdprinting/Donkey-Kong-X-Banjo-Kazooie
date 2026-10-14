@@ -45,10 +45,15 @@ if [ ! -x "$host/lib/vcpkg/vcpkg" ]; then
     "$host/lib/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
 fi
 
-# The generated game code only exists after running N64Recomp on the player's ROM.
+# The generated game code (and the audio microcode from RSPRecomp) only exists after
+# running the recompilers on the player's ROM. Placeholders let CMake configure without it.
 if [ -z "$(ls "$host/RecompiledFuncs" 2>/dev/null)" ]; then
     mkdir -p "$host/RecompiledFuncs"
     echo "/* Placeholder: N64Recomp writes the game code here. */" > "$host/RecompiledFuncs/placeholder.c"
+fi
+if [ ! -e "$host/rsp/n_aspMain.cpp" ]; then
+    mkdir -p "$host/rsp"
+    echo "// Placeholder: RSPRecomp writes the audio microcode here." > "$host/rsp/n_aspMain.cpp"
 fi
 
 cmake -S "$host" -B "$build" -G Ninja \

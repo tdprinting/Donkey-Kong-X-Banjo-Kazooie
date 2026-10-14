@@ -12,6 +12,7 @@
 # Output C files
 RecompiledFuncs/
 RecompiledPatches/
+rsp/
 
 # Linux build output
 build/
