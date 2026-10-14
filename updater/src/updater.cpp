@@ -174,6 +174,9 @@ std::optional<Release> parse_release(std::string_view json_text, std::string* er
             ReleaseAsset asset;
             asset.name = item["name"].get<std::string>();
             asset.download_url = item["browser_download_url"].get<std::string>();
+            if (item.contains("url") && item["url"].is_string()) {
+                asset.api_url = item["url"].get<std::string>();
+            }
             if (item.contains("size") && item["size"].is_number_unsigned()) {
                 asset.size = item["size"].get<uint64_t>();
             }

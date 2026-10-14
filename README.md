@@ -106,7 +106,11 @@ publishes them as a GitHub Release that the updater picks up:
    `base64 -w0 jiggy.keystore`), `JIGGY_ANDROID_KEYSTORE_PASSWORD`,
    `JIGGY_ANDROID_KEY_ALIAS` and `JIGGY_ANDROID_KEY_PASSWORD`. Without them, releases
    skip the APK.
-4. Bump `JIGGY_VERSION` in `host/include/jiggy_version.h`, then tag and push:
+4. This repository is private (Jiggy Jungle is for personal use), so the updater needs a
+   token to see its releases. Make a fine-grained token limited to this repository with
+   read-only **Contents** access and add it as `JIGGY_UPDATE_TOKEN`. It's built into the
+   release builds, so keep it read-only and limited to this one repository.
+5. Bump `JIGGY_VERSION` in `host/include/jiggy_version.h`, then tag and push:
    `git tag v0.1.0 && git push origin v0.1.0`.
 
 This is the same setup upstream DK64 Recompiled uses for its own releases. The packages

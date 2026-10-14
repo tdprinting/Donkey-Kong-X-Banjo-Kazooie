@@ -1,6 +1,7 @@
 #include "jiggy_updates.h"
 
 #include <atomic>
+#include <cstdlib>
 #include <filesystem>
 #include <mutex>
 #include <optional>
@@ -38,8 +39,20 @@ namespace {
         return size * nmemb;
     }
 
+#ifndef JIGGY_UPDATE_TOKEN
+#define JIGGY_UPDATE_TOKEN ""
+#endif
+
+    // The token for the private repository: JIGGY_GITHUB_TOKEN from the environment when set
+    // (handy for testing), otherwise the one release.yml built in.
+    std::string update_token() {
+        const char* env = getenv("JIGGY_GITHUB_TOKEN");
+        return env != nullptr && env[0] != '\0' ? std::string(env) : std::string(JIGGY_UPDATE_TOKEN);
+    }
+
     // Plain blocking GET. GitHub's API requires a User-Agent, and release downloads
-    // redirect to a CDN, so redirects are followed.
+    // redirect to a CDN, so redirects are followed. curl only sends the Authorization
+    // header to the host it was set for, so the token never reaches the CDN.
     std::optional<std::vector<uint8_t>> http_get(const std::string& url, bool api, std::string& error) {
         CURL* curl = curl_easy_init();
         if (!curl) {
@@ -50,6 +63,10 @@ namespace {
         curl_slist* headers = nullptr;
         headers = curl_slist_append(headers, api ? "Accept: application/vnd.github+json"
                                                  : "Accept: application/octet-stream");
+        const std::string authorization = updater::authorization_header(update_token());
+        if (!authorization.empty()) {
+            headers = curl_slist_append(headers, authorization.c_str());
+        }
         const std::string user_agent = std::string("JiggyJungle/") + JIGGY_VERSION;
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
@@ -121,7 +138,7 @@ namespace {
     void install_worker(updater::UpdateInfo update) {
         using jiggy_host::updates::State;
         std::string error;
-        auto archive = http_get(update.asset.download_url, false, error);
+        auto archive = http_get(update.asset.fetch_url(), false, error);
         if (!archive) {
             set_error("Couldn't download the update: " + error);
             current_state = State::InstallFailed;

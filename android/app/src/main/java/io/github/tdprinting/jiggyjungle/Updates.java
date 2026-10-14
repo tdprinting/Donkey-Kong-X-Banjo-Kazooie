@@ -113,15 +113,36 @@ final class Updates {
         }
     }
 
+    /**
+     * Opens a GET request. The repository is private, so requests to api.github.com carry the
+     * read-only token built in from the JIGGY_UPDATE_TOKEN secret. Redirects are followed by
+     * hand so the token never goes to the storage host a download redirects to.
+     */
     private static HttpURLConnection open(String url, String accept) throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setRequestProperty("Accept", accept);
-        // GitHub's API requires a User-Agent.
-        conn.setRequestProperty("User-Agent", "JiggyJungle/" + BuildConfig.VERSION_NAME);
-        conn.setConnectTimeout(10_000);
-        conn.setReadTimeout(30_000);
-        conn.setInstanceFollowRedirects(true);
-        return conn;
+        for (int hops = 0; hops < 5; hops++) {
+            URL target = new URL(url);
+            HttpURLConnection conn = (HttpURLConnection) target.openConnection();
+            conn.setRequestProperty("Accept", accept);
+            // GitHub's API requires a User-Agent.
+            conn.setRequestProperty("User-Agent", "JiggyJungle/" + BuildConfig.VERSION_NAME);
+            if (!BuildConfig.UPDATE_TOKEN.isEmpty() && "api.github.com".equals(target.getHost())) {
+                conn.setRequestProperty("Authorization", "Bearer " + BuildConfig.UPDATE_TOKEN);
+            }
+            conn.setConnectTimeout(10_000);
+            conn.setReadTimeout(30_000);
+            conn.setInstanceFollowRedirects(false);
+            int status = conn.getResponseCode();
+            if (status < 300 || status >= 400) {
+                return conn;
+            }
+            String location = conn.getHeaderField("Location");
+            conn.disconnect();
+            if (location == null) {
+                throw new IOException("redirect without a location");
+            }
+            url = new URL(target, location).toString();
+        }
+        throw new IOException("too many redirects");
     }
 
     static byte[] readAll(InputStream in, Progress progress, long total) throws IOException {

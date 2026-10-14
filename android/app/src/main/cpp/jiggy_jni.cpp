@@ -68,7 +68,7 @@ Java_io_github_tdprinting_jiggyjungle_Native_findUpdate(JNIEnv* env, jclass, jst
     if (!update) {
         return nullptr;
     }
-    return string_array(env, {update->release.version.to_string(), update->asset.download_url,
+    return string_array(env, {update->release.version.to_string(), update->asset.fetch_url(),
                               std::to_string(update->asset.size), update->release.page_url});
 }
 

@@ -189,6 +189,14 @@ set (SOURCES
     ${CMAKE_SOURCE_DIR}/rsp/n_aspMain.cpp
 )
 
+# Read-only GitHub token for update checks against the private repository (release.yml passes
+# the JIGGY_UPDATE_TOKEN secret). Builds without one only see public releases.
+set(JIGGY_UPDATE_TOKEN "" CACHE STRING "GitHub token the updater sends to api.github.com")
+if (JIGGY_UPDATE_TOKEN)
+    set_source_files_properties(${CMAKE_SOURCE_DIR}/src/game/jiggy_updates.cpp PROPERTIES
+        COMPILE_DEFINITIONS "JIGGY_UPDATE_TOKEN=\"${JIGGY_UPDATE_TOKEN}\"")
+endif()
+
 target_include_directories(DK64Recompiled PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime/N64Recomp/include

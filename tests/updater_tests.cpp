@@ -39,7 +39,8 @@ std::string release_json(const char* tag, bool prerelease = false, bool draft = 
     {"name": "JiggyJungle-0.2.0-windows-x64.zip", "size": 1000,
      "browser_download_url": "https://example.invalid/win.zip"},
     {"name": "JiggyJungle-0.2.0-linux-x64.tar.gz", "size": 2000,
-     "browser_download_url": "https://example.invalid/linux.tar.gz"},
+     "browser_download_url": "https://example.invalid/linux.tar.gz",
+     "url": "https://api.example.invalid/assets/2"},
     {"name": "JiggyJungle-0.2.0-android-arm64.apk", "size": 3000,
      "browser_download_url": "https://example.invalid/app.apk"},
     {"name": "checksums.txt", "size": 10, "browser_download_url": "https://example.invalid/sums"}
@@ -94,6 +95,9 @@ TEST(parse_release_and_pick_assets) {
     auto win = jiggy::updater::pick_asset(*release, Platform::WindowsX64);
     auto apk = jiggy::updater::pick_asset(*release, Platform::AndroidArm64);
     CHECK(win && win->download_url == "https://example.invalid/win.zip" && win->size == 1000);
+    CHECK(win && win->api_url.empty() && win->fetch_url() == win->download_url);
+    CHECK(jiggy::updater::authorization_header("") .empty());
+    CHECK(jiggy::updater::authorization_header("abc") == "Authorization: Bearer abc");
     CHECK(apk && apk->name == "JiggyJungle-0.2.0-android-arm64.apk");
     CHECK(!jiggy::updater::pick_asset(*release, Platform::MacOS).has_value());
     CHECK(!jiggy::updater::pick_asset(*release, Platform::Unknown).has_value());
@@ -104,6 +108,7 @@ TEST(find_update_decisions) {
     std::string error;
     auto update = find_update(release_json("v0.2.0"), v("0.1.0"), Platform::LinuxX64, &error);
     CHECK(update && update->asset.download_url == "https://example.invalid/linux.tar.gz");
+    CHECK(update && update->asset.fetch_url() == "https://api.example.invalid/assets/2");
 
     CHECK(!find_update(release_json("v0.2.0"), v("0.2.0"), Platform::LinuxX64, &error)); // up to date
     CHECK(!find_update(release_json("v0.2.0"), v("0.3.0"), Platform::LinuxX64, &error)); // newer locally

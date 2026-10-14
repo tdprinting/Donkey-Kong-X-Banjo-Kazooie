@@ -24,6 +24,14 @@ namespace jiggy::updater {
 inline constexpr const char* kLatestReleaseUrl =
     "https://api.github.com/repos/tdprinting/Donkey-Kong-X-Banjo-Kazooie/releases/latest";
 
+// The repository is private, so update requests carry a read-only GitHub token baked in at
+// build time (the JIGGY_UPDATE_TOKEN secret in release.yml). Empty in builds without one,
+// which then only see public releases. The token goes to api.github.com only: downloads
+// redirect to a storage host, and the token must not follow the redirect.
+inline std::string authorization_header(std::string_view token) {
+    return token.empty() ? std::string() : "Authorization: Bearer " + std::string(token);
+}
+
 struct Version {
     int major = 0;
     int minor = 0;
@@ -54,8 +62,13 @@ const char* platform_suffix(Platform platform);
 
 struct ReleaseAsset {
     std::string name;
-    std::string download_url;
+    std::string download_url; // browser_download_url: public repositories only.
+    std::string api_url;      // The asset's API URL, which also works for private repositories
+                              // when requested with a token and "Accept: application/octet-stream".
     uint64_t size = 0;
+
+    // Where to download from: the API URL when GitHub gave one, so a token can be used.
+    const std::string& fetch_url() const { return api_url.empty() ? download_url : api_url; }
 };
 
 struct Release {
