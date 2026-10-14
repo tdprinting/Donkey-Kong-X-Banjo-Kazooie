@@ -30,6 +30,11 @@ curl_tag=curl-8_10_1
 freetype_tag=VER-2-13-3
 prefix="$deps/prefix"
 
+# The game patches are MIPS code built with the build machine's clang, which llvm-mingw's
+# clang (first on PATH below) can't stand in for.
+patches_cc="${PATCHES_C_COMPILER:-$(command -v clang)}"
+patches_ld="${PATCHES_LD:-$(command -v ld.lld)}"
+
 # llvm-mingw: clang targeting Windows, with the UCRT runtime.
 if [ ! -x "$llvm_mingw/bin/x86_64-w64-mingw32-clang++" ]; then
     curl -sSL "https://github.com/mstorsjo/llvm-mingw/releases/download/$llvm_mingw_version/$(basename "$llvm_mingw").tar.xz" \
@@ -163,7 +168,9 @@ cmake -S "$host" -B "$build/game" -G Ninja \
     -DCURL_DIR="$prefix/lib/cmake/CURL" \
     -DFREETYPE_MINGW_ROOT="$prefix" \
     -DFETCHCONTENT_SOURCE_DIR_SDL2="$sdl2" \
-    -DRT64_HOST_FILE_TO_C="$build/host-tools/file_to_c"
+    -DRT64_HOST_FILE_TO_C="$build/host-tools/file_to_c" \
+    -DPATCHES_C_COMPILER="$patches_cc" \
+    -DPATCHES_LD="$patches_ld"
 
 if [ "$#" -gt 0 ]; then
     cmake --build "$build/game" --target "$@" -- -k 0
