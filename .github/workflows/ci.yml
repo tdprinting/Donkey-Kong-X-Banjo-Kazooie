@@ -127,4 +127,9 @@ jobs:
           path: ~/.cache/vcpkg
           key: vcpkg-arm64-android-${{ hashFiles('host/vcpkg.json', '.gitmodules') }}
       - name: Build
-        run: android/engine/build-engine.sh
+        run: |
+          set -o pipefail
+          android/engine/build-engine.sh 2>&1 | tee engine-build.log
+      - name: Summarize errors
+        if: failure()
+        run: grep -E "error:|FAILED:|CMake Error" engine-build.log | sort -u | head -150 || true
