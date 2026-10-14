@@ -22,8 +22,8 @@ if [ -z "$ndk" ]; then
 fi
 export ANDROID_NDK_HOME="$ndk" # vcpkg's Android triplets read this.
 
-# Small changes RT64 and plume need for Android (cross-compiling, no desktop file dialogs,
-# rendering to SDL's window). They apply to the pinned submodules and are skipped when
+# Small changes RT64, plume and zstd need for Android (cross-compiling, no desktop file
+# dialogs, rendering to SDL's window, no qsort_r). They apply to the pinned submodules and are skipped when
 # already applied.
 apply_patch() {
     local dir="$host/$1" patch="$repo/android/engine/patches/$2"
@@ -36,6 +36,7 @@ apply_patch() {
 }
 apply_patch lib/rt64 rt64.patch
 apply_patch lib/rt64/src/contrib/plume plume.patch
+apply_patch lib/rt64/src/contrib/zstd zstd.patch
 
 # file_to_c turns shaders and assets into C during the build, so it must run here.
 mkdir -p "$build/host-tools"
@@ -68,4 +69,5 @@ cmake -S "$host" -B "$build" -G Ninja \
 if [ "$#" -eq 0 ]; then
     set -- rt64 ultramodern librecomp recompui recompinput jiggy_bridge jiggy_updater
 fi
-cmake --build "$build" --target "$@"
+# -k 0 keeps going after an error, so one run reports every file that fails.
+cmake --build "$build" --target "$@" -- -k 0
