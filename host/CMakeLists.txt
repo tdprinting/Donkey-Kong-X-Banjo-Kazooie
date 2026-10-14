@@ -59,6 +59,10 @@ if (RECOMP_FLATPAK)
     add_compile_definitions(RECOMP_FLATPAK)
 endif()
 
+if (ANDROID)
+    # nativefiledialog-extended needs GTK or a desktop portal; Android gets a stand-in.
+    set(RT64_NFD_SOURCE ${CMAKE_SOURCE_DIR}/src/android/nfd_android.cpp)
+endif()
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/rt64 ${CMAKE_BINARY_DIR}/rt64)
 
 set(BUILD_SHARED_LIBS OFF)
