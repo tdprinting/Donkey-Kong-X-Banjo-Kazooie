@@ -1,5 +1,6 @@
 add_library(jiggy_bridge STATIC
     src/bk_assets.cpp
+    src/bk_sprite.cpp
     src/bridge.cpp
     src/dk64_tables.cpp
     src/inflate.cpp

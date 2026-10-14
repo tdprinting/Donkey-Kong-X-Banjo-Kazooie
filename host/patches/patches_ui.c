@@ -2962,6 +2962,7 @@ extern u8 D_global_asm_807444FC;
 extern void *D_global_asm_8076A080;
 extern Gfx **D_1000090;
 extern void set_sprite_interpolation_state(void);
+Gfx *jiggy_cameo_draw(Gfx *dl);
 
 // @recomp: General gfx loop
 RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx **arg2) {
@@ -3149,6 +3150,7 @@ RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx
         dl = func_global_asm_80709344(dl);
         dl = func_global_asm_806FAB20(dl);
         dl = func_global_asm_80714060(dl);
+        dl = jiggy_cameo_draw(dl); // @jiggy: Banjo's portrait in DK Isles (jiggy_cameo.c)
         func_global_asm_806FBC34();
         func_global_asm_8068C0B4();
         func_global_asm_80722280();

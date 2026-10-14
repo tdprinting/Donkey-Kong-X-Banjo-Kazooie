@@ -30,11 +30,14 @@ The foundation every later step needs: reading both games' files from the player
       their own ROM, as upstream requires.
 - [x] Ask for the Banjo ROM in the launcher next to the DK64 one, and load it at startup.
 - [x] Expose the bridge to patches and mods as recomp imports (`jiggy_bk_available`,
-      `jiggy_bk_asset_size`, `jiggy_bk_asset_read` at `0x8F0004xx` in `patches/syms.ld`).
+      `jiggy_bk_asset_size`, `jiggy_bk_asset_read`, `jiggy_bk_sprite_frame_count`,
+      `jiggy_bk_sprite_frame_rgba16` at `0x8F0004xx` in `patches/syms.ld`).
 - [x] Own app id (`JiggyJungle`), so saves and settings stay separate from DK64 Recompiled.
-- [ ] **First visible crossover:** one Banjo-Kazooie asset loaded from the player's ROM
-  and shown in DK Isles. A dialogue string or HUD sprite is the simplest place to start
-  before tackling 3D models.
+- [x] **First visible crossover:** Banjo's own dialogue portrait (`ASSET_7EF_SPRITE_BANJO`)
+  is decoded from the player's ROM (`bridge/src/bk_sprite.cpp`, all eight BK sprite
+  formats) and fades in, talking, at the bottom left of the HUD each time DK Isles loads
+  (`host/patches/jiggy_cameo.c`). Needs a check on real ROMs: `jiggy-inspect sprite` dumps
+  the same frames to PNG.
 
 ## Updates and releases (done)
 

@@ -82,3 +82,5 @@ recomp_get_mouse_inverted_axes = 0x8F00015C;
 jiggy_bk_available = 0x8F000400;
 jiggy_bk_asset_size = 0x8F000404;
 jiggy_bk_asset_read = 0x8F000408;
+jiggy_bk_sprite_frame_count = 0x8F00040C;
+jiggy_bk_sprite_frame_rgba16 = 0x8F000410;

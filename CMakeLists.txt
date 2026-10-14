@@ -30,7 +30,7 @@ add_subdirectory(updater)
 
 if (JIGGY_BUILD_TOOLS)
     add_executable(jiggy-inspect tools/jiggy-inspect/main.cpp)
-    target_link_libraries(jiggy-inspect PRIVATE jiggy_bridge)
+    target_link_libraries(jiggy-inspect PRIVATE jiggy_bridge miniz)
 endif()
 
 if (JIGGY_BUILD_TESTS)

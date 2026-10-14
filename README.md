@@ -19,7 +19,9 @@ rendering with [RT64](https://github.com/rt64/rt64).
 Milestone 1 of the [roadmap](docs/ROADMAP.md), the **Jiggy Bridge**, is done: it's the
 library that lets the DK64 engine read Banjo-Kazooie's files from the player's ROM.
 Milestone 2 is underway: DK64 Recompiled now lives in [`host/`](host) as the engine,
-with the bridge wired in. Nothing new is visible in-game yet. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains why the
+with the bridge wired in. The first crossover is in: Banjo's dialogue portrait, read from
+the player's Banjo-Kazooie ROM, greets you when DK Isles loads (not yet tested on real
+ROMs). [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains why the
 project is shaped this way.
 
 | Piece | State |
@@ -35,7 +37,9 @@ project is shaped this way.
 | Game-side imports (`jiggy_bk_asset_read` and friends) | Done |
 | Auto-updater from GitHub Releases (Windows and Linux install in place) | Done |
 | Release workflow publishing Windows and Linux builds | Done (needs ROM secrets, see below) |
-| First Banjo asset visible in DK Isles | Next |
+| Banjo-Kazooie sprite decoder (all 8 texture formats) | Done |
+| First Banjo asset visible in DK Isles (Banjo's portrait) | Done, needs a test on real ROMs |
+| CI: game patches build | Done |
 | Android app | Planned |
 
 ## Building
@@ -122,6 +126,7 @@ To browse what the bridge can load:
 ./build/jiggy-inspect list dk64.z64 5       # files in one table (5 = actor models)
 ./build/jiggy-inspect extract banjo.z64 0x34e banjo-model.bin   # MODEL_BANJOKAZOOIE_HIGH_POLY
 ./build/jiggy-inspect extract dk64.z64 5:0 model.bin
+./build/jiggy-inspect sprite banjo.z64 0x7ef 0 banjo.png    # Banjo's dialogue portrait, frame 0
 ```
 
 Extracted files are for your own local research and must stay out of this repository.

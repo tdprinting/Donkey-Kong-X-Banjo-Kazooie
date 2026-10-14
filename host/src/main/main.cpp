@@ -888,6 +888,8 @@ int main(int argc, char** argv) {
     REGISTER_FUNC(jiggy_bk_available);
     REGISTER_FUNC(jiggy_bk_asset_size);
     REGISTER_FUNC(jiggy_bk_asset_read);
+    REGISTER_FUNC(jiggy_bk_sprite_frame_count);
+    REGISTER_FUNC(jiggy_bk_sprite_frame_rgba16);
     recompui::register_ui_exports();
     recomputil::register_data_api_exports();
     recomptheme::set_custom_theme();

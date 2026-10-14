@@ -12,5 +12,10 @@ DECLARE_FUNC(s32, jiggy_bk_available);
 DECLARE_FUNC(s32, jiggy_bk_asset_size, u32 asset_id);
 // Copies an asset into dst. Returns the bytes copied, or -1 if it is missing or doesn't fit.
 DECLARE_FUNC(s32, jiggy_bk_asset_read, u32 asset_id, void* dst, u32 dst_len);
+// Frames in a sprite asset (e.g. a dialogue portrait), or -1 if the asset isn't a sprite.
+DECLARE_FUNC(s32, jiggy_bk_sprite_frame_count, u32 asset_id);
+// Decodes a sprite frame to RGBA16 texels, width padded to a multiple of 4. Returns
+// (width << 16) | height, or -1. Pass dst NULL to get the size without writing.
+DECLARE_FUNC(s32, jiggy_bk_sprite_frame_rgba16, u32 asset_id, u32 frame, void* dst, u32 dst_len);
 
 #endif

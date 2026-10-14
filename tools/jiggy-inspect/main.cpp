@@ -3,6 +3,7 @@
 //   jiggy-inspect info <rom>...
 //   jiggy-inspect list <rom> [dk64-table]
 //   jiggy-inspect extract <rom> <bk-asset-id | dk64-table:index> <out-file>
+//   jiggy-inspect sprite <bk-rom> <bk-asset-id> <frame> <out.png>
 //
 // Extracted files are for local research only. Never commit them: they are copyrighted game data.
 #include <cstdio>
@@ -14,9 +15,11 @@
 #include <vector>
 
 #include "jiggy/bk_assets.hpp"
+#include "jiggy/bk_sprite.hpp"
 #include "jiggy/dk64_tables.hpp"
 #include "jiggy/inflate.hpp"
 #include "jiggy/rom.hpp"
+#include "miniz.h"
 
 namespace {
 
@@ -28,6 +31,7 @@ void usage() {
                  "  jiggy-inspect info <rom>...\n"
                  "  jiggy-inspect list <rom> [dk64-table]\n"
                  "  jiggy-inspect extract <rom> <bk-asset-id | dk64-table:index> <out-file>\n"
+                 "  jiggy-inspect sprite <bk-rom> <bk-asset-id> <frame> <out.png>\n"
                  "options:\n"
                  "  --allow-unverified   use the US 1.0 offsets on a dump with a different SHA-1\n");
 }
@@ -195,6 +199,51 @@ int cmd_extract(const std::string& path, const std::string& id, const std::strin
     return 0;
 }
 
+int cmd_sprite(const std::string& path, const std::string& id, const std::string& frame, const std::string& out_path) {
+    auto rom = load(path);
+    if (!rom || !usable(*rom, path)) {
+        return 1;
+    }
+    if (rom->info().game != jiggy::Game::BanjoKazooie) {
+        std::fprintf(stderr, "sprites come from the Banjo-Kazooie ROM\n");
+        return 1;
+    }
+    std::string error;
+    auto table = jiggy::BkAssetTable::parse(rom->data(), jiggy::BkAssetTable::kUs10RomOffset, &error);
+    std::optional<std::vector<uint8_t>> data;
+    if (table) {
+        data = table->load(rom->data(), std::strtoul(id.c_str(), nullptr, 0), &error);
+    }
+    std::optional<jiggy::BkSprite> sprite;
+    if (data) {
+        sprite = jiggy::BkSprite::parse(*data, &error);
+    }
+    std::optional<jiggy::BkSpriteImage> image;
+    if (sprite) {
+        image = sprite->decode_frame(std::strtoul(frame.c_str(), nullptr, 0), &error);
+    }
+    if (!image) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+    size_t png_size = 0;
+    void* png = tdefl_write_image_to_png_file_in_memory(image->rgba.data(), image->width, image->height, 4, &png_size);
+    if (!png) {
+        std::fprintf(stderr, "could not encode the PNG\n");
+        return 1;
+    }
+    std::ofstream out(out_path, std::ios::binary);
+    out.write(static_cast<const char*>(png), std::streamsize(png_size));
+    mz_free(png);
+    if (!out) {
+        std::fprintf(stderr, "could not write %s\n", out_path.c_str());
+        return 1;
+    }
+    std::printf("%s sprite, %zu frames; wrote frame %s (%ux%u) to %s\n", jiggy::bk_sprite_format_name(sprite->type()),
+                sprite->frame_count(), frame.c_str(), image->width, image->height, out_path.c_str());
+    return 0;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -219,6 +268,9 @@ int main(int argc, char** argv) {
     }
     if (cmd == "extract" && args.size() == 4) {
         return cmd_extract(args[1], args[2], args[3]);
+    }
+    if (cmd == "sprite" && args.size() == 5) {
+        return cmd_sprite(args[1], args[2], args[3], args[4]);
     }
     usage();
     return 2;

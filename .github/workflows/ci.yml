@@ -77,3 +77,17 @@ jobs:
             src/contrib/hlslpp src/contrib/plume src/contrib/nativefiledialog-extended src/contrib/stb
       - name: Compile host sources
         run: ci/check-host-sources.sh
+
+  patches:
+    name: Game patches
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # Builds patches.elf, the MIPS code (Jiggy's in-game changes included) that N64Recomp
+      # turns into native code in a full build. Needs only the decomp and RT64 headers, no ROM.
+      - name: Install the MIPS toolchain
+        run: sudo apt-get update && sudo apt-get install -y clang lld
+      - name: Fetch submodules
+        run: git submodule update --init host/lib/dk64_decomp host/lib/rt64
+      - name: Build patches
+        run: make -C host/patches -j"$(nproc)" CC=clang LD=ld.lld

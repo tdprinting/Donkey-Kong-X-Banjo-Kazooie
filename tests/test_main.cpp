@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "jiggy/bk_assets.hpp"
+#include "jiggy/bk_sprite.hpp"
 #include "jiggy/bridge.h"
 #include "jiggy/bridge.hpp"
 #include "jiggy/dk64_tables.hpp"
@@ -382,6 +383,156 @@ TEST(bridge_c_api_rejects_unknown_dumps) {
     CHECK(jiggy_dk64_file_read(nullptr, 0, 0, nullptr, 0) == -1);
     CHECK(jiggy_bridge_open("/nonexistent/bk.z64", "/nonexistent/dk.z64", error, sizeof(error)) == nullptr);
     CHECK(std::strstr(error, "could not open") != nullptr);
+}
+
+namespace {
+
+// Builds a sprite the way the game lays one out (see bk_sprite.hpp).
+struct SpriteChunk {
+    int16_t x, y, w, h;
+    Bytes texels;
+};
+
+void pad8(Bytes& b) {
+    while (b.size() % 8) {
+        b.push_back(0xEE);
+    }
+}
+
+void push_be16(Bytes& b, uint16_t v) {
+    b.push_back(uint8_t(v >> 8));
+    b.push_back(uint8_t(v));
+}
+
+Bytes make_frame(int16_t w, int16_t h, const std::vector<uint16_t>& palette, const std::vector<SpriteChunk>& chunks,
+                 size_t start) {
+    // Alignment is relative to the sprite, so build with the right number of leading bytes and strip them.
+    Bytes b(start, 0);
+    for (int16_t v : {int16_t(0), int16_t(0), w, h, int16_t(chunks.size()), int16_t(0), int16_t(0), int16_t(0),
+                      int16_t(0), int16_t(0)}) {
+        push_be16(b, uint16_t(v));
+    }
+    if (!palette.empty()) {
+        pad8(b);
+        for (uint16_t c : palette) {
+            push_be16(b, c);
+        }
+    }
+    for (const auto& c : chunks) {
+        for (int16_t v : {c.x, c.y, c.w, c.h}) {
+            push_be16(b, uint16_t(v));
+        }
+        pad8(b);
+        b.insert(b.end(), c.texels.begin(), c.texels.end());
+    }
+    return Bytes(b.begin() + long(start), b.end());
+}
+
+Bytes make_sprite(uint16_t type, const std::vector<Bytes>& frames_for_offsets) {
+    Bytes b;
+    push_be16(b, uint16_t(frames_for_offsets.size()));
+    push_be16(b, type);
+    b.resize(0x10, 0);
+    const size_t table_end = 0x10 + 4 * frames_for_offsets.size();
+    b.resize(table_end, 0);
+    size_t offset = 0;
+    for (size_t i = 0; i < frames_for_offsets.size(); i++) {
+        put_be32(b, 0x10 + 4 * i, uint32_t(offset));
+        b.insert(b.end(), frames_for_offsets[i].begin(), frames_for_offsets[i].end());
+        offset += frames_for_offsets[i].size();
+    }
+    return b;
+}
+
+const uint8_t* pixel(const jiggy::BkSpriteImage& img, int x, int y) {
+    return &img.rgba[(size_t(y) * img.width + size_t(x)) * 4];
+}
+
+} // namespace
+
+TEST(bk_sprite_ci4_two_frames_and_chunks) {
+    // Palette: 0 transparent, 1 opaque red, 2 opaque white.
+    std::vector<uint16_t> palette(16, 0);
+    palette[1] = 0xF801;
+    palette[2] = 0xFFFF;
+    // Frame 0: 4x3 canvas, a 3x2 chunk (odd width: 2 bytes per row) and a 1x1 chunk at (3,2).
+    SpriteChunk a{0, 0, 3, 2, {0x12, 0x10, 0x21, 0x00}};
+    SpriteChunk b{3, 2, 1, 1, {0x20}};
+    // Frames start at the sprite's frame table end (0x18 for two frames), so pass that for alignment.
+    Bytes f0 = make_frame(4, 3, palette, {a, b}, 0x18);
+    Bytes f1 = make_frame(2, 1, palette, {SpriteChunk{0, 0, 2, 1, {0x21}}}, 0x18 + f0.size());
+    Bytes sprite = make_sprite(0x001, {f0, f1});
+
+    std::string error;
+    auto parsed = jiggy::BkSprite::parse(sprite, &error);
+    CHECK(parsed.has_value());
+    CHECK(parsed->frame_count() == 2);
+    CHECK(std::string(jiggy::bk_sprite_format_name(parsed->type())) == "CI4");
+
+    auto img = parsed->decode_frame(0, &error);
+    CHECK(img.has_value());
+    CHECK(img->width == 4 && img->height == 3);
+    CHECK(pixel(*img, 0, 0)[0] == 0xFF && pixel(*img, 0, 0)[1] == 0 && pixel(*img, 0, 0)[3] == 0xFF); // red
+    CHECK(pixel(*img, 1, 0)[1] == 0xFF && pixel(*img, 1, 0)[3] == 0xFF);                               // white
+    CHECK(pixel(*img, 2, 0)[0] == 0xFF && pixel(*img, 2, 0)[1] == 0);                                  // red
+    CHECK(pixel(*img, 0, 1)[1] == 0xFF);                                                               // white
+    CHECK(pixel(*img, 2, 1)[3] == 0);                                                                  // index 0
+    CHECK(pixel(*img, 3, 2)[1] == 0xFF && pixel(*img, 3, 2)[3] == 0xFF);                               // second chunk
+    CHECK(pixel(*img, 3, 0)[3] == 0);                                                                  // uncovered
+
+    auto img1 = parsed->decode_frame(1, &error);
+    CHECK(img1.has_value());
+    CHECK(img1->width == 2 && pixel(*img1, 0, 0)[1] == 0xFF && pixel(*img1, 1, 0)[1] == 0);
+    CHECK(!parsed->decode_frame(2, &error).has_value());
+}
+
+TEST(bk_sprite_direct_formats) {
+    std::string error;
+    {
+        // RGBA16: one blue opaque texel, one transparent.
+        Bytes f = make_frame(2, 1, {}, {SpriteChunk{0, 0, 2, 1, {0x00, 0x3F, 0x00, 0x00}}}, 0x14);
+        auto s = jiggy::BkSprite::parse(make_sprite(0x400, {f}), &error);
+        CHECK(s.has_value());
+        auto img = s->decode_frame(0, &error);
+        CHECK(img.has_value());
+        CHECK(pixel(*img, 0, 0)[2] == 0xFF && pixel(*img, 0, 0)[3] == 0xFF && pixel(*img, 1, 0)[3] == 0);
+    }
+    {
+        // IA8: intensity 0xF, alpha 0x8.
+        Bytes f = make_frame(1, 1, {}, {SpriteChunk{0, 0, 1, 1, {0xF8}}}, 0x14);
+        auto img = jiggy::BkSprite::parse(make_sprite(0x100, {f}), &error)->decode_frame(0, &error);
+        CHECK(img.has_value());
+        CHECK(pixel(*img, 0, 0)[0] == 0xFF && pixel(*img, 0, 0)[3] == 0x88);
+    }
+    {
+        // RGBA32, with a chunk hanging off the canvas that must be clipped.
+        Bytes f = make_frame(1, 1, {}, {SpriteChunk{0, 0, 2, 1, {1, 2, 3, 4, 5, 6, 7, 8}}}, 0x14);
+        auto img = jiggy::BkSprite::parse(make_sprite(0x800, {f}), &error)->decode_frame(0, &error);
+        CHECK(img.has_value());
+        CHECK(img->rgba.size() == 4 && img->rgba[0] == 1 && img->rgba[3] == 4);
+    }
+}
+
+TEST(bk_sprite_rejects_bad_data) {
+    std::string error;
+    CHECK(!jiggy::BkSprite::parse(Bytes(4, 0), &error).has_value());
+    Bytes unknown = make_sprite(0x200, {make_frame(1, 1, {}, {}, 0x14)});
+    CHECK(!jiggy::BkSprite::parse(unknown, &error).has_value());
+
+    // Chunk claims more texels than exist.
+    Bytes f = make_frame(8, 8, {}, {SpriteChunk{0, 0, 8, 8, {0x00, 0x01}}}, 0x14);
+    auto s = jiggy::BkSprite::parse(make_sprite(0x400, {f}), &error);
+    CHECK(s.has_value());
+    CHECK(!s->decode_frame(0, &error).has_value());
+    CHECK(error.find("past the end") != std::string::npos);
+}
+
+TEST(rgba5551_packing) {
+    const Bytes rgba = {0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x10};
+    const Bytes packed = jiggy::rgba8888_to_rgba5551(rgba);
+    CHECK(packed.size() == 4);
+    CHECK(packed[0] == 0xF8 && packed[1] == 0x01);
+    CHECK(packed[2] == 0x00 && packed[3] == 0x3E);
 }
 
 JIGGY_TEST_MAIN
