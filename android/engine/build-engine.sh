@@ -43,6 +43,15 @@ apply_patch lib/rt64/src/contrib/zstd zstd.patch
 mkdir -p "$build/host-tools"
 c++ -std=c++17 -O2 -o "$build/host-tools/file_to_c" "$host/lib/rt64/src/tools/file_to_c/file_to_c.cpp"
 
+# N64Recomp turns the game's patches into C during the build. Release builds bring the one
+# they generated the game code with; otherwise build the runtime's copy for this machine.
+if [ ! -x "$host/N64Recomp" ]; then
+    cmake -S "$host/lib/N64ModernRuntime/N64Recomp" -B "$build/host-tools/N64Recomp" -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release
+    cmake --build "$build/host-tools/N64Recomp" --target N64RecompCLI
+    cp "$build/host-tools/N64Recomp/N64Recomp" "$host/N64Recomp"
+fi
+
 if [ ! -x "$host/lib/vcpkg/vcpkg" ]; then
     "$host/lib/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
 fi
