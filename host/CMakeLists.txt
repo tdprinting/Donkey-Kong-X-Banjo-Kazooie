@@ -62,6 +62,9 @@ endif()
 if (ANDROID)
     # nativefiledialog-extended needs GTK or a desktop portal; Android gets a stand-in.
     set(RT64_NFD_SOURCE ${CMAKE_SOURCE_DIR}/src/android/nfd_android.cpp)
+    # Render to the SDL window through SDL_Vulkan_CreateSurface, as on Linux. The runtime
+    # already hands RT64 an SDL_Window* on Android.
+    add_compile_definitions(PLUME_SDL_VULKAN_ENABLED RT64_SDL_WINDOW_VULKAN)
 endif()
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/rt64 ${CMAKE_BINARY_DIR}/rt64)
 

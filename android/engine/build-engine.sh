@@ -22,12 +22,20 @@ if [ -z "$ndk" ]; then
 fi
 export ANDROID_NDK_HOME="$ndk" # vcpkg's Android triplets read this.
 
-# RT64 needs two small build-system changes to cross-compile; they apply cleanly to the
-# pinned submodule and are skipped when already applied.
-patch="$repo/android/engine/rt64-cross-compile.patch"
-if git -C "$host/lib/rt64" apply --check "$patch" 2>/dev/null; then
-    git -C "$host/lib/rt64" apply "$patch"
-fi
+# Small changes RT64 and plume need for Android (cross-compiling, no desktop file dialogs,
+# rendering to SDL's window). They apply to the pinned submodules and are skipped when
+# already applied.
+apply_patch() {
+    local dir="$host/$1" patch="$repo/android/engine/patches/$2"
+    if git -C "$dir" apply --check "$patch" 2>/dev/null; then
+        git -C "$dir" apply "$patch"
+    elif ! git -C "$dir" apply --check --reverse "$patch" 2>/dev/null; then
+        echo "$2 doesn't apply to $dir; was the submodule updated?" >&2
+        exit 1
+    fi
+}
+apply_patch lib/rt64 rt64.patch
+apply_patch lib/rt64/src/contrib/plume plume.patch
 
 # file_to_c turns shaders and assets into C during the build, so it must run here.
 mkdir -p "$build/host-tools"
