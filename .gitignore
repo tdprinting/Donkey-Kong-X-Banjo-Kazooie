@@ -18,4 +18,5 @@
 /android/app/.cxx/
 /android/local.properties
 /build-android-engine/
+/build-windows/
 /android/app/engine-libs/

@@ -277,6 +277,7 @@ if (WIN32)
             "${CMAKE_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxcompiler.dll"
             $<TARGET_FILE_DIR:DK64Recompiled>)
 
+    if (MSVC)
     set_target_properties(
         DK64Recompiled
         PROPERTIES
@@ -285,9 +286,16 @@ if (WIN32)
             LINK_FLAGS_RELWITHDEBINFO  "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
             LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
     )
+    endif()
 
     target_sources(DK64Recompiled PRIVATE ${CMAKE_SOURCE_DIR}/icons/app.rc)
-    target_link_libraries(DK64Recompiled PRIVATE SDL2 Winmm.lib)
+    if (MINGW)
+        # Test builds cross-compiled from Linux (tools/windows/build-windows.sh).
+        target_sources(DK64Recompiled PRIVATE ${CMAKE_SOURCE_DIR}/src/windows/mingw_uuids.cpp)
+        target_link_libraries(DK64Recompiled PRIVATE SDL2 winmm dwmapi d3dcompiler)
+    else()
+        target_link_libraries(DK64Recompiled PRIVATE SDL2 Winmm.lib)
+    endif()
 endif()
 
 if (APPLE)
@@ -366,9 +374,11 @@ set (DXC_CS_OPTS "${DXC_COMMON_OPTS}" "-E" "CSMain" "-T cs_6_0")
 set (DXC_GS_OPTS "${DXC_COMMON_OPTS}" "-E" "GSMain" "-T gs_6_0")
 set (DXC_RT_OPTS "${DXC_COMMON_OPTS}" "-D" "RT_SHADER" "-T" "lib_6_3" "-fspv-target-env=vulkan1.1spirv1.4" "-fspv-extension=SPV_KHR_ray_tracing" "-fspv-extension=SPV_EXT_descriptor_indexing")
 
-if (${WIN32})
-    set (DXC "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc.exe")
+if (WIN32)
     add_compile_definitions(NOMINMAX)
+endif()
+if (CMAKE_HOST_WIN32)
+    set (DXC "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc.exe")
 else()
     if (APPLE)
         # Apple's binary is universal, so it'll work on both x86_64 and arm64
