@@ -17,6 +17,10 @@ android {
     def installedNdk = System.getenv('ANDROID_NDK_LATEST_HOME') ?: System.getenv('ANDROID_NDK_HOME')
     if (installedNdk) {
         ndkPath installedNdk
+        // AGP insists ndkVersion matches the NDK at ndkPath.
+        def ndkProps = new Properties()
+        file("${installedNdk}/source.properties").withInputStream { ndkProps.load(it) }
+        ndkVersion ndkProps.getProperty('Pkg.Revision')
     }
 
     defaultConfig {
