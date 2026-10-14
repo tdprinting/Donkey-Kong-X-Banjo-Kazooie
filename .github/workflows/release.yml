@@ -211,6 +211,7 @@ jobs:
       - name: Fetch submodules
         run: |
           git submodule update --init --recursive host/lib/N64ModernRuntime host/lib/RecompFrontend host/lib/rt64
+          git submodule update --init host/lib/dk64_decomp
           # vcpkg needs its history to find the manifest's baseline.
           git submodule update --init host/lib/vcpkg
       - name: Get the decompressed ROM
@@ -220,7 +221,7 @@ jobs:
           token: ${{ secrets.JIGGY_ROM_TOKEN }}
           path: rom
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build lld
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang lld
       - name: Build N64Recomp and RSPRecomp
         run: |
           git clone --recurse-submodules https://github.com/N64Recomp/N64Recomp.git N64RecompSource
