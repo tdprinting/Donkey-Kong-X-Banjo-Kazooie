@@ -67,6 +67,8 @@ std::vector<uint8_t> dk64::decompress_dk(std::span<const uint8_t> compressed_rom
 }
 
 void dk64::dk_on_init(uint8_t* rdram, recomp_context* ctx) {
+    wait_for_launcher_frames();
+
     MEM_W(0, 0xFFFFFFFF802FE1C0) = 0xAD170014; //write to 0x802FE1C0
     MEM_W(0, 0xFFFFFFFF802FE1C4) = 0x3C09A600; //write to 0x802FE1C4
 

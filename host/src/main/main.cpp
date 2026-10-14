@@ -11,6 +11,7 @@
 #include <unistd.h>
 #endif
 #include <chrono>
+#include <mutex>
 
 #include "nfd.h"
 
@@ -66,6 +67,8 @@
 
 namespace {
 
+std::mutex dummy_workload_mutex;
+
 class PacingRendererContext final : public ultramodern::renderer::RendererContext {
 public:
     explicit PacingRendererContext(std::unique_ptr<ultramodern::renderer::RendererContext> inner_context)
@@ -91,6 +94,14 @@ public:
     }
 
     void send_dummy_workload(uint32_t fb_address) override {
+        // The launcher queues a dummy frame every VI, drawn at 0x80700000. On a slow GPU
+        // the queue backs up, and frames drawn after Start Game overwrite the game's code
+        // and data there (the F3DEX microcode among it), so the game can't render.
+        // dk64::wait_for_launcher_frames() holds the game until the last one is done.
+        std::lock_guard lock{ dummy_workload_mutex };
+        if (ultramodern::is_game_started()) {
+            return;
+        }
         inner->send_dummy_workload(fb_address);
     }
 
@@ -114,6 +125,14 @@ private:
     std::unique_ptr<ultramodern::renderer::RendererContext> inner;
 };
 
+}
+
+void dk64::wait_for_launcher_frames() {
+    // The game has started, so once this lock is free no more launcher frames get drawn.
+    std::lock_guard lock{ dummy_workload_mutex };
+}
+
+namespace {
 std::unique_ptr<ultramodern::renderer::RendererContext> create_pacing_render_context(uint8_t* rdram, ultramodern::renderer::WindowHandle window_handle, bool developer_mode) {
     auto presentation_mode = ultramodern::renderer::PresentationMode::PresentEarly;
     auto render_context = recompui::renderer::create_render_context(rdram, window_handle, presentation_mode, developer_mode);
