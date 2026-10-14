@@ -1,0 +1,17 @@
+[submodule "host/lib/N64ModernRuntime"]
+	path = host/lib/N64ModernRuntime
+	url = https://github.com/Killklli/N64ModernRuntime
+	branch = patch-1
+[submodule "host/lib/rt64"]
+	path = host/lib/rt64
+	url = https://github.com/rt64/rt64
+[submodule "host/lib/RecompFrontend"]
+	path = host/lib/RecompFrontend
+	url = https://github.com/Killklli/RecompFrontend
+	branch = mod_store
+[submodule "host/lib/dk64_decomp"]
+	path = host/lib/dk64_decomp
+	url = https://gitlab.com/dk64_decomp/dk64
+[submodule "host/lib/vcpkg"]
+	path = host/lib/vcpkg
+	url = https://github.com/microsoft/vcpkg
