@@ -115,11 +115,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install Ninja
-        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Install Ninja and the patches toolchain
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang lld
       - name: Fetch submodules
         run: |
           git submodule update --init --recursive host/lib/N64ModernRuntime host/lib/RecompFrontend host/lib/rt64
+          # The game's patches build against the DK64 decompilation's headers.
+          git submodule update --init host/lib/dk64_decomp
           # vcpkg needs its history to find the manifest's baseline.
           git submodule update --init host/lib/vcpkg
       - uses: actions/cache@v4
