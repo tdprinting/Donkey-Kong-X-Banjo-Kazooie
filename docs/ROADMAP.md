@@ -73,6 +73,9 @@ The foundation every later step needs: reading both games' files from the player
 
 ## Ground rules
 
+- Reuse the two games' own assets wherever possible: models, animations, textures,
+  sounds, music and text come from the player's ROMs. Only create something new when no
+  existing asset from either game can do the job, and note why when that happens.
 - No ROMs, extracted assets or other copyrighted game data in this repository, ever.
 - Format knowledge comes from the CC0 decompilations and is credited where it's used.
 - Both recomps are GPL-3.0. Code taken from them keeps that license, so this project
