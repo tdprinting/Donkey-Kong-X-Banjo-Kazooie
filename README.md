@@ -80,6 +80,13 @@ the ROM, running N64Recomp, then CMake). The executable is still called `DK64Rec
 When the launcher opens, pick **Load DK64 ROM** and **Load Banjo-Kazooie ROM**. Both are
 stored in the app's own folder (`JiggyJungle`), separate from DK64 Recompiled's saves.
 
+### Windows test builds
+
+For quick tests on a Windows PC, `tools/windows/build-windows.sh` cross-compiles the game
+from Linux with [llvm-mingw](https://github.com/mstorsjo/llvm-mingw) and writes
+`build-windows/JiggyJungle-windows.zip`. Generate the game code in `host/` first, as above.
+Android stays the target, and releases still come from `release.yml`.
+
 ## Updates
 
 On launch the game checks this repository's
