@@ -562,11 +562,11 @@ TEST(rom_import_checks_and_stores) {
     }
     auto ok = jiggy::import_rom(v64, jiggy::Game::DonkeyKong64, dir, false);
     CHECK(ok.ok);
-    CHECK(ok.stored_path == dir / "dk64.z64");
+    CHECK(ok.stored_path == dir / "DK64.z64");
     std::ifstream in(ok.stored_path, std::ios::binary);
     const Bytes stored{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
     CHECK(stored == z64);
-    CHECK(!fs::exists(dir / "dk64.z64.new"));
+    CHECK(!fs::exists(dir / "DK64.z64.new"));
     fs::remove_all(dir);
 }
 

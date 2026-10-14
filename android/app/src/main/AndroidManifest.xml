@@ -8,6 +8,12 @@
     <!-- The DK64 engine runs on Vulkan (RT64). -->
     <uses-feature android:name="android.hardware.vulkan.version" android:version="0x400003" android:required="false" />
 
+    <!-- Controllers, through SDL. None of these are required. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-feature android:name="android.hardware.gamepad" android:required="false" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
     <application
         android:label="Jiggy Jungle"
         android:largeHeap="true"
@@ -23,6 +29,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- The game, on SDL's activity (settings from SDL's own Android project template). -->
+        <activity
+            android:name=".GameActivity"
+            android:exported="false"
+            android:label="Jiggy Jungle"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
+            android:screenOrientation="sensorLandscape"
+            android:preferMinimalPostProcessing="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation" />
 
         <receiver
             android:name=".InstallResultReceiver"

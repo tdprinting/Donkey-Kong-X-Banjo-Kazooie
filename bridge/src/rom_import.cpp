@@ -10,7 +10,7 @@ const char* stored_rom_filename(Game game) {
         case Game::BanjoKazooie:
             return "jiggy_banjo.z64";
         case Game::DonkeyKong64:
-            return "dk64.z64";
+            return "DK64.z64"; // The name librecomp loads: game id + ".z64".
         case Game::Unknown:
             break;
     }

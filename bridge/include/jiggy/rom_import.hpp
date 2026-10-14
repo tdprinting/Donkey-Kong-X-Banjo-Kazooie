@@ -12,7 +12,7 @@
 
 namespace jiggy {
 
-// File name the stored copy gets: "dk64.z64" or "jiggy_banjo.z64".
+// File name the stored copy gets: "DK64.z64" (the name librecomp loads) or "jiggy_banjo.z64".
 const char* stored_rom_filename(Game game);
 
 struct RomImportResult {

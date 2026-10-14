@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 
 /**
  * The launcher: pick the two ROMs (checked and stored by the same C++ the desktop launcher
- * uses), check for updates, and start the game once the Android engine is ready.
+ * uses), check for updates, and start the game.
  */
 public final class MainActivity extends Activity {
     private static final int PICK_DK64 = 1;
@@ -73,8 +73,7 @@ public final class MainActivity extends Activity {
 
         dk64Button = addButton(column, v -> pickRom(PICK_DK64));
         banjoButton = addButton(column, v -> pickRom(PICK_BANJO));
-        startButton = addButton(column, v -> status.setText(
-                "Both ROMs are ready. The game engine for Android is the next milestone, so it can't start yet."));
+        startButton = addButton(column, v -> startGame());
         startButton.setText("Start Game");
         updateButton = addButton(column, v -> installUpdate());
         updateButton.setText("Checking for Updates...");
@@ -122,6 +121,34 @@ public final class MainActivity extends Activity {
         dk64Button.setText(haveDk64 ? "Donkey Kong 64 ROM Loaded" : "Load Donkey Kong 64 ROM");
         banjoButton.setText(haveBanjo ? "Banjo-Kazooie ROM Loaded" : "Load Banjo-Kazooie ROM");
         startButton.setEnabled(haveDk64 && haveBanjo);
+    }
+
+    private void startGame() {
+        if (!BuildConfig.HAS_ENGINE) {
+            status.setText("This build of the app doesn't include the game engine. "
+                    + "Release builds do; development builds only have the launcher.");
+            return;
+        }
+        startButton.setEnabled(false);
+        status.setText("Getting the game ready...");
+        worker.execute(() -> {
+            String error = null;
+            try {
+                EngineFiles.unpackIfNeeded(getApplicationContext());
+            } catch (IOException e) {
+                error = e.getMessage();
+            }
+            final String failure = error;
+            runOnUiThread(() -> {
+                refreshRomButtons();
+                if (failure != null) {
+                    status.setText("Couldn't unpack the game's files: " + failure);
+                    return;
+                }
+                status.setText("");
+                startActivity(new Intent(this, GameActivity.class));
+            });
+        });
     }
 
     private void pickRom(int request) {

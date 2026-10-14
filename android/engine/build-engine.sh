@@ -4,9 +4,10 @@
 #
 #   android/engine/build-engine.sh [targets...]
 #
-# With no targets it builds the engine libraries only, which is what CI checks: the game
-# itself also needs the code N64Recomp generates from the player's DK64 ROM (host/RecompiledFuncs),
-# which can't exist in CI. Pass DK64Recompiled once that code is in place to build libmain.so.
+# With no targets it builds the engine libraries and compiles the game's own sources, which
+# is what CI checks: linking the game also needs the code N64Recomp generates from a DK64
+# ROM (host/RecompiledFuncs), which can't exist in CI. Pass DK64Recompiled once that code is
+# in place to build libmain.so; android/app picks it up from android/app/engine-libs.
 #
 # Needs: ANDROID_NDK_HOME (or ANDROID_NDK_LATEST_HOME), ninja, a host C++ compiler, and the
 # host submodules checked out (vcpkg with full history, for its baseline).
@@ -67,7 +68,21 @@ cmake -S "$host" -B "$build" -G Ninja \
     -DRT64_HOST_FILE_TO_C="$build/host-tools/file_to_c"
 
 if [ "$#" -eq 0 ]; then
-    set -- rt64 ultramodern librecomp recompui recompinput jiggy_bridge jiggy_updater
+    # The engine libraries, plus every game source file that doesn't include the code
+    # generated from the ROM, compiled but not linked.
+    host_objects=$(ninja -C "$build" -t targets all \
+        | sed -n 's|^\(CMakeFiles/DK64Recompiled\.dir/src/[^:]*\.o\):.*|\1|p' \
+        | grep -v -e register_overlays -e register_patches)
+    set -- rt64 ultramodern librecomp recompui recompinput jiggy_bridge jiggy_updater $host_objects
 fi
 # -k 0 keeps going after an error, so one run reports every file that fails.
 cmake --build "$build" --target "$@" -- -k 0
+
+# Hand a freshly linked game to the Android app build.
+for target in "$@"; do
+    if [ "$target" = DK64Recompiled ]; then
+        mkdir -p "$repo/android/app/engine-libs/arm64-v8a"
+        cp "$build/libmain.so" "$repo/android/app/engine-libs/arm64-v8a/"
+        echo "Copied libmain.so to android/app/engine-libs/arm64-v8a/"
+    fi
+done

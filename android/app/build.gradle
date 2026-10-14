@@ -8,6 +8,10 @@ def jiggyVersion = (file('../../host/include/jiggy_version.h').text =~ /#define 
 def versionParts = jiggyVersion.tokenize('.-')
 def jiggyVersionCode = versionParts[0].toInteger() * 10000 + versionParts[1].toInteger() * 100 + versionParts[2].toInteger()
 
+def engineLibs = file('engine-libs')
+def hasEngine = file('engine-libs/arm64-v8a/libmain.so').exists()
+def engineAssets = layout.buildDirectory.dir('generated/engine-assets').get().asFile
+
 android {
     namespace 'io.github.tdprinting.jiggyjungle'
     compileSdk 35
@@ -30,6 +34,7 @@ android {
         targetSdk 35
         versionCode jiggyVersionCode
         versionName jiggyVersion
+        buildConfigField 'boolean', 'HAS_ENGINE', hasEngine.toString()
         ndk {
             abiFilters 'arm64-v8a'
         }
@@ -77,5 +82,30 @@ android {
         cmake {
             path 'src/main/cpp/CMakeLists.txt'
         }
+    }
+
+    // The game itself (libmain.so) is built by android/engine/build-engine.sh DK64Recompiled,
+    // which needs code generated from a DK64 ROM, so it's only in builds made that way
+    // (release.yml does). Without it the app still runs, minus Start Game.
+    sourceSets {
+        main {
+            jniLibs.srcDirs += engineLibs
+            if (hasEngine) {
+                assets.srcDirs += engineAssets
+            }
+        }
+    }
+}
+
+// The engine's UI assets and controller database go in the APK under engine/, and the app
+// unpacks them into its storage, where the engine looks for them.
+tasks.register('copyEngineAssets', Copy) {
+    into engineAssets
+    from('../../host/assets') { into 'engine/assets' }
+    from('../../host/recompcontrollerdb.txt') { into 'engine' }
+}
+tasks.named('preBuild') {
+    if (hasEngine) {
+        dependsOn 'copyEngineAssets'
     }
 }

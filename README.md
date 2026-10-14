@@ -41,7 +41,8 @@ project is shaped this way.
 | First Banjo asset visible in DK Isles (Banjo's portrait) | Done, needs a test on real ROMs |
 | CI: game patches build | Done |
 | Android app: ROM picker and checks, in-app updates | Done, needs a test on a phone |
-| Android app: running the game | Next |
+| Android: engine cross-compiles, game packaged as libmain.so on SDL's activity | Done, untested on a phone |
+| Android: touch controls | Next |
 
 ## Building
 
@@ -113,14 +114,20 @@ contain the compiled game but no ROM data, and players still load their own ROMs
 
 ## Android
 
-[`android/`](android) is the Android app. So far it's the launcher: pick your two ROMs
-with Android's file picker (each is checked and stored in the app's own storage) and
-install updates from GitHub Releases. Running the game itself is the next milestone.
+[`android/`](android) is the Android app (Android 9 or newer, arm64). The launcher picks
+your two ROMs with Android's file picker (each is checked and stored in the app's own
+storage) and installs updates from GitHub Releases. Start Game runs the game: DK64
+Recompiled with the Jiggy Bridge, built as `libmain.so` and run on SDL's activity.
 
-Every CI run uploads a debug APK (**JiggyJungle-debug-apk** on the run's page) you can
-install to try it. To build it yourself with the Android SDK and NDK installed:
+The game code is generated from a DK64 ROM, so only builds made with one contain the game.
+Release APKs do (`release.yml`). The debug APK every CI run uploads
+(**JiggyJungle-debug-apk** on the run's page) has the launcher only.
+
+To build the full app yourself, with the Android SDK and NDK installed and the game code
+generated in `host/` as for the desktop build:
 
 ```bash
+android/engine/build-engine.sh DK64Recompiled   # libmain.so, into android/app/engine-libs
 cd android && ./gradlew assembleDebug
 ```
 

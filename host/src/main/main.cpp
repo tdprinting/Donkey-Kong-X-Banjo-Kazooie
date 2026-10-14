@@ -7,6 +7,9 @@
 #include <numeric>
 #include <stdexcept>
 #include <cinttypes>
+#if defined(__ANDROID__)
+#include <unistd.h>
+#endif
 #include <chrono>
 
 #include "nfd.h"
@@ -760,7 +763,20 @@ void on_launcher_init(recompui::LauncherMenu *menu) {
 
 #define REGISTER_FUNC(name) recomp::overlays::register_base_export(#name, name)
 
+#if defined(__ANDROID__)
+// SDL's Android activity loads libmain.so and calls SDL_main on its own thread. The app sets
+// APP_FOLDER_PATH to its private storage, which holds the ROMs, saves, config and the assets
+// it unpacked, and the engine finds its assets relative to the working directory.
+extern "C" __attribute__((visibility("default"))) int SDL_main(int argc, char** argv) {
+    const char* app_folder = getenv("APP_FOLDER_PATH");
+    if (app_folder == nullptr || chdir(app_folder) != 0) {
+        fprintf(stderr, "APP_FOLDER_PATH isn't set to a usable folder.\n");
+        return EXIT_FAILURE;
+    }
+    SDL_SetMainReady();
+#else
 int main(int argc, char** argv) {
+#endif
     (void)argc;
     (void)argv;
     recomp::Version project_version{};

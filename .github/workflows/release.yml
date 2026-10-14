@@ -208,6 +208,37 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
+      - name: Fetch submodules
+        run: |
+          git submodule update --init --recursive host/lib/N64ModernRuntime host/lib/RecompFrontend host/lib/rt64
+          # vcpkg needs its history to find the manifest's baseline.
+          git submodule update --init host/lib/vcpkg
+      - name: Get the decompressed ROM
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.JIGGY_ROM_REPO }}
+          token: ${{ secrets.JIGGY_ROM_TOKEN }}
+          path: rom
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build lld
+      - name: Build N64Recomp and RSPRecomp
+        run: |
+          git clone --recurse-submodules https://github.com/N64Recomp/N64Recomp.git N64RecompSource
+          cd N64RecompSource
+          git checkout "$N64RECOMP_COMMIT"
+          git submodule update --init --recursive
+          cmake -DCMAKE_BUILD_TYPE=Release -G Ninja -S . -B cmake-build
+          cmake --build cmake-build --target N64RecompCLI RSPRecomp -j"$(nproc)"
+          cp cmake-build/N64Recomp cmake-build/RSPRecomp ../host/
+      - name: Generate the game code
+        working-directory: host
+        run: |
+          cp ../rom/donkeykong64.decompressed.us.z64 .
+          ./N64Recomp us.toml
+          ./RSPRecomp n_aspMain.toml
+          rm donkeykong64.decompressed.us.z64
+      - name: Build the game for Android (libmain.so)
+        run: android/engine/build-engine.sh DK64Recompiled
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -226,6 +257,8 @@ jobs:
           rm -f "$JIGGY_ANDROID_KEYSTORE_FILE"
           cp app/build/outputs/apk/release/app-release.apk \
             "../JiggyJungle-${{ needs.prepare.outputs.version }}-android-arm64.apk"
+          # A release APK without the game would only show the launcher.
+          unzip -l app/build/outputs/apk/release/app-release.apk | grep -q 'lib/arm64-v8a/libmain.so'
       - uses: actions/upload-artifact@v4
         with:
           name: android-arm64

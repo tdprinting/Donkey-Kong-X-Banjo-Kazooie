@@ -61,9 +61,15 @@ The foundation every later step needs: reading both games' files from the player
 - [x] ROM selection with Android's file picker. Each ROM is checked by the same C++ as the
       desktop launcher (`jiggy/rom_import.hpp`) and stored big-endian in app storage.
 - [x] In-app updates: download the release APK and install it with Android's package installer.
-- [ ] Port the DK64 host to Android: an SDL2 activity running the runtime and RT64 on Vulkan,
-      with paths pointed at app storage. Needs the generated game code, so like the desktop
-      game it can only be built from a ROM.
+- [x] Cross-compile the engine for Android (`android/engine/build-engine.sh`): the runtime,
+      RT64 on Vulkan through SDL's window, RecompFrontend and the game's own sources, with
+      SDL2, FreeType and curl from vcpkg. Small patches to RT64, plume and zstd live in
+      `android/engine/patches/`. CI builds all of it except the final link, which needs the
+      code generated from a ROM.
+- [x] The game as `libmain.so` on SDL's activity (`GameActivity`), with ROMs, saves, config
+      and unpacked assets in app storage. `release.yml` builds it from the ROM and puts it in
+      the APK; development APKs from CI have the launcher only.
+- [ ] First run on a real phone. Nothing has been tested on a device yet, so expect fixes.
 - [ ] On-screen touch controls and controller support; replace the desktop file dialog.
 - [ ] Save data and config in app storage.
 

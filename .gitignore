@@ -18,3 +18,4 @@
 /android/app/.cxx/
 /android/local.properties
 /build-android-engine/
+/android/app/engine-libs/

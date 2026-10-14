@@ -299,7 +299,15 @@ if (ANDROID)
     # SDL2 and FreeType come from vcpkg (arm64-android), like curl.
     find_package(SDL2 CONFIG REQUIRED)
     find_package(Freetype REQUIRED)
-    target_link_libraries(DK64Recompiled PRIVATE SDL2::SDL2 Freetype::Freetype android log)
+    get_target_property(JIGGY_SDL2_TYPE SDL2::SDL2 TYPE)
+    if (JIGGY_SDL2_TYPE STREQUAL "STATIC_LIBRARY")
+        # libmain.so carries SDL itself, so keep all of it: SDL's Java side calls into JNI
+        # functions nothing in the game references.
+        target_link_libraries(DK64Recompiled PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,SDL2::SDL2>")
+    else()
+        target_link_libraries(DK64Recompiled PRIVATE SDL2::SDL2)
+    endif()
+    target_link_libraries(DK64Recompiled PRIVATE Freetype::Freetype android log)
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
