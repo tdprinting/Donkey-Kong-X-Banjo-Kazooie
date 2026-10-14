@@ -308,6 +308,7 @@ if (ANDROID)
         target_link_libraries(DK64Recompiled PRIVATE SDL2::SDL2)
     endif()
     target_link_libraries(DK64Recompiled PRIVATE Freetype::Freetype android log)
+    target_sources(DK64Recompiled PRIVATE ${CMAKE_SOURCE_DIR}/src/android/touch_controls.cpp)
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")

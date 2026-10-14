@@ -42,7 +42,7 @@ project is shaped this way.
 | CI: game patches build | Done |
 | Android app: ROM picker and checks, in-app updates | Done, needs a test on a phone |
 | Android: engine cross-compiles, game packaged as libmain.so on SDL's activity | Done, untested on a phone |
-| Android: touch controls | Next |
+| Android: on-screen touch controls, controller support | Done, untested on a phone |
 
 ## Building
 

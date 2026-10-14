@@ -70,8 +70,11 @@ The foundation every later step needs: reading both games' files from the player
       and unpacked assets in app storage. `release.yml` builds it from the ROM and puts it in
       the APK; development APKs from CI have the launcher only.
 - [ ] First run on a real phone. Nothing has been tested on a device yet, so expect fixes.
-- [ ] On-screen touch controls and controller support; replace the desktop file dialog.
-- [ ] Save data and config in app storage.
+- [x] On-screen touch controls: an N64 layout drawn over the game that drives an SDL virtual
+      controller, so the game's own input mapping handles it. Hidden while a physical
+      controller is connected, which SDL supports directly. The desktop file dialog is a stub
+      on Android, since the launcher picks ROMs.
+- [x] Save data and config in app storage (`APP_FOLDER_PATH`).
 
 ## 4. Banjo content in the DK64 engine
 
