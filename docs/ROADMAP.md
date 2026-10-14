@@ -56,7 +56,7 @@ The foundation every later step needs: reading both games' files from the player
 
 *Size: weeks to a few months, depending on device issues.*
 
-- [x] Gradle project (`android/`, arm64-v8a, API 24+) with the bridge and updater built in
+- [x] Gradle project (`android/`, arm64-v8a, Android 9 / API 28+) with the bridge and updater built in
       through JNI. CI builds a debug APK on every push.
 - [x] ROM selection with Android's file picker. Each ROM is checked by the same C++ as the
       desktop launcher (`jiggy/rom_import.hpp`) and stored big-endian in app storage.

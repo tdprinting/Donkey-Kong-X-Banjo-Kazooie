@@ -62,7 +62,7 @@ cmake -S "$host" -B "$build" -G Ninja \
     -DVCPKG_TARGET_TRIPLET=arm64-android \
     -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$ndk/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI=arm64-v8a \
-    -DANDROID_PLATFORM=android-24 \
+    -DANDROID_PLATFORM=android-28 \
     -DANDROID_STL=c++_static \
     -DRT64_HOST_FILE_TO_C="$build/host-tools/file_to_c"
 

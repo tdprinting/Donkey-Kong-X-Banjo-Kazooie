@@ -1,17 +1,16 @@
 diff --git a/lib/dictBuilder/cover.c b/lib/dictBuilder/cover.c
-index 386a4d572..fe9b3f2e4 100644
+index 386a4d572..438df396f 100644
 --- a/lib/dictBuilder/cover.c
 +++ b/lib/dictBuilder/cover.c
-@@ -21,9 +21,9 @@
+@@ -47,6 +47,11 @@
+ #include "../zdict.h"
+ #include "cover.h"
+ 
++#if defined(__ANDROID__)
++/* Android's libc only has qsort_r from API 36, so use the portable qsort path below. */
++#undef _GNU_SOURCE
++#endif
++
  /*-*************************************
- *  Dependencies
+ *  Constants
  ***************************************/
--/* qsort_r is an extension. */
--#if defined(__linux) || defined(__linux__) || defined(linux) || defined(__gnu_linux__) || \
--    defined(__CYGWIN__) || defined(__MSYS__)
-+/* qsort_r is an extension. Android's libc only has it from API 36, so it uses plain qsort. */
-+#if (defined(__linux) || defined(__linux__) || defined(linux) || defined(__gnu_linux__) || \
-+    defined(__CYGWIN__) || defined(__MSYS__)) && !defined(__ANDROID__)
- #if !defined(_GNU_SOURCE)
- #define _GNU_SOURCE
- #endif
