@@ -63,7 +63,26 @@ The foundation every later step needs: reading both games' files from the player
   Firing) as DK64 patches, using the BK decompilation as the behaviour reference.
 - Add the duo to DK64's character swap, then a quick-swap wheel in place of Tag Barrels.
 
-## 6. Jiggy Jungle proper
+## 6. Two-player split-screen co-op
+
+*Size: months. Engine work that doesn't depend on milestones 4 and 5, so a prototype with
+two Kongs can start right after milestone 2.*
+
+Each duo becomes two players: player 1 controls one partner and player 2 the other, and
+both play through every mission together.
+
+- Starting point: DK64 already has 2 to 4 player split-screen, but only in its battle
+  arenas (the `multiplayer` overlay in the decompilation). DK64 Recompiled ships it behind
+  a "work in progress, non-functional" setting, so it needs fixing first.
+- Bring split-screen cameras and viewports into story-mode maps, with a second player actor
+  driven by controller 2.
+- Rework what assumes one player: cutscenes, warps, loading zones, collectible pickups,
+  Kong-only switches, and the HUD (one per half of the screen).
+- Tie it into the duo system: both players share the duo's Notes and Jiggies, and duo-only
+  Jiggies need both partners. On Android, player 2 uses a controller.
+- Reuse DK64's existing split-screen HUD and camera code rather than writing new versions.
+
+## 7. Jiggy Jungle proper
 
 *Size: long-term.*
 
