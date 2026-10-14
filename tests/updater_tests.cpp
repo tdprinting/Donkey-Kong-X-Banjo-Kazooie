@@ -1,4 +1,5 @@
 // Updater tests: version ordering and parsing of GitHub's "latest release" responses.
+#include <algorithm>
 #include <cstdlib>
 #include <string>
 
