@@ -12,6 +12,13 @@ android {
     namespace 'io.github.tdprinting.jiggyjungle'
     compileSdk 35
 
+    // Use an NDK that's already installed (CI runners have one) rather than downloading
+    // AGP's default version on every build.
+    def installedNdk = System.getenv('ANDROID_NDK_LATEST_HOME') ?: System.getenv('ANDROID_NDK_HOME')
+    if (installedNdk) {
+        ndkPath installedNdk
+    }
+
     defaultConfig {
         applicationId 'io.github.tdprinting.jiggyjungle'
         // RT64's Android target.
