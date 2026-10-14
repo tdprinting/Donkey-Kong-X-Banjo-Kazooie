@@ -154,8 +154,14 @@ add_custom_command(OUTPUT
                    DEPENDS ${CMAKE_SOURCE_DIR}/patches/patches.elf
 )
 
-# Main executable
-add_executable(DK64Recompiled)
+# Main executable. On Android the game is a shared library that SDL's Java activity loads
+# (it must be called libmain.so).
+if (ANDROID)
+    add_library(DK64Recompiled SHARED)
+    set_target_properties(DK64Recompiled PROPERTIES OUTPUT_NAME main)
+else()
+    add_executable(DK64Recompiled)
+endif()
 
 set (SOURCES
     ${CMAKE_SOURCE_DIR}/src/main/launcher_animation.cpp
@@ -282,6 +288,13 @@ if (APPLE)
     include(${CMAKE_SOURCE_DIR}/.github/macos/apple_bundle.cmake)
 endif()
 
+if (ANDROID)
+    # SDL2 and FreeType come from vcpkg (arm64-android), like curl.
+    find_package(SDL2 CONFIG REQUIRED)
+    find_package(Freetype REQUIRED)
+    target_link_libraries(DK64Recompiled PRIVATE SDL2::SDL2 Freetype::Freetype android log)
+endif()
+
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(SDL2 REQUIRED)
     find_package(X11 REQUIRED)
@@ -342,7 +355,8 @@ else()
             set(SPIRVCROSS "DYLD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/spirv-cross/lib/arm64" "${PROJECT_SOURCE_DIR}/lib/rt64//src/contrib/spirv-cross/bin/x64/spirv-cross")
         endif()
     else()
-        if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+        # DXC runs on the build machine, which isn't the target when cross-compiling for Android.
+        if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
             set (DXC "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/lib/x64" "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc-linux")
         else()
             set (DXC "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/lib/arm64" "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/arm64/dxc-linux")
@@ -354,6 +368,12 @@ set(RECOMP_FRONTEND_N64MODERNRUNTIME_PATH ${CMAKE_SOURCE_DIR}/lib/N64ModernRunti
 set(RECOMP_FRONTEND_RT64_PATH ${CMAKE_SOURCE_DIR}/lib/rt64)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/RecompFrontend)
+
+if (ANDROID)
+    # RecompFrontend only adds SDL's headers on desktop platforms.
+    target_link_libraries(recompui PRIVATE SDL2::SDL2)
+    target_link_libraries(recompinput PRIVATE SDL2::SDL2)
+endif()
 
 target_link_libraries(DK64Recompiled PRIVATE
     PatchesLib

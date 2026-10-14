@@ -109,3 +109,22 @@ jobs:
         with:
           name: JiggyJungle-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+
+  android-engine:
+    name: Android engine libraries
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Fetch submodules
+        run: |
+          git submodule update --init --recursive host/lib/N64ModernRuntime host/lib/RecompFrontend host/lib/rt64
+          # vcpkg needs its history to find the manifest's baseline.
+          git submodule update --init host/lib/vcpkg
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg
+          key: vcpkg-arm64-android-${{ hashFiles('host/vcpkg.json', '.gitmodules') }}
+      - name: Build
+        run: android/engine/build-engine.sh

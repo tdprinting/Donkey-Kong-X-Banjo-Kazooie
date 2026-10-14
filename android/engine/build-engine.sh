@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Cross-compiles the DK64 Recompiled engine (N64ModernRuntime, RT64, RecompFrontend) for
+# Android arm64 with the NDK, plus SDL2, FreeType and curl from vcpkg.
+#
+#   android/engine/build-engine.sh [targets...]
+#
+# With no targets it builds the engine libraries only, which is what CI checks: the game
+# itself also needs the code N64Recomp generates from the player's DK64 ROM (host/RecompiledFuncs),
+# which can't exist in CI. Pass DK64Recompiled once that code is in place to build libmain.so.
+#
+# Needs: ANDROID_NDK_HOME (or ANDROID_NDK_LATEST_HOME), ninja, a host C++ compiler, and the
+# host submodules checked out (vcpkg with full history, for its baseline).
+set -euo pipefail
+
+repo="$(cd "$(dirname "$0")/../.." && pwd)"
+host="$repo/host"
+build="${JIGGY_ANDROID_ENGINE_BUILD:-$repo/build-android-engine}"
+ndk="${ANDROID_NDK_HOME:-${ANDROID_NDK_LATEST_HOME:-}}"
+if [ -z "$ndk" ]; then
+    echo "Set ANDROID_NDK_HOME to the Android NDK." >&2
+    exit 1
+fi
+export ANDROID_NDK_HOME="$ndk" # vcpkg's Android triplets read this.
+
+# RT64 needs two small build-system changes to cross-compile; they apply cleanly to the
+# pinned submodule and are skipped when already applied.
+patch="$repo/android/engine/rt64-cross-compile.patch"
+if git -C "$host/lib/rt64" apply --check "$patch" 2>/dev/null; then
+    git -C "$host/lib/rt64" apply "$patch"
+fi
+
+# file_to_c turns shaders and assets into C during the build, so it must run here.
+mkdir -p "$build/host-tools"
+c++ -std=c++17 -O2 -o "$build/host-tools/file_to_c" "$host/lib/rt64/src/tools/file_to_c/file_to_c.cpp"
+
+if [ ! -x "$host/lib/vcpkg/vcpkg" ]; then
+    "$host/lib/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+fi
+
+# The generated game code only exists after running N64Recomp on the player's ROM.
+if [ -z "$(ls "$host/RecompiledFuncs" 2>/dev/null)" ]; then
+    mkdir -p "$host/RecompiledFuncs"
+    echo "/* Placeholder: N64Recomp writes the game code here. */" > "$host/RecompiledFuncs/placeholder.c"
+fi
+
+cmake -S "$host" -B "$build" -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DVCPKG_TARGET_TRIPLET=arm64-android \
+    -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$ndk/build/cmake/android.toolchain.cmake" \
+    -DANDROID_ABI=arm64-v8a \
+    -DANDROID_PLATFORM=android-24 \
+    -DANDROID_STL=c++_static \
+    -DRT64_HOST_FILE_TO_C="$build/host-tools/file_to_c"
+
+if [ "$#" -eq 0 ]; then
+    set -- rt64 ultramodern librecomp recompui recompinput jiggy_bridge jiggy_updater
+fi
+cmake --build "$build" --target "$@"
