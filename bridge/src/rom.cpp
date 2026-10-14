@@ -213,7 +213,7 @@ RomInfo identify_big_endian(std::span<const uint8_t> rom, ByteOrder original_ord
     const std::string title = info.game_code.size() == 4 ? info.game_code.substr(1, 2) : "";
     if (title == "BK") {
         info.game = Game::BanjoKazooie;
-        info.supported = info.sha1 == kBanjoKazooieUs10Sha1;
+        info.supported = info.sha1 == kBanjoKazooieUs10Sha1 || info.sha1 == kBanjoKazooieUsRev1Sha1;
     } else if (title == "DO") {
         info.game = Game::DonkeyKong64;
         info.supported = info.sha1 == kDonkeyKong64UsSha1;

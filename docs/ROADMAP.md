@@ -18,8 +18,9 @@ The foundation every later step needs: reading both games' files from the player
 - [x] C API for the host and for Android
 - [x] `jiggy-inspect` for checking ROMs and browsing assets locally
 - [x] Tests on synthetic ROMs, CI on Linux and an Android arm64 cross-build
-- [ ] Run `jiggy-inspect list` on real US 1.0 dumps and confirm every entry decodes.
-      This needs a maintainer with both ROMs, since CI can't have them.
+- [x] Run on real dumps: every one of the 3619 Banjo-Kazooie assets loads and decompresses
+      (checked on US Rev 1, which shares 1.0's asset bank, so both are accepted), and all 32
+      DK64 tables read from the US dump. Banjo's portrait decodes correctly.
 
 ## 2. DK64 Recompiled as the host
 
@@ -80,8 +81,11 @@ The foundation every later step needs: reading both games' files from the player
 
 *Size: months.*
 
-- Model converter: Banjo-Kazooie's model format and F3DEX display lists to DK64's actor
-  model format and F3DEX2.
+- [x] Model reader (`bridge/src/bk_model.cpp`): header, vertex list, textures (CI4, CI8,
+  RGBA16, RGBA32) and an F3DEX display list walk that produces triangles with UVs. On the
+  real ROM it finds exactly the triangle count each model's header gives (Banjo high poly:
+  4470), and `jiggy-inspect model` exports OBJ + PNG for checking.
+- [ ] Model converter: from those triangles to DK64's actor model format and F3DEX2.
 - Texture and palette conversion where formats differ.
 - Animation retargeting from BK's bone animation format to DK64's.
 - Music: Banjo sequences and instruments into DK64's sound bank format, or a second

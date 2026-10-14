@@ -11,7 +11,7 @@ running on [N64ModernRuntime](https://github.com/N64Recomp/N64ModernRuntime) and
 rendering with [RT64](https://github.com/rt64/rt64).
 
 > **This repository contains no game data.** You need your own legally obtained
-> US 1.0 ROMs of *both* games. They are read at runtime and never copied into the
+> US ROMs of *both* games (Donkey Kong 64 1.0, Banjo-Kazooie 1.0 or Rev 1). They are read at runtime and never copied into the
 > repository. Don't commit ROMs or anything extracted from them.
 
 ## Status
@@ -137,12 +137,15 @@ cd android && ./gradlew assembleDebug
 ./build/jiggy-inspect info banjo.z64 dk64.z64
 ```
 
-`supported: yes` means the dump matches the one both recomps target:
+`supported: yes` means the dump is one Jiggy Jungle reads:
 
-| Game | SHA-1 of the US 1.0 ROM |
+| Game | SHA-1 |
 | --- | --- |
-| Banjo-Kazooie | `1fe1632098865f639e22c11b9a81ee8f29c75d7a` |
-| Donkey Kong 64 | `cf806ff2603640a748fca5026ded28802f1f4a50` |
+| Banjo-Kazooie US 1.0 | `1fe1632098865f639e22c11b9a81ee8f29c75d7a` |
+| Banjo-Kazooie US Rev 1 | `ded6ee166e740ad1bc810fd678a84b48e245ab80` |
+| Donkey Kong 64 US | `cf806ff2603640a748fca5026ded28802f1f4a50` |
+
+Only Banjo-Kazooie's asset bank is read, and it's identical in layout on both revisions.
 
 `.z64`, `.v64` and `.n64` files all work. The tool converts them to the console's byte order in memory.
 
@@ -155,6 +158,7 @@ To browse what the bridge can load:
 ./build/jiggy-inspect extract banjo.z64 0x34e banjo-model.bin   # MODEL_BANJOKAZOOIE_HIGH_POLY
 ./build/jiggy-inspect extract dk64.z64 5:0 model.bin
 ./build/jiggy-inspect sprite banjo.z64 0x7ef 0 banjo.png    # Banjo's dialogue portrait, frame 0
+./build/jiggy-inspect model banjo.z64 0x34e banjo-model/   # Banjo & Kazooie (high poly) as OBJ + PNG textures
 ```
 
 Extracted files are for your own local research and must stay out of this repository.

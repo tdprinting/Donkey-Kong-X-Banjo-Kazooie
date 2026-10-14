@@ -4,17 +4,20 @@
 //   jiggy-inspect list <rom> [dk64-table]
 //   jiggy-inspect extract <rom> <bk-asset-id | dk64-table:index> <out-file>
 //   jiggy-inspect sprite <bk-rom> <bk-asset-id> <frame> <out.png>
+//   jiggy-inspect model <bk-rom> <bk-asset-id> <out-dir>   (OBJ + MTL + PNG textures)
 //
 // Extracted files are for local research only. Never commit them: they are copyrighted game data.
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "jiggy/bk_assets.hpp"
+#include "jiggy/bk_model.hpp"
 #include "jiggy/bk_sprite.hpp"
 #include "jiggy/dk64_tables.hpp"
 #include "jiggy/inflate.hpp"
@@ -32,6 +35,7 @@ void usage() {
                  "  jiggy-inspect list <rom> [dk64-table]\n"
                  "  jiggy-inspect extract <rom> <bk-asset-id | dk64-table:index> <out-file>\n"
                  "  jiggy-inspect sprite <bk-rom> <bk-asset-id> <frame> <out.png>\n"
+                 "  jiggy-inspect model <bk-rom> <bk-asset-id> <out-dir>\n"
                  "options:\n"
                  "  --allow-unverified   use the US 1.0 offsets on a dump with a different SHA-1\n");
 }
@@ -52,7 +56,7 @@ bool usable(const jiggy::Rom& rom, const std::string& path) {
         return false;
     }
     if (!info.supported && !g_allow_unverified) {
-        std::fprintf(stderr, "%s: not the US 1.0 dump (SHA-1 %s); pass --allow-unverified to try anyway\n",
+        std::fprintf(stderr, "%s: not a supported US dump (SHA-1 %s); pass --allow-unverified to try anyway\n",
                      path.c_str(), info.sha1.c_str());
         return false;
     }
@@ -75,7 +79,7 @@ int cmd_info(const std::vector<std::string>& paths) {
         std::printf("  byte order: %s\n", jiggy::byte_order_name(info.original_order));
         std::printf("  size:       %zu bytes\n", rom->data().size());
         std::printf("  sha1:       %s\n", info.sha1.c_str());
-        std::printf("  supported:  %s\n", info.supported ? "yes (matches the US 1.0 dump the recomps target)" : "no");
+        std::printf("  supported:  %s\n", info.supported ? "yes (a US dump Jiggy Jungle supports)" : "no");
         if (!info.supported) {
             status = 1;
         }
@@ -199,6 +203,23 @@ int cmd_extract(const std::string& path, const std::string& id, const std::strin
     return 0;
 }
 
+bool write_png(const std::vector<uint8_t>& rgba, int width, int height, const std::string& out_path) {
+    size_t png_size = 0;
+    void* png = tdefl_write_image_to_png_file_in_memory(rgba.data(), width, height, 4, &png_size);
+    if (!png) {
+        std::fprintf(stderr, "could not encode the PNG\n");
+        return false;
+    }
+    std::ofstream out(out_path, std::ios::binary);
+    out.write(static_cast<const char*>(png), std::streamsize(png_size));
+    mz_free(png);
+    if (!out) {
+        std::fprintf(stderr, "could not write %s\n", out_path.c_str());
+        return false;
+    }
+    return true;
+}
+
 int cmd_sprite(const std::string& path, const std::string& id, const std::string& frame, const std::string& out_path) {
     auto rom = load(path);
     if (!rom || !usable(*rom, path)) {
@@ -226,21 +247,86 @@ int cmd_sprite(const std::string& path, const std::string& id, const std::string
         std::fprintf(stderr, "%s\n", error.c_str());
         return 1;
     }
-    size_t png_size = 0;
-    void* png = tdefl_write_image_to_png_file_in_memory(image->rgba.data(), image->width, image->height, 4, &png_size);
-    if (!png) {
-        std::fprintf(stderr, "could not encode the PNG\n");
-        return 1;
-    }
-    std::ofstream out(out_path, std::ios::binary);
-    out.write(static_cast<const char*>(png), std::streamsize(png_size));
-    mz_free(png);
-    if (!out) {
-        std::fprintf(stderr, "could not write %s\n", out_path.c_str());
+    if (!write_png(image->rgba, image->width, image->height, out_path)) {
         return 1;
     }
     std::printf("%s sprite, %zu frames; wrote frame %s (%ux%u) to %s\n", jiggy::bk_sprite_format_name(sprite->type()),
                 sprite->frame_count(), frame.c_str(), image->width, image->height, out_path.c_str());
+    return 0;
+}
+
+int cmd_model(const std::string& path, const std::string& id, const std::string& out_dir) {
+    auto rom = load(path);
+    if (!rom || !usable(*rom, path)) {
+        return 1;
+    }
+    if (rom->info().game != jiggy::Game::BanjoKazooie) {
+        std::fprintf(stderr, "models come from the Banjo-Kazooie ROM\n");
+        return 1;
+    }
+    std::string error;
+    auto table = jiggy::BkAssetTable::parse(rom->data(), jiggy::BkAssetTable::kUs10RomOffset, &error);
+    std::optional<std::vector<uint8_t>> data;
+    if (table) {
+        data = table->load(rom->data(), std::strtoul(id.c_str(), nullptr, 0), &error);
+    }
+    std::optional<jiggy::BkModel> model;
+    if (data) {
+        model = jiggy::BkModel::parse(*data, &error);
+    }
+    if (!model) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+    std::error_code ec;
+    std::filesystem::create_directories(out_dir, ec);
+    const std::filesystem::path dir(out_dir);
+
+    std::ofstream mtl(dir / "model.mtl");
+    mtl << "newmtl untextured\nKd 1 1 1\n";
+    for (size_t t = 0; t < model->textures().size(); t++) {
+        const auto& info = model->textures()[t];
+        const char* format = jiggy::bk_texture_format_name(info.type);
+        auto image = model->decode_texture(t, &error);
+        const std::string png = "tex" + std::to_string(t) + ".png";
+        if (!image || !write_png(image->rgba, image->width, image->height, (dir / png).string())) {
+            std::fprintf(stderr, "texture %zu: %s\n", t, image ? "could not write" : error.c_str());
+        }
+        std::printf("texture %zu: %s %ux%u\n", t, format ? format : "?", info.width, info.height);
+        mtl << "newmtl tex" << t << "\nKd 1 1 1\nmap_Kd " << png << "\n";
+    }
+
+    // Vertex colours go after the position, which Blender and most viewers read.
+    std::ofstream obj(dir / "model.obj");
+    obj << "# Banjo-Kazooie asset " << id << " (" << (jiggy::bk_asset_name(std::strtoul(id.c_str(), nullptr, 0)) ? jiggy::bk_asset_name(std::strtoul(id.c_str(), nullptr, 0)) : "unnamed")
+        << "), local research only\nmtllib model.mtl\n";
+    for (const auto& v : model->vertices()) {
+        obj << "v " << v.position[0] << ' ' << v.position[1] << ' ' << v.position[2] << ' ' << v.color[0] / 255.0f << ' '
+            << v.color[1] / 255.0f << ' ' << v.color[2] / 255.0f << "\n";
+    }
+    int current = -2;
+    size_t uv_index = 1;
+    for (const auto& tri : model->triangles()) {
+        for (const auto& uv : tri.uv) {
+            obj << "vt " << uv[0] << ' ' << 1.0f - uv[1] << "\n";
+        }
+        if (tri.texture != current) {
+            current = tri.texture;
+            obj << "usemtl " << (current < 0 ? std::string("untextured") : "tex" + std::to_string(current)) << "\n";
+        }
+        obj << "f";
+        for (size_t k = 0; k < 3; k++) {
+            obj << ' ' << tri.vertices[k] + 1 << '/' << uv_index++;
+        }
+        obj << "\n";
+    }
+    if (!obj || !mtl) {
+        std::fprintf(stderr, "could not write to %s\n", out_dir.c_str());
+        return 1;
+    }
+    std::printf("%zu vertices, %zu triangles (header says %u), %zu textures, %zu display list commands; wrote %s\n",
+                model->vertices().size(), model->triangles().size(), model->header_triangle_count(),
+                model->textures().size(), model->display_list_commands(), (dir / "model.obj").string().c_str());
     return 0;
 }
 
@@ -271,6 +357,9 @@ int main(int argc, char** argv) {
     }
     if (cmd == "sprite" && args.size() == 5) {
         return cmd_sprite(args[1], args[2], args[3], args[4]);
+    }
+    if (cmd == "model" && args.size() == 4) {
+        return cmd_model(args[1], args[2], args[3]);
     }
     usage();
     return 2;

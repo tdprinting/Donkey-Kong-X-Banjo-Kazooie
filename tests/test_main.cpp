@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "jiggy/bk_assets.hpp"
+#include "jiggy/bk_model.hpp"
 #include "jiggy/bk_sprite.hpp"
 #include "jiggy/bridge.h"
 #include "jiggy/bridge.hpp"
@@ -372,7 +373,7 @@ TEST(bridge_cpp_api) {
     // With the default options, unknown dumps are refused.
     auto strict = jiggy::Bridge::open(to_rom(bkf.rom), to_rom(dkf.rom), {}, &error);
     CHECK(strict == nullptr);
-    CHECK(error.find("not the US 1.0 dump") != std::string::npos);
+    CHECK(error.find("not a supported US dump") != std::string::npos);
 }
 
 TEST(bridge_c_api_rejects_unknown_dumps) {
@@ -382,7 +383,7 @@ TEST(bridge_c_api_rejects_unknown_dumps) {
     JiggyBridge* bridge =
         jiggy_bridge_open_memory(bkf.rom.data(), bkf.rom.size(), dkf.rom.data(), dkf.rom.size(), error, sizeof(error));
     CHECK(bridge == nullptr);
-    CHECK(std::strstr(error, "not the US 1.0 dump") != nullptr);
+    CHECK(std::strstr(error, "not a supported US dump") != nullptr);
     CHECK(jiggy_bk_asset_count(nullptr) == 0);
     CHECK(jiggy_dk64_file_read(nullptr, 0, 0, nullptr, 0) == -1);
     CHECK(jiggy_bridge_open("/nonexistent/bk.z64", "/nonexistent/dk.z64", error, sizeof(error)) == nullptr);
@@ -537,6 +538,104 @@ TEST(rgba5551_packing) {
     CHECK(packed.size() == 4);
     CHECK(packed[0] == 0xF8 && packed[1] == 0x01);
     CHECK(packed[2] == 0x00 && packed[3] == 0x3E);
+}
+
+// A model the way the game lays one out (see bk_model.hpp): one 2x2 CI4 texture and a
+// quad drawn as G_TRI1 plus a G_TRI2 that reuses cached vertices.
+TEST(bk_model_triangles_and_textures) {
+    Bytes m(0x38, 0);
+    put_be32(m, 0, 0x0000000B);
+    // Texture list: one CI4 2x2 texture, palette (32 bytes) then 2 bytes of texels.
+    const size_t tex = m.size();
+    put_be16(m, 0x08, uint16_t(tex));
+    m.resize(tex + 8 + 0x10 + 32 + 8, 0);
+    put_be32(m, tex, 32 + 2);
+    put_be16(m, tex + 4, 1);
+    put_be32(m, tex + 8, 0);
+    put_be16(m, tex + 12, 0x01);
+    m[tex + 16] = 2;
+    m[tex + 17] = 2;
+    const size_t palette = tex + 8 + 0x10;
+    put_be16(m, palette + 0, 0xF801); // red
+    put_be16(m, palette + 2, 0x07C1); // green
+    m[palette + 32] = 0x01;           // texels: 0 1 / 1 0
+    m[palette + 33] = 0x10;
+
+    const size_t gfx = m.size();
+    put_be32(m, 0x0C, uint32_t(gfx));
+    const std::vector<std::pair<uint32_t, uint32_t>> cmds = {
+        {0xBB000001, 0xFFFFFFFF},                         // G_TEXTURE, full scale
+        {0xFD100000, 0x02000000},                         // G_SETTIMG palette
+        {0xFD500000, 0x02000020},                         // G_SETTIMG texels: texture 0
+        {0x04000000u | (3 << 10) | (3 * 16 - 1), 0x01000000}, // G_VTX 3 at slot 0
+        {0xBF000000, 0x00000204},                         // G_TRI1 0 1 2
+        {0x04060000u | (1 << 10) | (16 - 1), 0x01000030}, // G_VTX vertex 3 into slot 3
+        {0xB1000206, 0x00020406},                         // G_TRI2 (0 1 3) (1 2 3)
+        {0xFD100000, 0x0B000000},                         // animated texture: untextured
+        {0xBF000000, 0x00000204},
+        {0xB8000000, 0},
+    };
+    m.resize(gfx + 8 + cmds.size() * 8, 0);
+    put_be32(m, gfx, uint32_t(cmds.size()));
+    for (size_t i = 0; i < cmds.size(); i++) {
+        put_be32(m, gfx + 8 + i * 8, cmds[i].first);
+        put_be32(m, gfx + 8 + i * 8 + 4, cmds[i].second);
+    }
+
+    const size_t vtx = m.size();
+    put_be32(m, 0x10, uint32_t(vtx));
+    put_be16(m, 0x30, 5);
+    m.resize(vtx + 0x18 + 4 * 16, 0);
+    put_be16(m, vtx + 0x14, 4);
+    const int16_t pos[4][2] = {{0, 0}, {100, 0}, {100, 100}, {0, 100}};
+    for (size_t i = 0; i < 4; i++) {
+        const size_t at = vtx + 0x18 + i * 16;
+        put_be16(m, at, uint16_t(pos[i][0]));
+        put_be16(m, at + 2, uint16_t(pos[i][1]));
+        put_be16(m, at + 8, uint16_t(pos[i][0] ? 64 : 0)); // 2 texels in s10.5
+        put_be16(m, at + 10, uint16_t(pos[i][1] ? 64 : 0));
+        m[at + 12] = 0xFF;
+        m[at + 15] = 0xFF;
+    }
+
+    std::string error;
+    auto model = jiggy::BkModel::parse(m, &error);
+    CHECK(model.has_value());
+    if (!model) {
+        return;
+    }
+    CHECK(model->vertices().size() == 4);
+    CHECK(model->textures().size() == 1);
+    CHECK(model->triangles().size() == 4);
+    CHECK(model->header_triangle_count() == 5);
+    const auto& t0 = model->triangles()[0];
+    CHECK(t0.texture == 0);
+    CHECK(t0.vertices[0] == 0 && t0.vertices[1] == 1 && t0.vertices[2] == 2);
+    CHECK(t0.uv[1][0] == 1.0f && t0.uv[1][1] == 0.0f);
+    const auto& t1 = model->triangles()[1];
+    CHECK(t1.vertices[0] == 0 && t1.vertices[1] == 1 && t1.vertices[2] == 3);
+    CHECK(model->triangles()[2].vertices[2] == 3);
+    CHECK(model->triangles()[3].texture == -1);
+
+    auto image = model->decode_texture(0, &error);
+    CHECK(image.has_value());
+    if (image) {
+        CHECK(image->width == 2 && image->height == 2);
+        CHECK(image->rgba[0] == 0xFF && image->rgba[1] == 0 && image->rgba[3] == 0xFF); // red
+        CHECK(image->rgba[4] == 0 && image->rgba[5] == 0xFF);                          // green
+        CHECK(image->rgba[12] == 0xFF && image->rgba[13] == 0);                        // red
+    }
+    CHECK(!model->decode_texture(1, &error));
+    CHECK(std::string(jiggy::bk_texture_format_name(0x01)) == "CI4");
+}
+
+TEST(bk_model_rejects_bad_data) {
+    std::string error;
+    CHECK(!jiggy::BkModel::parse(Bytes(0x38, 0), &error));
+    Bytes m(0x38, 0);
+    put_be32(m, 0, 0x0000000B);
+    put_be32(m, 0x10, 0x30); // vertex list header would run past the end
+    CHECK(!jiggy::BkModel::parse(m, &error));
 }
 
 TEST(rom_import_checks_and_stores) {
