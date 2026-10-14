@@ -25,12 +25,14 @@ The foundation every later step needs: reading both games' files from the player
 
 *Size: weeks.*
 
-- Bring DK64 Recompiled in as a submodule and build it from this repo (the player still
-  generates the recompiled C from their own ROM, as upstream requires).
-- Ask for the Banjo ROM in the launcher next to the DK64 one, and open the bridge at startup.
-- Expose the bridge to patches as recomp imports (`jiggy_bk_asset_read` and similar, at
-  free `0x8F0000xx` addresses in `patches/syms.ld`).
-- **First visible crossover:** one Banjo-Kazooie asset loaded from the player's ROM
+- [x] Bring DK64 Recompiled into `host/` (vendored at upstream 3b0c36d so it can be changed
+      freely) and build it from this repo. The player still generates the recompiled C from
+      their own ROM, as upstream requires.
+- [x] Ask for the Banjo ROM in the launcher next to the DK64 one, and load it at startup.
+- [x] Expose the bridge to patches and mods as recomp imports (`jiggy_bk_available`,
+      `jiggy_bk_asset_size`, `jiggy_bk_asset_read` at `0x8F0004xx` in `patches/syms.ld`).
+- [x] Own app id (`JiggyJungle`), so saves and settings stay separate from DK64 Recompiled.
+- [ ] **First visible crossover:** one Banjo-Kazooie asset loaded from the player's ROM
   and shown in DK Isles. A dialogue string or HUD sprite is the simplest place to start
   before tackling 3D models.
 

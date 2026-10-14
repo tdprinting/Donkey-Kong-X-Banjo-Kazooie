@@ -8,8 +8,9 @@
 #include "json/json.hpp"
 
 namespace dk64 {
-    inline const std::u8string program_id = u8"DK64Recompiled";
-    inline const std::string program_name = "DK64: Rekongpiled";
+    // Separate from DK64 Recompiled so Jiggy Jungle never touches its saves or settings.
+    inline const std::u8string program_id = u8"JiggyJungle";
+    inline const std::string program_name = "Banjo & Kong: Jiggy Jungle";
 
     namespace configkeys {
         namespace general {

@@ -16,9 +16,10 @@ rendering with [RT64](https://github.com/rt64/rt64).
 
 ## Status
 
-Milestone 1 of the [roadmap](docs/ROADMAP.md) is in progress: the **Jiggy Bridge**, the
+Milestone 1 of the [roadmap](docs/ROADMAP.md), the **Jiggy Bridge**, is done: it's the
 library that lets the DK64 engine read Banjo-Kazooie's files from the player's ROM.
-Nothing is playable yet. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains why the
+Milestone 2 is underway: DK64 Recompiled now lives in [`host/`](host) as the engine,
+with the bridge wired in. Nothing new is visible in-game yet. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains why the
 project is shaped this way.
 
 | Piece | State |
@@ -29,7 +30,10 @@ project is shaped this way.
 | C API for the recompiled game and for Android | Done |
 | `jiggy-inspect` command-line tool | Done |
 | CI: Linux (GCC + sanitizers, Clang) and Android arm64 cross-build | Done |
-| DK64 Recompiled host with the bridge linked in | Next |
+| DK64 Recompiled host (`host/`) with the bridge linked in | Done |
+| Launcher option to load the Banjo-Kazooie ROM | Done |
+| Game-side imports (`jiggy_bk_asset_read` and friends) | Done |
+| First Banjo asset visible in DK Isles | Next |
 | Android app | Planned |
 
 ## Building
@@ -50,6 +54,23 @@ cmake -S . -B build-android -G Ninja \
   -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24
 cmake --build build-android
 ```
+
+## Building the game
+
+The game itself is built from [`host/`](host), a copy of DK64 Recompiled with the Jiggy
+changes on top. Like upstream, it needs your own **decompressed DK64 ROM** at build time
+to generate the game code, so it can only be built on your machine:
+
+```bash
+git clone --recurse-submodules https://github.com/tdprinting/Donkey-Kong-X-Banjo-Kazooie
+cd Donkey-Kong-X-Banjo-Kazooie/host
+```
+
+Then follow [host/BUILDING.md](host/BUILDING.md) from step 2 (dependencies, decompressing
+the ROM, running N64Recomp, then CMake). The executable is still called `DK64Recompiled`.
+
+When the launcher opens, pick **Load DK64 ROM** and **Load Banjo-Kazooie ROM**. Both are
+stored in the app's own folder (`JiggyJungle`), separate from DK64 Recompiled's saves.
 
 ## Checking your ROMs
 

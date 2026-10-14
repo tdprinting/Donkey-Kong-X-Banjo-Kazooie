@@ -58,3 +58,21 @@ jobs:
         run: cmake --build build-android
       - name: Check the output is arm64
         run: file build-android/jiggy_bridge_tests | tee /dev/stderr | grep -q "ARM aarch64"
+
+  host-sources:
+    name: Host integration sources
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # The full game can't be built in CI: N64Recomp needs the player's DK64 ROM to generate
+      # the game code. This checks the Jiggy files added to the host against the runtime headers.
+      - name: Fetch the runtime headers
+        run: git submodule update --init --recursive --depth 1 host/lib/N64ModernRuntime
+      - name: Compile jiggy_api.cpp
+        run: >
+          clang++ -std=c++20 -fsyntax-only -Wall -Wextra -Wno-unused-parameter
+          -Ihost/include -Ibridge/include
+          -Ihost/lib/N64ModernRuntime/N64Recomp/include
+          -Ihost/lib/N64ModernRuntime/librecomp/include
+          -Ihost/lib/N64ModernRuntime/ultramodern/include
+          host/src/game/jiggy_api.cpp

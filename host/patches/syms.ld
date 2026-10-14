@@ -78,3 +78,7 @@ osStartThread_recomp = 0x8F000150;
 recomp_run_ui_callbacks = 0x8F000154;
 recomp_get_gyro_inverted_axes = 0x8F000158;
 recomp_get_mouse_inverted_axes = 0x8F00015C;
+/* Jiggy Jungle imports (src/game/jiggy_api.cpp). Kept well above upstream's range. */
+jiggy_bk_available = 0x8F000400;
+jiggy_bk_asset_size = 0x8F000404;
+jiggy_bk_asset_read = 0x8F000408;

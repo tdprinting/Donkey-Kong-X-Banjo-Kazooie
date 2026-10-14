@@ -51,6 +51,8 @@
 #include "librecomp/helpers.hpp"
 
 #include "../../patches/graphics.h"
+#include "../../patches/jiggy.h"
+#include "jiggy_host.h"
 #include "../../patches/input.h"
 #include "../../patches/sound.h"
 #include "../../patches/options.h"
@@ -646,7 +648,32 @@ void on_launcher_init(recompui::LauncherMenu *menu) {
         recompui::GameOptionsMenuLayout::Center
     );
 
-    game_options_menu->add_default_options();
+    // The default options, plus a slot for the Banjo-Kazooie ROM next to the DK64 one.
+    game_options_menu->add_start_game_or_load_rom_option("Load DK64 ROM", "Start Game");
+    auto banjo_option = game_options_menu->add_option(
+        jiggy_host::banjo_rom_loaded() ? "Banjo-Kazooie ROM Loaded" : "Load Banjo-Kazooie ROM", nullptr);
+    banjo_option->set_callback([banjo_option]() {
+        recompui::file::open_file_dialog([banjo_option](bool success, const std::filesystem::path& path) {
+            if (!success) {
+                return;
+            }
+            std::string error;
+            if (!jiggy_host::select_banjo_rom(path, error)) {
+                recompui::message_box(error.c_str());
+                return;
+            }
+            recompui::ContextId ui_context = recompui::get_launcher_context_id();
+            bool opened = ui_context.open_if_not_already();
+            banjo_option->set_title("Banjo-Kazooie ROM Loaded");
+            if (opened) {
+                ui_context.close();
+            }
+        });
+    });
+    game_options_menu->add_setup_controls_option();
+    game_options_menu->add_settings_option();
+    game_options_menu->add_mods_option();
+    game_options_menu->add_exit_option();
     game_options_menu->set_width(30, recompui::Unit::Percent);
 
     for (auto option : game_options_menu->get_options()) {
@@ -775,6 +802,7 @@ int main(int argc, char** argv) {
 
     // Register configuration path.
     recomp::register_config_path(recompui::file::get_app_folder_path());
+    jiggy_host::init(recompui::file::get_app_folder_path());
 
     // Register supported games and patches
     for (const auto& game : supported_games) {
@@ -803,6 +831,9 @@ int main(int argc, char** argv) {
     REGISTER_FUNC(recomp_get_first_person_inverted_axes);
     REGISTER_FUNC(recomp_get_gyro_inverted_axes);
     REGISTER_FUNC(recomp_get_mouse_inverted_axes);
+    REGISTER_FUNC(jiggy_bk_available);
+    REGISTER_FUNC(jiggy_bk_asset_size);
+    REGISTER_FUNC(jiggy_bk_asset_read);
     recompui::register_ui_exports();
     recomputil::register_data_api_exports();
     recomptheme::set_custom_theme();

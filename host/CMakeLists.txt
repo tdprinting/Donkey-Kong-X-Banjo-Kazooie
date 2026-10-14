@@ -67,6 +67,9 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime)
 
 target_include_directories(rt64 PRIVATE ${CMAKE_BINARY_DIR}/rt64/src)
 
+# Jiggy Bridge: Banjo-Kazooie assets from the player's ROM. Uses the runtime's miniz target.
+add_subdirectory(${CMAKE_SOURCE_DIR}/../bridge ${CMAKE_BINARY_DIR}/jiggy_bridge)
+
 # RecompiledFuncs - Library containing the primary recompiler output
 add_library(RecompiledFuncs STATIC)
 
@@ -160,6 +163,7 @@ set (SOURCES
 
     ${CMAKE_SOURCE_DIR}/src/game/config.cpp
     ${CMAKE_SOURCE_DIR}/src/game/debug.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/jiggy_api.cpp
     ${CMAKE_SOURCE_DIR}/src/game/recomp_api.cpp
     ${CMAKE_SOURCE_DIR}/src/game/recomp_extension_api.cpp
     ${CMAKE_SOURCE_DIR}/src/game/recomp_data_api.cpp
@@ -356,6 +360,7 @@ target_link_libraries(DK64Recompiled PRIVATE
     ultramodern
     rt64
     nfd
+    jiggy_bridge
 )
 
 # Embed all .nrm files in the "mods" directory
