@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+            sanitize: "-fsanitize=address,undefined -fno-omit-frame-pointer"
+          - compiler: clang
+            cc: clang
+            cxx: clang++
+            sanitize: ""
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Configure
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="${{ matrix.sanitize }}"
+          -DCMAKE_EXE_LINKER_FLAGS="${{ matrix.sanitize }}"
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  android:
+    name: Android arm64-v8a
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      # Same ABI and minimum platform RT64 targets for Android (android-24, arm64-v8a).
+      - name: Configure
+        run: >
+          cmake -S . -B build-android -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake"
+          -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24
+      - name: Build
+        run: cmake --build build-android
+      - name: Check the output is arm64
+        run: file build-android/jiggy_bridge_tests | tee /dev/stderr | grep -q "ARM aarch64"

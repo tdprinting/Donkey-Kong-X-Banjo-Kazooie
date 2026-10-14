@@ -1,0 +1,12 @@
+# Build output
+/build*/
+/out/
+.vs/
+
+# Game data never belongs in this repository. Bring your own legally obtained ROMs
+# and keep them, and anything extracted from them, outside version control.
+*.z64
+*.n64
+*.v64
+*.rom
+/extracted/

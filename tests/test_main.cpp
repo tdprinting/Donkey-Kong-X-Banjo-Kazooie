@@ -1,0 +1,422 @@
+// Bridge tests. Every ROM here is synthetic: built in memory from made-up bytes so the
+// tests run in CI without anyone's game dumps.
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <string>
+#include <vector>
+
+#include "jiggy/bk_assets.hpp"
+#include "jiggy/bridge.h"
+#include "jiggy/bridge.hpp"
+#include "jiggy/dk64_tables.hpp"
+#include "jiggy/inflate.hpp"
+#include "jiggy/rom.hpp"
+#include "miniz.h"
+
+namespace {
+
+int g_failures = 0;
+std::vector<std::pair<const char*, std::function<void()>>>& registry() {
+    static std::vector<std::pair<const char*, std::function<void()>>> tests;
+    return tests;
+}
+
+struct Register {
+    Register(const char* name, std::function<void()> fn) { registry().emplace_back(name, std::move(fn)); }
+};
+
+#define TEST(name)                                     \
+    static void name();                                \
+    static Register register_##name(#name, name);      \
+    static void name()
+
+#define CHECK(cond)                                                              \
+    do {                                                                         \
+        if (!(cond)) {                                                           \
+            std::fprintf(stderr, "  %s:%d: CHECK failed: %s\n", __FILE__, __LINE__, #cond); \
+            g_failures++;                                                        \
+        }                                                                        \
+    } while (0)
+
+using Bytes = std::vector<uint8_t>;
+
+void put_be32(Bytes& b, size_t at, uint32_t v) {
+    b[at] = uint8_t(v >> 24);
+    b[at + 1] = uint8_t(v >> 16);
+    b[at + 2] = uint8_t(v >> 8);
+    b[at + 3] = uint8_t(v);
+}
+
+void put_be16(Bytes& b, size_t at, uint16_t v) {
+    b[at] = uint8_t(v >> 8);
+    b[at + 1] = uint8_t(v);
+}
+
+void put_le32(Bytes& b, uint32_t v) {
+    for (int i = 0; i < 4; i++) {
+        b.push_back(uint8_t(v >> (8 * i)));
+    }
+}
+
+Bytes pattern(size_t size, uint8_t seed) {
+    Bytes out(size);
+    for (size_t i = 0; i < size; i++) {
+        out[i] = uint8_t((i * 7 + seed) ^ (i >> 3));
+    }
+    return out;
+}
+
+Bytes deflate_raw(const Bytes& data) {
+    size_t out_len = 0;
+    void* out = tdefl_compress_mem_to_heap(data.data(), data.size(), &out_len, TDEFL_DEFAULT_MAX_PROBES);
+    Bytes result(static_cast<uint8_t*>(out), static_cast<uint8_t*>(out) + out_len);
+    mz_free(out);
+    return result;
+}
+
+Bytes rarezip(const Bytes& data) {
+    Bytes out = {0x11, 0x72, 0, 0, 0, 0};
+    put_be32(out, 2, uint32_t(data.size()));
+    const Bytes body = deflate_raw(data);
+    out.insert(out.end(), body.begin(), body.end());
+    return out;
+}
+
+Bytes gzip(const Bytes& data, bool with_name = false) {
+    Bytes out = {0x1F, 0x8B, 0x08, uint8_t(with_name ? 0x08 : 0x00), 0, 0, 0, 0, 0, 3};
+    if (with_name) {
+        for (char c : std::string("file.bin")) {
+            out.push_back(uint8_t(c));
+        }
+        out.push_back(0);
+    }
+    const Bytes body = deflate_raw(data);
+    out.insert(out.end(), body.begin(), body.end());
+    put_le32(out, uint32_t(mz_crc32(MZ_CRC32_INIT, data.data(), data.size())));
+    put_le32(out, uint32_t(data.size()));
+    return out;
+}
+
+// A big-endian image with a valid N64 header carrying the given game code.
+Bytes make_rom(size_t size, const char* code, const char* title) {
+    Bytes rom(size, 0);
+    put_be32(rom, 0, 0x80371240);
+    std::memset(rom.data() + 0x20, ' ', 20);
+    std::memcpy(rom.data() + 0x20, title, std::strlen(title));
+    std::memcpy(rom.data() + 0x3B, code, 4);
+    return rom;
+}
+
+constexpr uint32_t kBkBase = 0x100;
+constexpr uint32_t kDkBase = 0x200;
+
+// Banjo-style asset bank with: 0 = stored, 1 = rarezip, 2 = empty stub.
+struct BkFixture {
+    Bytes rom;
+    Bytes asset0 = pattern(100, 1);
+    Bytes asset1 = pattern(5000, 2);
+};
+
+BkFixture make_bk_rom() {
+    BkFixture f;
+    f.rom = make_rom(0x4000, "NBKE", "Banjo-Kazooie");
+    const Bytes stored1 = rarezip(f.asset1);
+    const uint32_t count = 4; // three assets plus the terminator
+    const uint32_t data_base = kBkBase + 8 + count * 8;
+    const uint32_t offsets[4] = {0, uint32_t(f.asset0.size()), uint32_t(f.asset0.size() + stored1.size()),
+                                 uint32_t(f.asset0.size() + stored1.size())};
+    const uint16_t flags[4] = {0, 1, 0, 0};
+    put_be32(f.rom, kBkBase, count);
+    for (uint32_t i = 0; i < count; i++) {
+        put_be32(f.rom, kBkBase + 8 + i * 8, offsets[i]);
+        put_be16(f.rom, kBkBase + 8 + i * 8 + 4, flags[i]);
+        put_be16(f.rom, kBkBase + 8 + i * 8 + 6, uint16_t(0x10 + i));
+    }
+    std::memcpy(f.rom.data() + data_base, f.asset0.data(), f.asset0.size());
+    std::memcpy(f.rom.data() + data_base + offsets[1], stored1.data(), stored1.size());
+    return f;
+}
+
+// DK64-style pointer tables. Table 0: 0 = gzip, 1 = stored, 2 = shared with file 0.
+// Table 5: one stored file. Every other table is left pointing at garbage.
+struct DkFixture {
+    Bytes rom;
+    Bytes file0 = pattern(3000, 3);
+    Bytes file1 = pattern(64, 4);
+    Bytes model = pattern(40, 5);
+    uint32_t shared_at = 0; // base-relative offset of file 2's redirect header
+};
+
+DkFixture make_dk_rom() {
+    DkFixture f;
+    f.rom = make_rom(0x8000, "NDOE", "DONKEY KONG 64");
+    // Unused tables point past the end of the ROM so they parse as empty.
+    for (uint32_t t = 0; t < 32; t++) {
+        put_be32(f.rom, kDkBase + t * 4, 0x7FFF0000);
+    }
+
+    const Bytes gz0 = gzip(f.file0, true);
+    const uint32_t table0 = 0x80;          // relative to base
+    const uint32_t data0 = table0 + 4 * 4; // 3 files + terminator
+    const uint32_t file1_at = data0 + uint32_t(gz0.size());
+    const uint32_t shared_at = file1_at + uint32_t(f.file1.size());
+    const uint32_t end0 = shared_at + 8;
+    put_be32(f.rom, kDkBase + 0 * 4, table0);
+    put_be32(f.rom, kDkBase + table0 + 0, data0);
+    put_be32(f.rom, kDkBase + table0 + 4, file1_at);
+    put_be32(f.rom, kDkBase + table0 + 8, shared_at | 0x80000000);
+    put_be32(f.rom, kDkBase + table0 + 12, end0);
+    std::memcpy(f.rom.data() + kDkBase + data0, gz0.data(), gz0.size());
+    std::memcpy(f.rom.data() + kDkBase + file1_at, f.file1.data(), f.file1.size());
+    put_be16(f.rom, kDkBase + shared_at, 0); // file 2 shares file 0
+    f.shared_at = shared_at;
+
+    const uint32_t table5 = (end0 + 15) & ~15u;
+    const uint32_t data5 = table5 + 2 * 4;
+    put_be32(f.rom, kDkBase + 5 * 4, table5);
+    put_be32(f.rom, kDkBase + table5, data5);
+    put_be32(f.rom, kDkBase + table5 + 4, data5 + uint32_t(f.model.size()));
+    std::memcpy(f.rom.data() + kDkBase + data5, f.model.data(), f.model.size());
+    return f;
+}
+
+jiggy::Rom to_rom(Bytes bytes) {
+    std::string error;
+    auto rom = jiggy::Rom::from_bytes(std::move(bytes), &error);
+    if (!rom) {
+        std::fprintf(stderr, "  fixture ROM rejected: %s\n", error.c_str());
+        std::abort();
+    }
+    return std::move(*rom);
+}
+
+std::string sha1_of(const char* text) {
+    return jiggy::sha1_hex({reinterpret_cast<const uint8_t*>(text), std::strlen(text)});
+}
+
+} // namespace
+
+TEST(sha1_known_vectors) {
+    CHECK(sha1_of("") == "da39a3ee5e6b4b0d3255bfef95601890afd80709");
+    CHECK(sha1_of("abc") == "a9993e364706816aba3e25717850c26c9cd0d89d");
+    CHECK(sha1_of("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq") ==
+          "84983e441c3bd26ebaae4aa1f95129e5e54670f1");
+    const Bytes million(1000000, 'a');
+    CHECK(jiggy::sha1_hex(million) == "34aa973cd4c4daa4f61eeb2bdbad27316534016f");
+}
+
+TEST(byte_orders_normalise) {
+    const Bytes z64 = make_rom(0x100, "NBKE", "Banjo-Kazooie");
+    Bytes v64 = z64, n64 = z64;
+    for (size_t i = 0; i < v64.size(); i += 2) std::swap(v64[i], v64[i + 1]);
+    for (size_t i = 0; i < n64.size(); i += 4) {
+        std::swap(n64[i], n64[i + 3]);
+        std::swap(n64[i + 1], n64[i + 2]);
+    }
+    CHECK(jiggy::detect_byte_order(z64) == jiggy::ByteOrder::BigEndian);
+    CHECK(jiggy::detect_byte_order(v64) == jiggy::ByteOrder::ByteSwapped);
+    CHECK(jiggy::detect_byte_order(n64) == jiggy::ByteOrder::LittleEndian);
+    CHECK(jiggy::normalize_to_big_endian(v64) && v64 == z64);
+    CHECK(jiggy::normalize_to_big_endian(n64) && n64 == z64);
+
+    std::string error;
+    auto rom = jiggy::Rom::from_bytes(n64, &error);
+    CHECK(rom.has_value());
+    if (rom) {
+        CHECK(rom->info().original_order == jiggy::ByteOrder::BigEndian);
+    }
+    Bytes garbage(0x100, 0xAB);
+    CHECK(!jiggy::Rom::from_bytes(garbage, &error).has_value());
+}
+
+TEST(identify_games) {
+    auto bk = to_rom(make_rom(0x100, "NBKE", "Banjo-Kazooie"));
+    CHECK(bk.info().game == jiggy::Game::BanjoKazooie);
+    CHECK(bk.info().game_code == "NBKE");
+    CHECK(bk.info().internal_name == "Banjo-Kazooie");
+    CHECK(!bk.info().supported); // synthetic, so its SHA-1 can't match the real dump
+
+    auto dk = to_rom(make_rom(0x100, "NDOE", "DONKEY KONG 64"));
+    CHECK(dk.info().game == jiggy::Game::DonkeyKong64);
+
+    auto other = to_rom(make_rom(0x100, "NSME", "SUPER MARIO 64"));
+    CHECK(other.info().game == jiggy::Game::Unknown);
+}
+
+TEST(rarezip_round_trip) {
+    const Bytes data = pattern(10000, 9);
+    const Bytes packed = rarezip(data);
+    CHECK(jiggy::is_rarezip(packed));
+    CHECK(jiggy::rarezip_uncompressed_size(packed) == uint32_t(data.size()));
+    std::string error;
+    auto out = jiggy::inflate_rarezip(packed, &error);
+    CHECK(out && *out == data);
+
+    Bytes lying = packed;
+    put_be32(lying, 2, uint32_t(data.size() + 1));
+    CHECK(!jiggy::inflate_rarezip(lying, &error).has_value());
+}
+
+TEST(gzip_round_trip_and_crc) {
+    const Bytes data = pattern(7000, 11);
+    Bytes packed = gzip(data, true);
+    packed.resize(packed.size() + 13, 0); // ROM files are padded after the member
+    std::string error;
+    auto out = jiggy::inflate_gzip(packed, &error);
+    CHECK(out && *out == data);
+
+    Bytes corrupt = gzip(data);
+    corrupt[corrupt.size() - 8] ^= 0xFF; // break the CRC
+    CHECK(!jiggy::inflate_gzip(corrupt, &error).has_value());
+    CHECK(error.find("CRC") != std::string::npos);
+}
+
+TEST(bk_asset_table) {
+    const auto f = make_bk_rom();
+    std::string error;
+    auto table = jiggy::BkAssetTable::parse(f.rom, kBkBase, &error);
+    CHECK(table.has_value());
+    if (!table) {
+        return;
+    }
+    CHECK(table->size() == 3);
+    CHECK(!table->entry(0).compressed);
+    CHECK(table->entry(1).compressed);
+    CHECK(table->entry(2).stored_size == 0);
+    CHECK(table->entry(1).type == 0x11);
+
+    CHECK(table->uncompressed_size(f.rom, 1, &error) == uint32_t(f.asset1.size()));
+    auto a0 = table->load(f.rom, 0, &error);
+    auto a1 = table->load(f.rom, 1, &error);
+    auto a2 = table->load(f.rom, 2, &error);
+    CHECK(a0 && *a0 == f.asset0);
+    CHECK(a1 && *a1 == f.asset1);
+    CHECK(a2 && a2->empty());
+    CHECK(!table->load(f.rom, 3, &error).has_value());
+}
+
+TEST(bk_asset_names) {
+    CHECK(std::strcmp(jiggy::bk_asset_name(0x34E), "MODEL_BANJOKAZOOIE_HIGH_POLY") == 0);
+    CHECK(std::strcmp(jiggy::bk_asset_name(0x1), "ANIM_BSCROUCH_ENTER") == 0);
+    CHECK(jiggy::bk_asset_name(0) == nullptr);
+    CHECK(jiggy::bk_asset_name(0xFFFFFF) == nullptr);
+}
+
+TEST(bk_asset_table_rejects_garbage) {
+    Bytes rom(0x200, 0);
+    put_be32(rom, 0x10, 0xFFFFFFFF);
+    std::string error;
+    CHECK(!jiggy::BkAssetTable::parse(rom, 0x10, &error).has_value());
+    CHECK(!jiggy::BkAssetTable::parse(rom, 0x1000, &error).has_value());
+
+    // An entry pointing past the ROM is marked invalid instead of failing the whole bank.
+    auto f = make_bk_rom();
+    put_be32(f.rom, kBkBase + 8 + 2 * 8, 0x00FFFFFF);
+    auto table = jiggy::BkAssetTable::parse(f.rom, kBkBase, &error);
+    CHECK(table.has_value());
+    if (table) {
+        CHECK(table->entry(0).valid);
+        CHECK(!table->entry(1).valid);
+        CHECK(!table->load(f.rom, 1, &error).has_value());
+    }
+}
+
+TEST(dk64_pointer_tables) {
+    const auto f = make_dk_rom();
+    std::string error;
+    auto tables = jiggy::Dk64PointerTables::parse(f.rom, kDkBase, &error);
+    CHECK(tables.has_value());
+    if (!tables) {
+        return;
+    }
+    CHECK(tables->file_count(0) == 3);
+    CHECK(tables->file_count(5) == 1);
+    CHECK(tables->file_count(1) == 0);
+    CHECK(tables->file_count(99) == 0);
+
+    auto f0 = tables->load(f.rom, 0, 0, &error);
+    auto f1 = tables->load(f.rom, 0, 1, &error);
+    auto f2 = tables->load(f.rom, 0, 2, &error);
+    auto m = tables->load(f.rom, 5, 0, &error);
+    CHECK(f0 && *f0 == f.file0);
+    CHECK(f1 && *f1 == f.file1);
+    CHECK(f2 && *f2 == f.file0);
+    CHECK(m && *m == f.model);
+
+    auto shared = tables->resolve(f.rom, 0, 2, &error);
+    CHECK(shared && shared->resolved_index == 0 && shared->index == 2);
+    CHECK(!tables->load(f.rom, 0, 3, &error).has_value());
+}
+
+TEST(dk64_redirect_loop_is_an_error) {
+    auto f = make_dk_rom();
+    put_be16(f.rom, kDkBase + f.shared_at, 2); // file 2 now redirects to itself
+    std::string error;
+    auto tables = jiggy::Dk64PointerTables::parse(f.rom, kDkBase, &error);
+    CHECK(tables.has_value());
+    if (tables) {
+        CHECK(!tables->load(f.rom, 0, 2, &error).has_value());
+        CHECK(error.find("loop") != std::string::npos);
+    }
+}
+
+TEST(bridge_cpp_api) {
+    jiggy::BridgeOptions options;
+    options.require_known_dumps = false;
+    options.bk_asset_base = kBkBase;
+    options.dk64_table_base = kDkBase;
+    const auto bkf = make_bk_rom();
+    const auto dkf = make_dk_rom();
+
+    std::string error;
+    auto bridge = jiggy::Bridge::open(to_rom(bkf.rom), to_rom(dkf.rom), options, &error);
+    CHECK(bridge != nullptr);
+    if (!bridge) {
+        std::fprintf(stderr, "  %s\n", error.c_str());
+        return;
+    }
+    auto a1 = bridge->load_bk_asset(1, &error);
+    CHECK(a1 && *a1 == bkf.asset1);
+    auto f0 = bridge->load_dk64_file(0, 0, &error);
+    CHECK(f0 && *f0 == dkf.file0);
+
+    // ROMs passed the wrong way round are rejected with a clear message.
+    auto swapped = jiggy::Bridge::open(to_rom(dkf.rom), to_rom(bkf.rom), options, &error);
+    CHECK(swapped == nullptr);
+    CHECK(error.find("expected a Banjo-Kazooie ROM") != std::string::npos);
+
+    // With the default options, unknown dumps are refused.
+    auto strict = jiggy::Bridge::open(to_rom(bkf.rom), to_rom(dkf.rom), {}, &error);
+    CHECK(strict == nullptr);
+    CHECK(error.find("not the US 1.0 dump") != std::string::npos);
+}
+
+TEST(bridge_c_api_rejects_unknown_dumps) {
+    const auto bkf = make_bk_rom();
+    const auto dkf = make_dk_rom();
+    char error[256] = {};
+    JiggyBridge* bridge =
+        jiggy_bridge_open_memory(bkf.rom.data(), bkf.rom.size(), dkf.rom.data(), dkf.rom.size(), error, sizeof(error));
+    CHECK(bridge == nullptr);
+    CHECK(std::strstr(error, "not the US 1.0 dump") != nullptr);
+    CHECK(jiggy_bk_asset_count(nullptr) == 0);
+    CHECK(jiggy_dk64_file_read(nullptr, 0, 0, nullptr, 0) == -1);
+    CHECK(jiggy_bridge_open("/nonexistent/bk.z64", "/nonexistent/dk.z64", error, sizeof(error)) == nullptr);
+    CHECK(std::strstr(error, "could not open") != nullptr);
+}
+
+int main() {
+    for (auto& [name, fn] : registry()) {
+        const int before = g_failures;
+        fn();
+        std::printf("%s %s\n", g_failures == before ? "PASS" : "FAIL", name);
+    }
+    if (g_failures) {
+        std::printf("%d check(s) failed\n", g_failures);
+        return 1;
+    }
+    std::printf("all %zu tests passed\n", registry().size());
+    return 0;
+}
