@@ -49,19 +49,23 @@ The foundation every later step needs: reading both games' files from the player
 - [x] `release.yml`: builds Windows and Linux packages and publishes the release. It needs
       the `JIGGY_ROM_REPO` / `JIGGY_ROM_TOKEN` secrets, since the game code is generated
       from a decompressed ROM, as upstream does.
-- [ ] Android: download the APK from the release and hand it to the system installer
-      (milestone 3), and add the APK to `release.yml`.
+- [x] Android: the app downloads the release APK and hands it to the system installer,
+      and `release.yml` adds a signed APK when the `JIGGY_ANDROID_*` key secrets are set.
 
 ## 3. Android
 
 *Size: weeks to a few months, depending on device issues.*
 
-- Gradle project with an SDL2 activity hosting the DK64 host build (arm64-v8a, API 24+,
-  Vulkan 1.2).
-- ROM selection with Android's file picker, passed to `jiggy_bridge_open_memory`.
-- On-screen touch controls and controller support; replace the desktop file dialog.
-- Save data and config in app storage.
-- In-app updates: download the release APK and install it with Android's package installer.
+- [x] Gradle project (`android/`, arm64-v8a, API 24+) with the bridge and updater built in
+      through JNI. CI builds a debug APK on every push.
+- [x] ROM selection with Android's file picker. Each ROM is checked by the same C++ as the
+      desktop launcher (`jiggy/rom_import.hpp`) and stored big-endian in app storage.
+- [x] In-app updates: download the release APK and install it with Android's package installer.
+- [ ] Port the DK64 host to Android: an SDL2 activity running the runtime and RT64 on Vulkan,
+      with paths pointed at app storage. Needs the generated game code, so like the desktop
+      game it can only be built from a ROM.
+- [ ] On-screen touch controls and controller support; replace the desktop file dialog.
+- [ ] Save data and config in app storage.
 
 ## 4. Banjo content in the DK64 engine
 

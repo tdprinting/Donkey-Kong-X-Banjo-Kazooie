@@ -91,3 +91,21 @@ jobs:
         run: git submodule update --init host/lib/dk64_decomp host/lib/rt64
       - name: Build patches
         run: make -C host/patches -j"$(nproc)" CC=clang LD=ld.lld
+
+  android-app:
+    name: Android app
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build the APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+      # A debug build anyone can install to try the ROM checks and update screen on a phone.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JiggyJungle-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk

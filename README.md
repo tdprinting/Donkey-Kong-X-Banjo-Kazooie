@@ -40,7 +40,8 @@ project is shaped this way.
 | Banjo-Kazooie sprite decoder (all 8 texture formats) | Done |
 | First Banjo asset visible in DK Isles (Banjo's portrait) | Done, needs a test on real ROMs |
 | CI: game patches build | Done |
-| Android app | Planned |
+| Android app: ROM picker and checks, in-app updates | Done, needs a test on a phone |
+| Android app: running the game | Next |
 
 ## Building
 
@@ -85,8 +86,8 @@ On launch the game checks this repository's
 When a newer version exists, the launcher shows **Install Update x.y.z**. On Windows and
 Linux that downloads the build for your platform, installs it next to the current one
 and asks you to restart. If anything fails, the old version is left as it was. Flatpak
-and macOS builds open the release page instead, and the Android app will install the APK
-through the system installer.
+and macOS builds open the release page instead, and the Android app downloads the APK
+and hands it to Android's installer, which asks you to confirm.
 
 ### Publishing a release
 
@@ -97,11 +98,31 @@ publishes them as a GitHub Release that the updater picks up:
    **private** repository. Never add it to this one.
 2. In this repository's settings, add the secrets `JIGGY_ROM_REPO` (that repo's
    `owner/name`) and `JIGGY_ROM_TOKEN` (a fine-grained token that can read it).
-3. Bump `JIGGY_VERSION` in `host/include/jiggy_version.h`, then tag and push:
+3. For the Android APK, make a signing key once and keep it safe: every release must be
+   signed with the same key, or phones refuse the update. For example
+   `keytool -genkeypair -keystore jiggy.keystore -alias jiggy -keyalg RSA -validity 10000`.
+   Add the secrets `JIGGY_ANDROID_KEYSTORE` (the file, base64-encoded:
+   `base64 -w0 jiggy.keystore`), `JIGGY_ANDROID_KEYSTORE_PASSWORD`,
+   `JIGGY_ANDROID_KEY_ALIAS` and `JIGGY_ANDROID_KEY_PASSWORD`. Without them, releases
+   skip the APK.
+4. Bump `JIGGY_VERSION` in `host/include/jiggy_version.h`, then tag and push:
    `git tag v0.1.0 && git push origin v0.1.0`.
 
 This is the same setup upstream DK64 Recompiled uses for its own releases. The packages
 contain the compiled game but no ROM data, and players still load their own ROMs.
+
+## Android
+
+[`android/`](android) is the Android app. So far it's the launcher: pick your two ROMs
+with Android's file picker (each is checked and stored in the app's own storage) and
+install updates from GitHub Releases. Running the game itself is the next milestone.
+
+Every CI run uploads a debug APK (**JiggyJungle-debug-apk** on the run's page) you can
+install to try it. To build it yourself with the Android SDK and NDK installed:
+
+```bash
+cd android && ./gradlew assembleDebug
+```
 
 ## Checking your ROMs
 

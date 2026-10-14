@@ -5,6 +5,7 @@ add_library(jiggy_bridge STATIC
     src/dk64_tables.cpp
     src/inflate.cpp
     src/rom.cpp
+    src/rom_import.cpp
 )
 
 target_include_directories(jiggy_bridge PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

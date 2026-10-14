@@ -3,6 +3,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -13,6 +16,7 @@
 #include "jiggy/dk64_tables.hpp"
 #include "jiggy/inflate.hpp"
 #include "jiggy/rom.hpp"
+#include "jiggy/rom_import.hpp"
 #include "miniz.h"
 #include "test_framework.hpp"
 
@@ -533,6 +537,37 @@ TEST(rgba5551_packing) {
     CHECK(packed.size() == 4);
     CHECK(packed[0] == 0xF8 && packed[1] == 0x01);
     CHECK(packed[2] == 0x00 && packed[3] == 0x3E);
+}
+
+TEST(rom_import_checks_and_stores) {
+    namespace fs = std::filesystem;
+    const fs::path dir = fs::temp_directory_path() / "jiggy_rom_import_test";
+    fs::remove_all(dir);
+
+    // Wrong game, non-ROM and unknown dumps are refused and nothing is written.
+    auto wrong = jiggy::import_rom(make_rom(0x100, "NBKE", "Banjo-Kazooie"), jiggy::Game::DonkeyKong64, dir, false);
+    CHECK(!wrong.ok);
+    CHECK(wrong.message.find("It's Banjo-Kazooie") != std::string::npos);
+    CHECK(!jiggy::import_rom(Bytes(0x100, 0x42), jiggy::Game::DonkeyKong64, dir, false).ok);
+    auto unknown_dump = jiggy::import_rom(make_rom(0x100, "NBKE", "Banjo-Kazooie"), jiggy::Game::BanjoKazooie, dir);
+    CHECK(!unknown_dump.ok);
+    CHECK(unknown_dump.message.find("US") != std::string::npos);
+    CHECK(!fs::exists(dir / "jiggy_banjo.z64"));
+
+    // A byte-swapped (.v64) dump is stored big-endian under the fixed name.
+    Bytes z64 = make_rom(0x100, "NDOE", "DONKEY KONG 64");
+    Bytes v64 = z64;
+    for (size_t i = 0; i + 1 < v64.size(); i += 2) {
+        std::swap(v64[i], v64[i + 1]);
+    }
+    auto ok = jiggy::import_rom(v64, jiggy::Game::DonkeyKong64, dir, false);
+    CHECK(ok.ok);
+    CHECK(ok.stored_path == dir / "dk64.z64");
+    std::ifstream in(ok.stored_path, std::ios::binary);
+    const Bytes stored{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+    CHECK(stored == z64);
+    CHECK(!fs::exists(dir / "dk64.z64.new"));
+    fs::remove_all(dir);
 }
 
 JIGGY_TEST_MAIN

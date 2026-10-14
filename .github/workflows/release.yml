@@ -11,6 +11,13 @@ name: Release
 #   JIGGY_ROM_TOKEN  a fine-grained token with read access to its contents
 # The release archives contain the compiled game but no ROM data; players still load
 # both of their own ROMs in the launcher.
+#
+# The Android APK is added when these secrets are set too (Android only installs an update
+# signed with the same key, so the key must stay the same for every release):
+#   JIGGY_ANDROID_KEYSTORE           the keystore file, base64-encoded
+#   JIGGY_ANDROID_KEYSTORE_PASSWORD  its password
+#   JIGGY_ANDROID_KEY_ALIAS          the key's alias
+#   JIGGY_ANDROID_KEY_PASSWORD       the key's password
 
 on:
   push:
@@ -35,6 +42,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
+      android: ${{ steps.android.outputs.enabled }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,6 +64,17 @@ jobs:
           if [ -z "$ROM_REPO" ] || [ -z "$ROM_TOKEN" ]; then
             echo "::error::Set the JIGGY_ROM_REPO and JIGGY_ROM_TOKEN secrets first (see the top of release.yml)."
             exit 1
+          fi
+      - name: Check for the Android signing key
+        id: android
+        env:
+          KEYSTORE: ${{ secrets.JIGGY_ANDROID_KEYSTORE }}
+        run: |
+          if [ -n "$KEYSTORE" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No JIGGY_ANDROID_KEYSTORE secret, so this release won't include the Android APK."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
   linux-x64:
@@ -181,8 +200,41 @@ jobs:
           name: windows-x64
           path: JiggyJungle-*-windows-x64.zip
 
+  android-arm64:
+    needs: prepare
+    if: needs.prepare.outputs.android == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build the signed APK
+        working-directory: android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.JIGGY_ANDROID_KEYSTORE }}
+          JIGGY_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.JIGGY_ANDROID_KEYSTORE_PASSWORD }}
+          JIGGY_ANDROID_KEY_ALIAS: ${{ secrets.JIGGY_ANDROID_KEY_ALIAS }}
+          JIGGY_ANDROID_KEY_PASSWORD: ${{ secrets.JIGGY_ANDROID_KEY_PASSWORD }}
+        run: |
+          export JIGGY_ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/jiggy.keystore"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$JIGGY_ANDROID_KEYSTORE_FILE"
+          ./gradlew --no-daemon assembleRelease
+          rm -f "$JIGGY_ANDROID_KEYSTORE_FILE"
+          cp app/build/outputs/apk/release/app-release.apk \
+            "../JiggyJungle-${{ needs.prepare.outputs.version }}-android-arm64.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-arm64
+          path: JiggyJungle-*-android-arm64.apk
+
   publish:
-    needs: [prepare, linux-x64, windows-x64]
+    needs: [prepare, linux-x64, windows-x64, android-arm64]
+    # Runs when the Android job is skipped (no signing key), but not when anything failed.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
