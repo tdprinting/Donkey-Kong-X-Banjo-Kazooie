@@ -69,10 +69,10 @@ static const u8 tune_two[] = {2, 8, 6, 1, 5, 4, 1, 7, 3, 6};
 
 // Banjo-Kazooie units to DK64 units, as jiggy_banjo3d.c scales Banjo.
 #define BK_TO_DK64 0.25f
-// He floats this high over the floor, drawn at Banjo-Kazooie's size (his hands are spread about
-// 160 units apart, as over the church organ), and leans this far toward each key he plays.
-#define MOTZAND_HOVER 18.0f
-#define MOTZAND_SCALE 1.0f
+// He floats this high over the floor, drawn half as big again as Banjo-Kazooie's size (at that
+// size he looked small beside a Kong), and leans this far toward each key he plays.
+#define MOTZAND_HOVER 24.0f
+#define MOTZAND_SCALE 1.5f
 #define MOTZAND_KEY_SHIFT 5.0f
 // Game frames per second, for object_timer.
 #define GAME_FPS 30.0f

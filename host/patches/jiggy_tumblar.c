@@ -32,6 +32,13 @@
 #define TUMBLAR_MODEL 0x2F1    // Mad Monster Mansion's Tumblar (unnamed in asset_e)
 #define TUMBLAR_PORTRAIT 0x826 // ASSET_826_SPRITE_TUMBLAR
 // He converts to about 9 KiB, with no bones and 6 pose commands.
+// His sides' texture (RGBA32) has an alpha of about half, which the converted render modes
+// blend (FORCE_BL) as glass; Banjo-Kazooie draws him solid. Those modes are swapped for this
+// one when he's built: Banjo-Kazooie's opaque surface (renderModesFullDepthOpa's 0x0C192078,
+// G_RM_AA_ZB_OPA_SURF in both cycles).
+#define RENDER_MODE_SET 0xE200001C // gsDPSetRenderMode's first word
+#define RENDER_MODE_FORCE_BL 0x4000
+#define RENDER_MODE_OPAQUE 0x0C192078
 #define TUMBLAR_BLOCK_MAX 0x2400
 #define TUMBLAR_GFX_MAX 16
 #define TUMBLAR_MTX_MAX 4
@@ -46,7 +53,7 @@
 // Banjo-Kazooie units to DK64 units, as jiggy_banjo3d.c scales Banjo (he's 150 units across).
 #define BK_TO_DK64 0.25f
 // The player is kept this far (across) from his middle, up to this high over his floor.
-#define TUMBLAR_RADIUS 24.0f
+#define TUMBLAR_RADIUS 20.0f
 #define TUMBLAR_HEIGHT 35.0f
 // Game frames per second, for object_timer.
 #define GAME_FPS 30.0f
@@ -55,11 +62,12 @@
 #define CELEBRATE_HOPS 4
 #define CELEBRATE_TURNS 2
 #define CELEBRATE_HOP_HEIGHT 14.0f
-// He talks when the player comes this close, on the ground; not again until the player has
-// walked this far off; and a remark he's given before at most this often (as Bottles).
+// He talks when the player comes this close (across, from his middle) and stands still on the
+// ground, or walks up, the first time; not again until the player has walked this far off; and a
+// remark he's given before at most this often (as Bottles). His first talk needs no walk off.
 #define TUMBLAR_REMIND_FRAMES (60 * 30) // A minute.
-#define TUMBLAR_TALK_RADIUS 60.0f
-#define TUMBLAR_REARM_RADIUS 220.0f
+#define TUMBLAR_TALK_RADIUS 110.0f
+#define TUMBLAR_REARM_RADIUS 260.0f
 #define TUMBLAR_TALK_FEET_ABOVE 40.0f
 #define TUMBLAR_TALK_FEET_BELOW 40.0f
 #define PLAYER_AIRBORNE_HEIGHT 6.0f
@@ -123,9 +131,11 @@ static const TumblarWord tumblar_words[] = {
 #define PANEL_GAP 6   // Between the panel and the box.
 #define LETTER_INSET 9 // A letter's left from its cell's.
 
-// Where he is, map by map. Creepy Castle: on the open ground by the way in from the lobby
-// (316, 391, 412), west of DK64's row of bananas toward the drawbridge, on unbroken floor; his
-// Golden Banana appears beside him to the north.
+// Where he is, map by map. Creepy Castle: on the wide ramp on the hill's west side (y 553), right
+// by one of DK64's yellow bananas (147, 553, 1167) on the path that winds up from the south
+// walk, 780 units from the way in from the lobby, on unbroken floor 80 units across, the west
+// half of the ramp left free to walk by. He faces north, down the ramp, where his Golden Banana
+// appears on the open floor.
 typedef struct {
     Maps map;
     f32 x, y, z;
@@ -133,7 +143,7 @@ typedef struct {
     f32 reward_x, reward_z; // Where his Golden Banana appears.
 } TumblarPlacement;
 static const TumblarPlacement tumblar_spots[] = {
-    {MAP_CASTLE, 255.0f, 391.0f, 300.0f, 0, 225.0f, 255.0f},
+    {MAP_CASTLE, 160.0f, 553.0f, 1160.0f, 2048, 120.0f, 1100.0f},
 };
 
 // What he says, in his grand way (Banjo-Kazooie's lines first). Each page is one press of A;
@@ -282,6 +292,19 @@ static void tumblar_load(void) {
     size = jiggy_bk_model_build(TUMBLAR_MODEL, tumblar_block, sizeof(tumblar_block));
     if (size <= 0 || size > (s32)sizeof(tumblar_block)) {
         return;
+    }
+    // Solid, not glass (see TUMBLAR_BLOCK_MAX): the block's render mode table is entries of
+    // gsDPSetRenderMode, mode, gsSPEndDisplayList.
+    {
+        u32 *words = (u32 *)tumblar_block;
+        s32 n = size / 4;
+
+        for (i = 0; i + 2 < n; i++) {
+            if (words[i] == RENDER_MODE_SET && (words[i + 2] >> 24) == 0xDF &&
+                (words[i + 1] & RENDER_MODE_FORCE_BL)) {
+                words[i + 1] = RENDER_MODE_OPAQUE;
+            }
+        }
     }
     count = jiggy_bk_sprite_frame_count(TUMBLAR_PORTRAIT);
     if (count <= 0) {
@@ -773,7 +796,7 @@ Gfx *jiggy_tumblar_draw(Gfx *dl, Actor *actor) {
             return dl;
         }
         tumblar_place();
-        tumblar_armed = !tumblar_player_near(actor, TUMBLAR_REARM_RADIUS);
+        tumblar_armed = !tumblar_player_near(actor, TUMBLAR_REARM_RADIUS) || tumblar_next_talk() == TALK_MEET;
     }
     frames = object_timer - tumblar_last_timer;
     tumblar_last_timer = object_timer;
