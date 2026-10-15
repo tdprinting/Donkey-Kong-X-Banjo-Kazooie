@@ -200,6 +200,7 @@ extern u8 cc_number_of_players;
 extern u8  D_global_asm_807444FC;
 Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor);
 s32 jiggy_banjo_replaces(Actor *actor);
+Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
     f32 temp_f0_3;
@@ -337,6 +338,7 @@ block_47:
     gDPSetTextureLUT(dl++, G_TT_NONE);
     gDPPipeSync(dl++);
     dl = jiggy_banjo_draw(dl, arg1); // @jiggy: Banjo beside the player (jiggy_banjo3d.c)
+    dl = jiggy_notes_draw(dl, arg1); // @jiggy: Music Notes, drawn with the player (jiggy_notes.c)
     return dl;
 }
 
