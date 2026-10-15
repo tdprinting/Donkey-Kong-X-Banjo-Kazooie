@@ -41,7 +41,7 @@ project is shaped this way.
 | First Banjo asset visible in DK Isles (Banjo's portrait) | Done, needs a test on real ROMs |
 | CI: game patches build | Done |
 | Banjo & Kazooie's 3D model, converted from the player's ROM, beside DK with Banjo-Kazooie's idle, walk, run and jump animations | Done, tested in game |
-| Play as Banjo & Kazooie (D-pad left, or J on keyboard): Claw Swipe, Beak Barge, crouch, backflip, Feathery Flap, Rat-a-tat Rap, Beak Buster, Talon Trot (crouch + C-left) and Egg Firing (crouch + C-up/C-down) | Done, tested in game |
+| Play as Banjo & Kazooie (D-pad left, or J on keyboard): Claw Swipe, Beak Barge, crouch, backflip, Feathery Flap, Rat-a-tat Rap, Beak Buster, Talon Trot (crouch + C-left), Egg Firing (crouch + C-up/C-down), Wonderwing (crouch + C-right; 2 s, no gold feathers yet) and Shock Spring Jump (A on the pad in the Training Grounds) | Done, tested in game (Wonderwing and Shock Spring Jump untested) |
 | Golden Bananas drawn as Banjo-Kazooie Jiggies | Done, tested in game (no shine yet) |
 | Music Notes as their own collectible, with Banjo-Kazooie's note counter (a few in the Training Grounds for now), saved per save file | Done, tested in game |
 | Jinjos (all five colors) as their own collectible, with Banjo-Kazooie's five-head counter (Training Grounds for now), saved per save file | Done, tested in game |

@@ -5,7 +5,9 @@
 // it's pressed again. As the player, Banjo shows his own move for what DK's controls do
 // (Claw Swipe, Beak Barge, crouch, backflip) and has Banjo-Kazooie's air moves: press A
 // again in the air and hold it to Feathery Flap, B for the Rat-a-tat Rap, Z for the Beak
-// Buster.
+// Buster. Crouched, C-left Talon Trots (jiggy_banjo_trot.c), C-right Wonderwings
+// (jiggy_banjo_wonderwing.c) and C-up and C-down fire eggs (jiggy_banjo_eggs.c); A on the
+// Shock Spring Jump pad springs (jiggy_banjo_shock.c).
 //
 // The host converts the model once (jiggy_bk_model_build) and, every frame, poses it with
 // an animation and writes the display list and bone matrices that draw it
@@ -103,6 +105,15 @@ f32 func_global_asm_80612794(s16 angle); // sin of a 12-bit angle
 s32 jiggy_banjo_trot_animate(Actor *player, s32 is_player, s32 airborne, f32 seconds, s32 *animation, f32 *progress);
 void jiggy_banjo_trot_selectors(s32 *selectors);
 f32 jiggy_banjo_trot_yaw(void);
+// Wonderwing (jiggy_banjo_wonderwing.c).
+s32 jiggy_banjo_wonderwing_animate(Actor *player, s32 is_player, s32 airborne, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_wonderwing_selectors(s32 *selectors);
+Gfx *jiggy_banjo_wonderwing_draw(Gfx *dl, Actor *player);
+// Shock Spring Jump (jiggy_banjo_shock.c).
+s32 jiggy_banjo_shock_animate(Actor *player, s32 is_player, s32 airborne, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_shock_selectors(s32 *selectors);
+f32 jiggy_banjo_shock_lift(Actor *player);
+Gfx *jiggy_banjo_shock_pad_draw(Gfx *dl, Actor *player);
 
 typedef enum {
     BANJO_UNLOADED,
@@ -254,7 +265,9 @@ static void banjo_animate(Actor *player) {
     }
     seconds = frames / GAME_FPS;
 
-    if (jiggy_banjo_trot_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress)) {
+    if (jiggy_banjo_trot_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress) ||
+        jiggy_banjo_wonderwing_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress) ||
+        jiggy_banjo_shock_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress)) {
         return;
     }
     banjo_air_moves(player, airborne, seconds);
@@ -343,6 +356,8 @@ static void banjo_set_selectors(void) {
         }
     }
     jiggy_banjo_trot_selectors(banjo_pose.selectors);
+    jiggy_banjo_wonderwing_selectors(banjo_pose.selectors);
+    jiggy_banjo_shock_selectors(banjo_pose.selectors);
     if (blink < sizeof(blink_frames)) {
         eyes = blink_frames[blink];
     }
@@ -400,7 +415,7 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     guRotateF(rotate, yaw, 0.0f, 1.0f, 0.0f);
     guMtxCatF(scale, rotate, banjo_pose.world);
     banjo_pose.world[3][0] = x;
-    banjo_pose.world[3][1] = actor->y_position;
+    banjo_pose.world[3][1] = actor->y_position + (banjo_is_player ? jiggy_banjo_shock_lift(actor) : 0.0f);
     banjo_pose.world[3][2] = z;
 
     banjo_pose.model = JIGGY_BANJO_MODEL;
@@ -411,11 +426,11 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     banjo_pose.gfx_capacity = BANJO_GFX_MAX;
     banjo_pose.mtx = banjo_mtx[buffer];
     banjo_pose.mtx_capacity = BANJO_MTX_MAX;
-    if (jiggy_bk_model_pose(&banjo_pose) <= 0) {
-        return dl;
+    if (jiggy_bk_model_pose(&banjo_pose) > 0) {
+        gDPPipeSync(dl++);
+        gSPDisplayList(dl++, banjo_gfx[buffer]);
     }
-
-    gDPPipeSync(dl++);
-    gSPDisplayList(dl++, banjo_gfx[buffer]);
-    return dl;
+    // The Wonderwing's sparkles and the Shock Spring Jump pad.
+    dl = jiggy_banjo_wonderwing_draw(dl, actor);
+    return jiggy_banjo_shock_pad_draw(dl, actor);
 }

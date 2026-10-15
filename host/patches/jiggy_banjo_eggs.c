@@ -15,7 +15,8 @@
 //
 // While the move can fire, DK64's own C-up and C-down actions (first-person view, the camera
 // zoom, the Shockwave camera on Z + C-down) are kept from seeing those buttons, by masking them
-// where the player's inputs are read (func_global_asm_806DFF34 below).
+// where the player's inputs are read (func_global_asm_806DFF34 below). C-right, which starts
+// the Wonderwing from the same crouch (jiggy_banjo_wonderwing.c), is masked with them.
 //
 // jiggy_banjo3d.c calls jiggy_banjo_eggs once a frame while Banjo is on screen.
 
@@ -113,6 +114,8 @@ void func_global_asm_8071586C(Actor *actor); // Removes the sprites attached to 
 s32 getActorMatrixTag(Actor *ac);
 Gfx *simple_set_model_matrix(Gfx *dl, u8 *pushed, s32 id, s32 sub_id);
 Gfx *simple_pop_model_matrix(Gfx *dl, u8 pushed);
+s32 jiggy_banjo_wonderwing_owns_c_right(void); // jiggy_banjo_wonderwing.c
+u16 jiggy_banjo_shock_buttons(void);            // jiggy_banjo_shock.c
 
 typedef enum {
     EGGS_UNLOADED,
@@ -530,8 +533,8 @@ Gfx *jiggy_banjo_eggs(Gfx *dl, Actor *player, s32 banjo_is_player, s32 *animatio
     return eggs_draw(dl);
 }
 
-// Whether C-up and C-down belong to the egg moves right now: Banjo is the player and crouching,
-// or firing.
+// Whether C-up and C-down belong to the egg moves right now (and C-right to the Wonderwing):
+// Banjo is the player and crouching, or firing.
 static s32 eggs_own_c_buttons(void) {
     if (cc_number_of_players != 1 || cc_player_index != 0 || !eggs_banjo_player_seen || gPlayerPointer == NULL ||
         object_timer - eggs_banjo_player_timer > 2) {
@@ -544,7 +547,9 @@ static s32 eggs_own_c_buttons(void) {
 // @jiggy: the player's buttons, held and newly pressed, go through here (remapped by the table
 // at arg1) before the control state's input handlers see them (handleInputsForControlState).
 // Without C-up and C-down there, DK64's own actions for them (first-person view, camera zoom,
-// Shockwave camera) stay out of the way of Egg Firing. Egg Firing reads the raw buttons.
+// Shockwave camera) stay out of the way of Egg Firing, and without C-right DK64's camera turn
+// stays out of the way of the Wonderwing. Both read the raw buttons. The Shock Spring Jump
+// hands DK an A press here for its spring.
 RECOMP_PATCH u16 func_global_asm_806DFF34(u16 arg0, u16 *arg1) {
     u16 i;
     u16 j;
@@ -561,7 +566,9 @@ RECOMP_PATCH u16 func_global_asm_806DFF34(u16 arg0, u16 *arg1) {
     }
     buttons = i | (arg0 & ~j);
     if (eggs_own_c_buttons()) {
-        buttons &= ~(U_CBUTTONS | D_CBUTTONS);
+        buttons &= ~(U_CBUTTONS | D_CBUTTONS | R_CBUTTONS);
+    } else if (jiggy_banjo_wonderwing_owns_c_right()) {
+        buttons &= ~R_CBUTTONS;
     }
-    return buttons;
+    return buttons | jiggy_banjo_shock_buttons();
 }
