@@ -1,8 +1,10 @@
 // Banjo in 3D: Banjo & Kazooie's own model (MODEL_BANJOKAZOOIE_HIGH_POLY), read from the
 // player's Banjo-Kazooie ROM, walks beside the player in DK Isles and the Training Grounds
 // outside DK's house, with Banjo-Kazooie's own idle, walk, run and jump animations.
-// D-pad left swaps who is on screen: Banjo takes the player's place (DK's moves for now)
-// and DK steps out, until it's pressed again.
+// D-pad left swaps who is on screen: Banjo takes the player's place and DK steps out, until
+// it's pressed again. As the player, Banjo shows his own move for what DK's controls do
+// (Claw Swipe, Beak Barge, crouch, backflip) and can Feathery Flap: press A again in the
+// air and hold it.
 //
 // The host converts the model once (jiggy_bk_model_build) and, every frame, poses it with
 // an animation and writes the display list and bone matrices that draw it
@@ -25,6 +27,13 @@
 #define BANJO_ANIM_WALK 0x03
 #define BANJO_ANIM_RUN 0x0C
 #define BANJO_ANIM_JUMP 0x08
+#define BANJO_ANIM_FALL 0xB0
+#define BANJO_ANIM_CLAW_SWIPE 0x05
+#define BANJO_ANIM_BEAK_BARGE 0x1C
+#define BANJO_ANIM_CROUCH_ENTER 0x01
+#define BANJO_ANIM_CROUCH 0x10C
+#define BANJO_ANIM_BACKFLIP 0x4B
+#define BANJO_ANIM_FLAP 0x17
 #define BANJO_IDLE_SECONDS 5.5f
 #define BANJO_JUMP_SECONDS 1.9f
 // Player speeds where Banjo starts walking and running, and the distance one walk or run
@@ -38,6 +47,22 @@
 // Game frames per second, for object_timer.
 #define GAME_FPS 30.0f
 
+// DK64 player states (Actor control_state) that have a Banjo-Kazooie move to show.
+#define STATE_JUMP 0x17
+#define STATE_FALL 0x1E
+#define STATE_ATTACK 0x26
+#define STATE_RUNNING_ATTACK 0x29
+#define STATE_CROUCH_ENTER 0x3C
+#define STATE_CROUCH 0x3D
+#define STATE_BACKFLIP 0x3E
+
+// Feathery Flap (src/core2/bs/bFlap.c): press A again in the air and hold it to flap,
+// slowing the fall, for a while. In DK64 units per second.
+#define FLAP_LIFT 120.0f
+#define FLAP_FALL_SPEED -60.0f
+#define FLAP_MAX_SECONDS 1.6f
+#define FLAP_SECONDS 0.35f
+
 // Banjo-Kazooie's appendage selectors for this model (src/core2/modelappendages.c).
 #define SEL_TRAINERS_FIRST 0x12
 #define SEL_TRAINERS_LAST 0x19
@@ -45,6 +70,8 @@
 #define SEL_EYES_LAST 0x21
 #define SEL_BOOTS_FIRST 0x22
 #define SEL_BOOTS_LAST 0x29
+// Kazooie's upper half (head and wings), out of the backpack.
+static const u8 kazooie_selectors[] = {0x01, 0x09, 0x0C, 0x0F};
 // A blink every few seconds, through the eye frames (1 is open, 8 closed).
 #define BLINK_EVERY_FRAMES 110
 static const u8 blink_frames[] = {3, 6, 8, 8, 6, 3};
@@ -55,6 +82,7 @@ extern u8 cc_number_of_players;
 extern u8 D_global_asm_807444FC;
 extern u32 object_timer;
 extern u16 newly_pressed_input[];
+extern OSContPad D_global_asm_807ECD58; // Buttons held this frame.
 f32 func_global_asm_80612790(s16 angle); // cos of a 12-bit angle
 f32 func_global_asm_80612794(s16 angle); // sin of a 12-bit angle
 
@@ -73,6 +101,23 @@ static s32 banjo_animation = -1;
 static f32 banjo_progress;
 static u32 banjo_last_timer;
 static s32 banjo_is_player;
+static s32 banjo_flapping;
+static s32 banjo_flap_used;
+static f32 banjo_flap_seconds;
+
+// The Banjo-Kazooie move shown for a DK64 player state, played once over `seconds`.
+typedef struct {
+    u8 state;
+    s16 animation;
+    f32 seconds;
+} BanjoMove;
+
+static const BanjoMove banjo_moves[] = {
+    {STATE_ATTACK, BANJO_ANIM_CLAW_SWIPE, 0.8f},
+    {STATE_RUNNING_ATTACK, BANJO_ANIM_BEAK_BARGE, 0.8f},
+    {STATE_CROUCH_ENTER, BANJO_ANIM_CROUCH_ENTER, 0.5f},
+    {STATE_BACKFLIP, BANJO_ANIM_BACKFLIP, 1.4f},
+};
 
 static void banjo_load(void) {
     s32 size;
@@ -94,11 +139,46 @@ static void banjo_play(s32 animation) {
     }
 }
 
-// Picks Banjo's animation from how the player moves and advances it.
+// Plays an animation once, holding its last pose.
+static void banjo_play_once(s32 animation, f32 seconds, f32 elapsed) {
+    banjo_play(animation);
+    banjo_progress += elapsed / seconds;
+    if (banjo_progress > 0.99f) {
+        banjo_progress = 0.99f;
+    }
+}
+
+// Feathery Flap, when Banjo is the player: a second press of A in the air starts it, and it
+// lasts while A is held, once per jump.
+static void banjo_flap(Actor *player, s32 airborne, f32 seconds) {
+    if (!airborne || !banjo_is_player) {
+        banjo_flapping = FALSE;
+        banjo_flap_used = FALSE;
+        return;
+    }
+    if (!banjo_flapping && !banjo_flap_used && (newly_pressed_input[0] & A_BUTTON)) {
+        banjo_flapping = TRUE;
+        banjo_flap_used = TRUE;
+        banjo_flap_seconds = 0.0f;
+        player->y_velocity = FLAP_LIFT;
+    }
+    if (banjo_flapping) {
+        banjo_flap_seconds += seconds;
+        if (!(D_global_asm_807ECD58.button & A_BUTTON) || banjo_flap_seconds > FLAP_MAX_SECONDS) {
+            banjo_flapping = FALSE;
+        } else if (player->y_velocity < FLAP_FALL_SPEED) {
+            player->y_velocity = FLAP_FALL_SPEED;
+        }
+    }
+}
+
+// Picks Banjo's animation from what the player is doing and advances it.
 static void banjo_animate(Actor *player) {
     f32 seconds;
     f32 speed = player->unkB8;
     u32 frames = object_timer - banjo_last_timer;
+    s32 airborne = player->y_position - player->floor > BANJO_AIRBORNE_HEIGHT;
+    s32 i;
 
     banjo_last_timer = object_timer;
     // Paused, or back after a while: don't jump ahead.
@@ -107,16 +187,35 @@ static void banjo_animate(Actor *player) {
     }
     seconds = frames / GAME_FPS;
 
-    if (player->y_position - player->floor > BANJO_AIRBORNE_HEIGHT) {
-        banjo_play(BANJO_ANIM_JUMP);
-        // Plays once, holding the falling pose.
-        banjo_progress += seconds / BANJO_JUMP_SECONDS;
-        if (banjo_progress > 0.95f) {
-            banjo_progress = 0.95f;
+    banjo_flap(player, airborne, seconds);
+    if (banjo_flapping) {
+        banjo_play(BANJO_ANIM_FLAP);
+        banjo_progress += seconds / FLAP_SECONDS;
+        while (banjo_progress >= 1.0f) {
+            banjo_progress -= 1.0f;
         }
         return;
     }
-    if (speed < BANJO_WALK_SPEED) {
+    for (i = 0; i < (s32)(sizeof(banjo_moves) / sizeof(banjo_moves[0])); i++) {
+        if (player->control_state == banjo_moves[i].state) {
+            banjo_play_once(banjo_moves[i].animation, banjo_moves[i].seconds, seconds);
+            return;
+        }
+    }
+    if (player->control_state == STATE_CROUCH) {
+        banjo_play(BANJO_ANIM_CROUCH);
+        banjo_progress += seconds;
+    } else if (airborne) {
+        if (player->control_state == STATE_FALL || banjo_animation == BANJO_ANIM_FLAP ||
+            banjo_animation == BANJO_ANIM_FALL) {
+            // Walked off a ledge, or coming down after a flap.
+            banjo_play(BANJO_ANIM_FALL);
+            banjo_progress += seconds;
+        } else {
+            banjo_play_once(BANJO_ANIM_JUMP, BANJO_JUMP_SECONDS, seconds);
+            return;
+        }
+    } else if (speed < BANJO_WALK_SPEED) {
         banjo_play(BANJO_ANIM_IDLE);
         banjo_progress += seconds / BANJO_IDLE_SECONDS;
     } else if (speed < BANJO_RUN_SPEED) {
@@ -146,6 +245,11 @@ static void banjo_set_selectors(void) {
     }
     for (i = SEL_BOOTS_FIRST; i <= SEL_BOOTS_LAST; i++) {
         banjo_pose.selectors[i] = 1;
+    }
+    if (banjo_flapping) {
+        for (i = 0; i < (s32)sizeof(kazooie_selectors); i++) {
+            banjo_pose.selectors[kazooie_selectors[i]] = 1;
+        }
     }
     if (blink < sizeof(blink_frames)) {
         eyes = blink_frames[blink];
