@@ -45,6 +45,7 @@ project is shaped this way.
 | Golden Bananas drawn as Banjo-Kazooie Jiggies, with Banjo-Kazooie's Jiggy jingle on pickup | Done, tested in game (the jingle not yet heard on a real pickup) |
 | Music Notes as their own collectible, with Banjo-Kazooie's note counter (in the Training Grounds and Jungle Japes), saved per save file | Done, tested in game |
 | Jinjos (all five colors) as their own collectible, with Banjo-Kazooie's five-head counter (Training Grounds and Jungle Japes), saved per save file | Done, tested in game |
+| All five Jinjos on a map give a Jiggy: Banjo-Kazooie's fifth-Jinjo fanfare, then a Golden Banana (drawn as a Jiggy) appears where the last Jinjo stood, counted and saved by DK64 (permanent flags 0x31E and 0x31F); given once per save file, and back on the next visit if left behind | Done, needs a test in game |
 | Empty Honeycomb pieces as their own collectible, with Banjo-Kazooie's six-piece ring counter, saved per save file; Honeycombs that give back a slice of health (Training Grounds for now) | Done, tested in game (pieces; health refill not yet) |
 | Red and Gold Feathers as their own collectible, with Banjo-Kazooie's feather counters (Training Grounds and Jungle Japes), saved per save file; the Wonderwing spends Gold Feathers | Pickup and counters tested in game; Wonderwing cost needs a test |
 | Mumbo Tokens as their own collectible, with Banjo-Kazooie's token counter and pickup sound (Training Grounds and Jungle Japes), saved per save file | Done, tested in game |

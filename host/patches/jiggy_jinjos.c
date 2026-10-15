@@ -17,10 +17,10 @@
 // Jinjo counter (fxjinjoscore in src/core2/fx/jinjoscore.c: a row of five Jinjo heads,
 // ASSET_7DF, recolored per Jinjo, the collected ones turning to face front) comes up for a
 // moment in the HUD pass (jiggy_jinjos_hud_draw, called from patches_ui.c).
-// TODO: the collected Jinjo's fly-away (ASSET_130/131 animations, sparkles), the Jiggy the
-// fifth Jinjo gives and Banjo-Kazooie's own sounds. Collected Jinjos are kept with the DK64
-// save file (jiggy_save_get/set): a bit per Jinjo per map, as Banjo-Kazooie's ITEM_12_JINJOS
-// keeps 5 bits a level.
+// The fifth Jinjo of a map gives a Jiggy (jiggy_jinjo_jiggy.c).
+// TODO: the collected Jinjo's fly-away (ASSET_130/131 animations, sparkles) and Banjo-Kazooie's
+// own sounds. Collected Jinjos are kept with the DK64 save file (jiggy_save_get/set): a bit per
+// Jinjo per map, as Banjo-Kazooie's ITEM_12_JINJOS keeps 5 bits a level.
 
 #include "common_structs.h"
 #include "ui.h"
@@ -134,6 +134,9 @@ s16 func_global_asm_80665DE0(f32 target_x, f32 target_z, f32 x, f32 z);
 // The floor under (x, z), as the game looks for one (func_global_asm_80667180): writes its
 // height to *y, leaving it as it was if there's none. The return value isn't reliable.
 s32 func_global_asm_80667110(f32 x, f32 z, f32 *y);
+// The fifth Jinjo's Jiggy (jiggy_jinjo_jiggy.c).
+s32 jiggy_jinjo_jiggy_earn(f32 pos[3], s32 fanfare);
+void jiggy_jinjo_jiggy_update(Actor *player);
 
 // Where the Jinjos go, map by map, each spot found by walking there so all five can be
 // reached on foot. Heights are the ground's; each is snapped to the floor found just above it
@@ -326,7 +329,10 @@ static void jinjos_collect(Actor *player) {
             }
         }
         hud_ticks = 0;
-        jinjo_play_sound(TRUE);
+        // The fifth plays Banjo-Kazooie's fifth-Jinjo fanfare in place of the jingle.
+        if (jinjo_collected != (1 << JINJO_COLORS) - 1 || !jiggy_jinjo_jiggy_earn(jinjos[i].pos, TRUE)) {
+            jinjo_play_sound(TRUE);
+        }
     }
 }
 
@@ -478,8 +484,13 @@ Gfx *jiggy_jinjos_draw(Gfx *dl, Actor *actor) {
         }
         jinjos_place(actor);
         jinjo_last_timer = object_timer;
+        // All five found before Jinjos gave a Jiggy: it's given where the last one stood.
+        if (jinjo_collected == (1 << JINJO_COLORS) - 1) {
+            jiggy_jinjo_jiggy_earn(jinjos[JINJO_COLORS - 1].pos, FALSE);
+        }
     }
     jinjos_collect(actor);
+    jiggy_jinjo_jiggy_update(actor);
 
     frames = object_timer - jinjo_last_timer;
     jinjo_last_timer = object_timer;
