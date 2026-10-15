@@ -210,6 +210,7 @@ Gfx *jiggy_grublins_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_conga_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_chimpy_draw(Gfx *dl, Actor *actor);
 s32 jiggy_golden_banana_actor_draw(Gfx **dl, Actor *actor);
+Gfx *jiggy_mumbo_draw(Gfx *dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
     f32 temp_f0_3;
@@ -357,6 +358,7 @@ block_47:
     dl = jiggy_grublins_draw(dl, arg1); // @jiggy: Grublins in Jungle Japes (jiggy_grublins.c)
     dl = jiggy_conga_draw(dl, arg1); // @jiggy: Conga and his oranges in Jungle Japes (jiggy_conga.c)
     dl = jiggy_chimpy_draw(dl, arg1); // @jiggy: Chimpy, his stump and the orange in Jungle Japes (jiggy_chimpy.c)
+    dl = jiggy_mumbo_draw(dl, arg1); // @jiggy: Mumbo and his skull hut in the Training Grounds (jiggy_mumbo.c)
     return dl;
 }
 

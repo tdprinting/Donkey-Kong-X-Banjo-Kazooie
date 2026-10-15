@@ -19,7 +19,8 @@
 // patches_ui.c). Collected tokens and the total are kept with the DK64 save file
 // (jiggy_save_get/set), as Banjo-Kazooie's mumboscore keeps a bit per token.
 // TODO: the collect sparkle (fxSparkle_mumboToken), the twinkles round an uncollected token,
-// the first pickup's text (FILEPROG_4_MUMBO_TOKEN_TEXT) and something to spend them on (Mumbo).
+// the first pickup's text (FILEPROG_4_MUMBO_TOKEN_TEXT). Mumbo (jiggy_mumbo.c) spends them,
+// taking them off the saved total and calling jiggy_mumbo_tokens_refresh.
 
 #include "common_structs.h"
 #include "ui.h"
@@ -279,6 +280,16 @@ static void tokens_collect(Actor *player) {
             playSound(TOKEN_PICKUP_SOUND, 0x7FFF, 63.0f, 1.0f, 5, 0);
         }
     }
+}
+
+// Called when tokens are spent (jiggy_mumbo.c) after the total is saved: reads it back, and
+// brings the counter up showing it, as Banjo-Kazooie's item_adjustByDiffWithHud does.
+void jiggy_mumbo_tokens_refresh(void) {
+    tokens_total = jiggy_save_get(current_file, TOKEN_SAVE_TOTAL_KEY);
+    if (hud_ticks >= HUD_SHOW_TICKS) {
+        hud_frame = 0.0f;
+    }
+    hud_ticks = 0;
 }
 
 // A matrix that stands the token at pos facing the camera, sized for a frame `width` texels
