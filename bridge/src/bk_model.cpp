@@ -167,6 +167,7 @@ std::optional<BkModel> BkModel::parse(std::span<const uint8_t> data, std::string
         const size_t at = commands_at + i * 8;
         const uint32_t w0 = read_be32(data, at);
         const uint32_t w1 = read_be32(data, at + 4);
+        model.commands_.push_back({w0, w1});
         switch (uint8_t(w0 >> 24)) {
             case G_VTX: {
                 if ((w1 >> 24) != kVertexSegment) {

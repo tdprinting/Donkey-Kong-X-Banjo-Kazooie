@@ -13,6 +13,8 @@
 #include <utility>
 
 #include "jiggy/bk_assets.hpp"
+#include "jiggy/bk_gfx.hpp"
+#include "jiggy/bk_model.hpp"
 #include "jiggy/bk_sprite.hpp"
 #include "jiggy/rom.hpp"
 #include "librecomp/helpers.hpp"
@@ -233,4 +235,41 @@ extern "C" void jiggy_bk_sprite_frame_rgba16(uint8_t* rdram, recomp_context* ctx
         }
     }
     _return<s32>(ctx, s32((image->width << 16) | image->height));
+}
+
+// s32 jiggy_bk_model_build(u32 asset_id, void* dst, u32 dst_len): converts a Banjo-Kazooie
+// model to a block DK64 can draw (bridge/include/jiggy/bk_gfx.hpp), built to live at dst.
+// The display list is at the start of the block. Returns the block's size, writing it only
+// when dst is 8-byte aligned and big enough (so a NULL dst asks for the size), or -1 if the
+// asset isn't a usable model.
+extern "C" void jiggy_bk_model_build(uint8_t* rdram, recomp_context* ctx) {
+    u32 id = _arg<0, u32>(rdram, ctx);
+    PTR(u8) dst = _arg<1, PTR(u8)>(rdram, ctx);
+    u32 dst_len = _arg<2, u32>(rdram, ctx);
+
+    auto data = load_asset(id);
+    if (!data) {
+        _return<s32>(ctx, -1);
+        return;
+    }
+    std::string error;
+    auto model = jiggy::BkModel::parse(*data, &error);
+    // The size doesn't depend on the address, so a placeholder one serves size queries.
+    const uint32_t base = dst != NULLPTR ? uint32_t(dst) : 0x80000000u;
+    std::optional<jiggy::BkGfxBlock> block;
+    if (model) {
+        block = jiggy::bk_model_to_f3dex2(*model, base, &error);
+    }
+    if (!block) {
+        fprintf(stderr, "[Jiggy] Banjo-Kazooie asset 0x%X is not a usable model: %s\n", id, error.c_str());
+        _return<s32>(ctx, -1);
+        return;
+    }
+    if (dst != NULLPTR && block->bytes.size() <= dst_len) {
+        // RDRAM is stored with 32-bit words byteswapped, so copy through MEM_B.
+        for (size_t i = 0; i < block->bytes.size(); i++) {
+            MEM_B(i, dst) = static_cast<s8>(block->bytes[i]);
+        }
+    }
+    _return<s32>(ctx, s32(block->bytes.size()));
 }

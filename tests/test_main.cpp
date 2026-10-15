@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "jiggy/bk_assets.hpp"
+#include "jiggy/bk_gfx.hpp"
 #include "jiggy/bk_model.hpp"
 #include "jiggy/bk_sprite.hpp"
 #include "jiggy/bridge.h"
@@ -30,6 +31,10 @@ void put_be32(Bytes& b, size_t at, uint32_t v) {
     b[at + 1] = uint8_t(v >> 16);
     b[at + 2] = uint8_t(v >> 8);
     b[at + 3] = uint8_t(v);
+}
+
+uint32_t read_be32_at(const Bytes& b, size_t at) {
+    return (uint32_t(b[at]) << 24) | (uint32_t(b[at + 1]) << 16) | (uint32_t(b[at + 2]) << 8) | b[at + 3];
 }
 
 void put_be16(Bytes& b, size_t at, uint16_t v) {
@@ -542,7 +547,9 @@ TEST(rgba5551_packing) {
 
 // A model the way the game lays one out (see bk_model.hpp): one 2x2 CI4 texture and a
 // quad drawn as G_TRI1 plus a G_TRI2 that reuses cached vertices.
-TEST(bk_model_triangles_and_textures) {
+// A small model: one CI4 2x2 texture, four vertices and a display list exercising each
+// command the reader handles.
+Bytes make_test_bk_model() {
     Bytes m(0x38, 0);
     put_be32(m, 0, 0x0000000B);
     // Texture list: one CI4 2x2 texture, palette (32 bytes) then 2 bytes of texels.
@@ -598,6 +605,11 @@ TEST(bk_model_triangles_and_textures) {
         m[at + 15] = 0xFF;
     }
 
+    return m;
+}
+
+TEST(bk_model_triangles_and_textures) {
+    Bytes m = make_test_bk_model();
     std::string error;
     auto model = jiggy::BkModel::parse(m, &error);
     CHECK(model.has_value());
@@ -627,6 +639,45 @@ TEST(bk_model_triangles_and_textures) {
     }
     CHECK(!model->decode_texture(1, &error));
     CHECK(std::string(jiggy::bk_texture_format_name(0x01)) == "CI4");
+}
+
+TEST(bk_model_to_f3dex2_converts_commands) {
+    std::string error;
+    auto model = jiggy::BkModel::parse(make_test_bk_model(), &error);
+    CHECK(model.has_value());
+    if (!model) {
+        return;
+    }
+    const uint32_t base = 0x80400000;
+    auto block = jiggy::bk_model_to_f3dex2(*model, base, &error);
+    CHECK(block.has_value());
+    if (!block) {
+        return;
+    }
+    // 5 prologue + 10 model + 7 epilogue commands, then 13 render modes, 4 vertices and the
+    // 34 bytes of texture data, padded to 8.
+    const size_t dl = 22 * 8, vertices = dl + 13 * 16, textures = vertices + 4 * 16;
+    CHECK(block->display_list_commands == 22);
+    CHECK(block->dropped_commands == 0);
+    CHECK(block->bytes.size() == ((textures + 34 + 7) & ~size_t(7)));
+    auto w = [&](size_t at) { return read_be32_at(block->bytes, at); };
+    auto cmd = [&](size_t i, uint32_t w0, uint32_t w1) { return w(i * 8) == w0 && w(i * 8 + 4) == w1; };
+    CHECK(cmd(5, 0xD7000002, 0xFFFFFFFF));                          // G_TEXTURE
+    CHECK(cmd(6, 0xFD100000, base + uint32_t(textures)));           // palette
+    CHECK(cmd(7, 0xFD500000, base + uint32_t(textures) + 0x20));    // texels
+    CHECK(cmd(8, 0x01003006, base + uint32_t(vertices)));           // G_VTX 3 at slot 0
+    CHECK(cmd(9, 0x05000204, 0));                                   // G_TRI1
+    CHECK(cmd(10, 0x01001008, base + uint32_t(vertices) + 0x30));   // G_VTX 1 at slot 3
+    CHECK(cmd(11, 0x06000206, 0x00020406));                         // G_TRI2
+    CHECK(cmd(12, 0xFD100000, base + uint32_t(textures)));          // animated: frame 0 stand-in
+    CHECK(cmd(14, 0x00000000, 0));                                  // model's ENDDL
+    CHECK(cmd(21, 0xDF000000, 0));                                  // block's own ENDDL
+    // Render mode table entry 1, then the vertices and texture data.
+    CHECK(w(dl + 16) == 0xE200001C && w(dl + 20) == 0x0C192078 && w(dl + 24) == 0xDF000000);
+    CHECK(w(vertices + 16) == 0x00640000);                          // vertex 1: x 100, y 0
+    CHECK(block->bytes[textures] == 0xF8 && block->bytes[textures + 32] == 0x01);
+
+    CHECK(!jiggy::bk_model_to_f3dex2(*model, base + 4, &error).has_value());
 }
 
 TEST(bk_model_rejects_bad_data) {

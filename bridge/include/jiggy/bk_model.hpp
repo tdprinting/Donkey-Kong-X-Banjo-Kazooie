@@ -71,6 +71,10 @@ public:
     uint16_t header_triangle_count() const { return header_tri_count_; }
     uint16_t geo_type() const { return geo_type_; }
     size_t display_list_commands() const { return gfx_count_; }
+    // The raw F3DEX commands ({w0, w1}), in file order, and the texture data they address
+    // through segment 2.
+    const std::vector<std::array<uint32_t, 2>>& commands() const { return commands_; }
+    const std::vector<uint8_t>& texture_data() const { return texture_data_; }
 
     std::optional<BkModelImage> decode_texture(size_t index, std::string* error) const;
 
@@ -79,6 +83,7 @@ private:
     std::vector<BkModelVertex> vertices_;
     std::vector<BkModelTexture> textures_;
     std::vector<BkModelTriangle> triangles_;
+    std::vector<std::array<uint32_t, 2>> commands_;
     uint16_t header_tri_count_ = 0;
     uint16_t geo_type_ = 0;
     size_t gfx_count_ = 0;

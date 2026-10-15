@@ -17,5 +17,9 @@ DECLARE_FUNC(s32, jiggy_bk_sprite_frame_count, u32 asset_id);
 // Decodes a sprite frame to RGBA16 texels, width padded to a multiple of 4. Returns
 // (width << 16) | height, or -1. Pass dst NULL to get the size without writing.
 DECLARE_FUNC(s32, jiggy_bk_sprite_frame_rgba16, u32 asset_id, u32 frame, void* dst, u32 dst_len);
+// Converts a model to a block DK64 can draw, built to live at dst (8-byte aligned): an
+// F3DEX2 display list at the start, then its vertices, textures and render modes. Returns
+// the size, writing only if it fits (pass dst NULL to ask), or -1 if it isn't a model.
+DECLARE_FUNC(s32, jiggy_bk_model_build, u32 asset_id, void* dst, u32 dst_len);
 
 #endif

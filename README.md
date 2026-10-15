@@ -40,6 +40,7 @@ project is shaped this way.
 | Banjo-Kazooie sprite decoder (all 8 texture formats) | Done |
 | First Banjo asset visible in DK Isles (Banjo's portrait) | Done, needs a test on real ROMs |
 | CI: game patches build | Done |
+| Banjo & Kazooie's 3D model, converted from the player's ROM, beside DK (rest pose) | Done, tested in game |
 | Android app: ROM picker and checks, in-app updates | Done, needs a test on a phone |
 | Android: engine cross-compiles, game packaged as libmain.so on SDL's activity | Done, untested on a phone |
 | Android: on-screen touch controls, controller support | Done, untested on a phone |

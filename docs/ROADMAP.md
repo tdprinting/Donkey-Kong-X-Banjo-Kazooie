@@ -85,7 +85,12 @@ The foundation every later step needs: reading both games' files from the player
   RGBA16, RGBA32) and an F3DEX display list walk that produces triangles with UVs. On the
   real ROM it finds exactly the triangle count each model's header gives (Banjo high poly:
   4470), and `jiggy-inspect model` exports OBJ + PNG for checking.
-- [ ] Model converter: from those triangles to DK64's actor model format and F3DEX2.
+- [x] Model converter (`bridge/src/bk_gfx.cpp`): re-encodes a model's F3DEX display lists as
+  F3DEX2 for the DK64 engine, with its vertices, textures and render modes in one block.
+  Banjo & Kazooie's model now stands beside the player in the Training Grounds and DK Isles
+  (`host/patches/jiggy_banjo3d.c`), tested in game on real ROMs. Rest pose only so far.
+- [ ] Bones: apply Banjo-Kazooie's skeleton (the geo list's bone and skinning commands) so
+  models can pose and animate.
 - Texture and palette conversion where formats differ.
 - Animation retargeting from BK's bone animation format to DK64's.
 - Music: Banjo sequences and instruments into DK64's sound bank format, or a second
