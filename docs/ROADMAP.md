@@ -1,7 +1,7 @@
 # Roadmap
 
 The goal is the *Banjo & Kong: Jiggy Jungle* concept: four tag-team duos, eight fused
-worlds and a shared Note and Jiggy economy, running natively on PC and Android. The
+worlds and collectibles from both games side by side, running natively on PC and Android. The
 player supplies both ROMs.
 
 Milestones 1 to 3 are well understood engineering. Milestone 4 onward is open-ended
@@ -132,7 +132,9 @@ both play through every mission together.
 
 *Size: long-term.*
 
-- Shared Notes and Jiggies replacing per-Kong colored bananas.
+- Collectibles from both games side by side. DK64's colored bananas stay, alongside
+  Banjo-Kazooie's Music Notes, Jiggies (in place of Golden Bananas), Jinjos, Honeycomb
+  pieces, Mumbo Tokens, eggs and feathers, each with its own counter and pickup.
 - Fused worlds (for example, Fungi Forest with Click Clock Wood's seasons), a hub
   rework, Mumbo and Funky's shops, and the tag-team final boss against Gruntilda and K. Rool.
 
