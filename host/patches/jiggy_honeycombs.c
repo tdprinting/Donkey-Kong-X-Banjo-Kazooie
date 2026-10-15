@@ -179,6 +179,13 @@ static const HoneycombPlacement pieces_fungi[] = {
 static const HoneycombPlacement combs_fungi[] = {
     {2000.0f, 215.0f, 2200.0f},
 };
+
+// DK Isles: on the main island's beach by the Training Grounds' tunnel side and on Krem Isle's
+// far shore. No full Honeycombs here.
+static const HoneycombPlacement pieces_isles[] = {
+    {2250.0f, 508.0f, 1450.0f},
+    {2800.0f, 500.0f, 3700.0f},
+};
 #define HONEYCOMB_MAP(map, pieces, combs) \
     {map, pieces, sizeof(pieces) / sizeof(pieces[0]), combs, sizeof(combs) / sizeof(combs[0])}
 static const struct {
@@ -194,6 +201,7 @@ static const struct {
     HONEYCOMB_MAP(MAP_CASTLE, pieces_castle, combs_castle),
     HONEYCOMB_MAP(MAP_FACTORY, pieces_factory, combs_factory),
     HONEYCOMB_MAP(MAP_FUNGI, pieces_fungi, combs_fungi),
+    {MAP_DK_ISLES_OVERWORLD, pieces_isles, sizeof(pieces_isles) / sizeof(pieces_isles[0]), NULL, 0},
 };
 // The most of each on one map (collected bits are one u32).
 #define PIECE_COUNT_MAX 8

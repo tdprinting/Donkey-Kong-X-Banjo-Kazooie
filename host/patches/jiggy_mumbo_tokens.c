@@ -136,6 +136,14 @@ static const TokenPlacement tokens_fungi[] = {
     {650.0f, 191.0f, 3700.0f, 4},  // On the barn's plateau, west of the mill.
     {4100.0f, 115.0f, 2050.0f, 8}, // In the far north-east field.
 };
+
+// DK Isles: on the main island's beach, by the tunnel, past the Japes lobby and below the
+// mountain, on sand at about y 500.
+static const TokenPlacement tokens_isles[] = {
+    {2460.0f, 495.0f, 2420.0f, 0},
+    {3675.0f, 494.0f, 1909.0f, 4},
+    {3000.0f, 500.0f, 950.0f, 8},
+};
 #define TOKEN_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -148,6 +156,7 @@ static const struct {
     TOKEN_MAP_SPOTS(MAP_CASTLE, tokens_castle),
     TOKEN_MAP_SPOTS(MAP_FACTORY, tokens_factory),
     TOKEN_MAP_SPOTS(MAP_FUNGI, tokens_fungi),
+    TOKEN_MAP_SPOTS(MAP_DK_ISLES_OVERWORLD, tokens_isles),
 };
 // The most tokens on one map (collected bits are one u32).
 #define TOKEN_COUNT_MAX 8

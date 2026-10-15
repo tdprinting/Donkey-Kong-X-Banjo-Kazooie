@@ -172,6 +172,17 @@ static const FeatherPlacement feathers_fungi[] = {
     {4776.0f, 83.0f, 3332.0f, FEATHER_GOLD, 3},  // On the owl tree's ring path, north-east.
     {2600.0f, 208.0f, 1700.0f, FEATHER_GOLD, 8}, // East of the entrance.
 };
+
+// DK Isles: round the main island's beach, between the note trail and the mountain, and on
+// Krem Isle's shore (gold, reached by swimming), on sand at about y 500.
+static const FeatherPlacement feathers_isles[] = {
+    {2245.0f, 506.0f, 1880.0f, FEATHER_RED, 0},  // By the Training Grounds' tunnel side.
+    {2438.0f, 495.0f, 1014.0f, FEATHER_RED, 5},  // Below the mountain, by the blue Jinjo.
+    {3454.0f, 495.0f, 1239.0f, FEATHER_RED, 10}, // Round toward the Aztec ledge.
+    {3300.0f, 497.0f, 2150.0f, FEATHER_RED, 2},  // Past the Japes lobby.
+    {2700.0f, 500.0f, 3220.0f, FEATHER_GOLD, 3}, // Krem Isle's shore.
+    {2950.0f, 497.0f, 2350.0f, FEATHER_GOLD, 8}, // Beside the tunnel, out by the water.
+};
 #define FEATHER_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -184,6 +195,7 @@ static const struct {
     FEATHER_MAP_SPOTS(MAP_CASTLE, feathers_castle),
     FEATHER_MAP_SPOTS(MAP_FACTORY, feathers_factory),
     FEATHER_MAP_SPOTS(MAP_FUNGI, feathers_fungi),
+    FEATHER_MAP_SPOTS(MAP_DK_ISLES_OVERWORLD, feathers_isles),
 };
 #define FEATHER_COUNT_MAX 16
 // The current map's feathers, or none.

@@ -202,6 +202,17 @@ static const JinjoPlacement jinjos_fungi[JINJO_COLORS] = {
     {450.0f, 189.0f, 3900.0f},  // Pink: on the barn's plateau, west of the mill.
     {4530.0f, 83.0f, 4001.0f},  // Yellow: on the owl tree's ring path, south side.
 };
+
+// DK Isles: one on each of the main island's beaches the player can walk round (the side
+// below the mountain and the Japes lobby's side), Krem Isle's shore, K. Lumsy's island and the
+// Banana Fairy's island (the last three reached by swimming), all on sand at about y 500.
+static const JinjoPlacement jinjos_isles[JINJO_COLORS] = {
+    {2500.0f, 494.0f, 950.0f},  // Blue
+    {3480.0f, 501.0f, 1500.0f}, // Green
+    {2500.0f, 500.0f, 3170.0f}, // Orange
+    {3300.0f, 500.0f, 3200.0f}, // Pink
+    {1095.0f, 494.0f, 2281.0f}, // Yellow
+};
 static const struct {
     Maps map;
     const JinjoPlacement *spots;
@@ -212,6 +223,7 @@ static const struct {
     {MAP_CASTLE, jinjos_castle},
     {MAP_FACTORY, jinjos_factory},
     {MAP_FUNGI, jinjos_fungi},
+    {MAP_DK_ISLES_OVERWORLD, jinjos_isles},
 };
 
 typedef enum {

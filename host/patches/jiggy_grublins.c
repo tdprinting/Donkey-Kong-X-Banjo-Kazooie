@@ -125,6 +125,15 @@ static const GrublinPath grublin_paths_japes[] = {
     {990.0f, 460.0f, 1070.0f, 530.0f},
     {1220.0f, 245.0f, 1330.0f, 225.0f}, // North, between the Jinjos and the trail.
 };
+// DK Isles (Gruntilda's Lair moved in; Banjo-Kazooie's Gruntlings would fit better, but their
+// model, ASSET_54A_MODEL_GRUNTLING_RED, moves its vertices with a rig of its own that the model
+// converter doesn't pose, so it would only slide about with its arms out): three short paths on
+// the main island's beach, at about y 500, clear of Brentilda, Cheato and the loading zones.
+static const GrublinPath grublin_paths_isles[] = {
+    {2360.0f, 2200.0f, 2480.0f, 2250.0f}, // Along the note trail, round from the Training Grounds' tunnel.
+    {3450.0f, 1650.0f, 3500.0f, 1900.0f}, // Past the Japes lobby.
+    {2296.0f, 1271.0f, 2230.0f, 1400.0f}, // The beach on the far side from the Japes lobby.
+};
 #define GRUBLIN_MAX 3
 typedef struct {
     Maps map;
@@ -137,6 +146,9 @@ typedef struct {
 static const GrublinMap grublin_maps[] = {
     {MAP_JAPES, 280.0f, 930.0f, 1460.0f, 150.0f, 720.0f, 1120.0f, 560.0f, 50.0f, grublin_paths_japes,
      sizeof(grublin_paths_japes) / sizeof(grublin_paths_japes[0])},
+    // The main island's beach; kept off Brentilda's first spot.
+    {MAP_DK_ISLES_OVERWORLD, 500.0f, 2100.0f, 3750.0f, 650.0f, 2550.0f, 2146.0f, 1695.0f, 60.0f, grublin_paths_isles,
+     sizeof(grublin_paths_isles) / sizeof(grublin_paths_isles[0])},
 };
 #define ARRAY_COUNT_OF(a) (sizeof(a) / sizeof((a)[0]))
 
