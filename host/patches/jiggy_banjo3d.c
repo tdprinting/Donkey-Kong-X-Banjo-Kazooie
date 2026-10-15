@@ -96,6 +96,10 @@ extern u16 newly_pressed_input[];
 extern OSContPad D_global_asm_807ECD58; // Buttons held this frame.
 f32 func_global_asm_80612790(s16 angle); // cos of a 12-bit angle
 f32 func_global_asm_80612794(s16 angle); // sin of a 12-bit angle
+// Talon Trot (jiggy_banjo_trot.c).
+s32 jiggy_banjo_trot_animate(Actor *player, s32 is_player, s32 airborne, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_trot_selectors(s32 *selectors);
+f32 jiggy_banjo_trot_yaw(void);
 
 typedef enum {
     BANJO_UNLOADED,
@@ -240,6 +244,9 @@ static void banjo_animate(Actor *player) {
     }
     seconds = frames / GAME_FPS;
 
+    if (jiggy_banjo_trot_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress)) {
+        return;
+    }
     banjo_air_moves(player, airborne, seconds);
     switch (banjo_air_move) {
         case AIR_MOVE_FLAP:
@@ -319,6 +326,7 @@ static void banjo_set_selectors(void) {
             banjo_pose.selectors[kazooie_selectors[i]] = 1;
         }
     }
+    jiggy_banjo_trot_selectors(banjo_pose.selectors);
     if (blink < sizeof(blink_frames)) {
         eyes = blink_frames[blink];
     }
@@ -365,7 +373,7 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     // Rotations are 12-bit angles. Banjo faces where the player faces, in their place or one
     // step to their side.
     offset = banjo_is_player ? 0.0f : BANJO_SIDE_OFFSET;
-    yaw = (actor->y_rotation & 0xFFF) * (360.0f / 4096.0f);
+    yaw = (actor->y_rotation & 0xFFF) * (360.0f / 4096.0f) + jiggy_banjo_trot_yaw();
     x = actor->x_position + func_global_asm_80612790(actor->y_rotation) * offset;
     z = actor->z_position - func_global_asm_80612794(actor->y_rotation) * offset;
     guScaleF(scale, BANJO_SCALE, BANJO_SCALE, BANJO_SCALE);
