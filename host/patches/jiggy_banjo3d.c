@@ -16,7 +16,7 @@
 #define BANJO_MTX_MAX 72
 // Banjo-Kazooie units to DK64 world units, and where Banjo stands relative to the player.
 #define BANJO_SCALE 0.25f
-#define BANJO_SIDE_OFFSET 40.0f
+#define BANJO_SIDE_OFFSET 70.0f
 
 // Banjo-Kazooie animation assets (asset_e) and how long one loop takes, in seconds.
 #define BANJO_ANIM_IDLE 0x6F
