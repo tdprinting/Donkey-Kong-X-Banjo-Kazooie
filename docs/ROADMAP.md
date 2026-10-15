@@ -112,8 +112,10 @@ The foundation every later step needs: reading both games' files from the player
 - [x] Banjo's animations for DK's moves (Claw Swipe, Beak Barge, crouch, backflip) and
   Banjo-Kazooie's air moves: Feathery Flap, Rat-a-tat Rap and Beak Buster
   (`host/patches/jiggy_banjo3d.c`), tested in game.
-- Rebuild the rest of the moveset (Talon Trot, Egg Firing, Wonderwing, Shock Spring Jump)
-  as DK64 patches, using the BK decompilation as the behaviour reference.
+- [x] Talon Trot (`jiggy_banjo_trot.c`) and Egg Firing (`jiggy_banjo_eggs.c`, eggs are DK's
+  coconut shots drawn as Banjo-Kazooie's eggs), tested in game.
+- Rebuild the rest of the moveset (Wonderwing, Shock Spring Jump, Flight, swimming) as DK64
+  patches, using the BK decompilation as the behaviour reference.
 - Add the duo to DK64's character swap, then a quick-swap wheel in place of Tag Barrels.
 
 ## 6. Two-player split-screen co-op

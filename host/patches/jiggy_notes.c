@@ -59,6 +59,10 @@ Gfx *popHUD(Gfx *dl, u8 alignment);
 #define HUD_FADE_TICKS 20
 #define HUD_TICKS_PER_FRAME 4
 #define HUD_MAX_DIGITS 3
+// Where the counter sits, bottom left like Banjo-Kazooie's. The left-aligned HUD pulls in by
+// the UI pillar, so this keeps it clear of the edge the way DK64's own counters are.
+#define HUD_X 56
+#define HUD_BOTTOM_MARGIN 36
 // The HUD note's color: the sprite is intensity only, tinted the way the game's notes are.
 #define HUD_NOTE_R 0xFF
 #define HUD_NOTE_G 0xC8
@@ -462,8 +466,8 @@ Gfx *jiggy_notes_hud_draw(Gfx *dl) {
     } while (value > 0 && digit_count < HUD_MAX_DIGITS);
 
     frame = (object_timer / HUD_TICKS_PER_FRAME) % hud_note_frames;
-    x = 16;
-    y = D_global_asm_80744494 - hud_note_height[frame] - 20;
+    x = HUD_X;
+    y = D_global_asm_80744494 - hud_note_height[frame] - HUD_BOTTOM_MARGIN;
 
     dl = alignHUDGameplay(dl, ALIGN_LEFT);
     gDPPipeSync(dl++);
