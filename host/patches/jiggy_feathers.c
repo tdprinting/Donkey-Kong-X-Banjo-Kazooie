@@ -194,6 +194,17 @@ static const FeatherPlacement feathers_aztec[] = {
     {3950.0f, 120.0f, 4380.0f, FEATHER_GOLD, 2}, // The main area's south-east corner.
     {3650.0f, 116.0f, 3400.0f, FEATHER_GOLD, 7}, // North-east of the quicksand basin.
 };
+
+// Crystal Caves: off the trails on the left side, the north-east shelf, the east shelf and the
+// south round ledge; the Gold Feathers out on the two far round ledges.
+static const FeatherPlacement feathers_caves[] = {
+    {1500.0f, 96.0f, 950.0f, FEATHER_RED, 0},    // Inside the bend from the north shelf to the left side.
+    {2400.0f, 100.0f, 760.0f, FEATHER_RED, 5},   // Below the north-east shelf's trail.
+    {3030.0f, 132.0f, 2190.0f, FEATHER_RED, 10}, // Beside the east shelf's trail.
+    {1820.0f, 280.0f, 2560.0f, FEATHER_RED, 15}, // Inside the south round ledge's ring.
+    {400.0f, 180.0f, 2620.0f, FEATHER_GOLD, 3},  // At the back of the round ledge out west.
+    {3560.0f, 287.0f, 600.0f, FEATHER_GOLD, 8},  // On the north-east round ledge, by the blue present.
+};
 #define FEATHER_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -208,6 +219,7 @@ static const struct {
     FEATHER_MAP_SPOTS(MAP_FUNGI, feathers_fungi),
     FEATHER_MAP_SPOTS(MAP_DK_ISLES_OVERWORLD, feathers_isles),
     FEATHER_MAP_SPOTS(MAP_AZTEC, feathers_aztec),
+    FEATHER_MAP_SPOTS(MAP_CAVES, feathers_caves),
 };
 #define FEATHER_COUNT_MAX 16
 // The current map's feathers, or none.

@@ -22,6 +22,7 @@
 //   reward 0x52  Fungi Forest's Jinjo Jiggy.
 //   reward 0x00  DK Isles' Jinjo Jiggy.
 //   reward 0x24  Angry Aztec's Jinjo Jiggy.
+//   reward 0x63  Crystal Caves' Jinjo Jiggy.
 //
 // The reward is kept with the save file (jiggy_save_get/set) so it's given once: earned, and
 // where it stands. While it's earned and its flag isn't set, it's spawned again on every visit,
@@ -80,6 +81,7 @@ static const struct {
     {MAP_FUNGI, NO_FLAG, 0x52},
     {MAP_DK_ISLES_OVERWORLD, NO_FLAG, 0x00},
     {MAP_AZTEC, NO_FLAG, 0x24},
+    {MAP_CAVES, NO_FLAG, 0x63}, // CAVES_REWARD_JINJOS (jiggy_caves.h)
 };
 
 static s32 jiggy_map = -1;

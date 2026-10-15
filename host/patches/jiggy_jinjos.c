@@ -222,6 +222,16 @@ static const JinjoPlacement jinjos_aztec[JINJO_COLORS] = {
     {2500.0f, 118.0f, 3500.0f}, // Pink: the main area's west sand, by the Ancient Ones.
     {4050.0f, 120.0f, 3700.0f}, // Yellow: the main area's east sand.
 };
+
+// Crystal Caves: one by the entrance, one on the left side past the north shelf, one at the
+// east shelf's north end, one on the slope out west, one at the top of the ice arch's climb.
+static const JinjoPlacement jinjos_caves[JINJO_COLORS] = {
+    {1720.0f, -29.0f, 340.0f},  // Blue
+    {1360.0f, 97.0f, 1280.0f},  // Green
+    {3420.0f, 154.0f, 1650.0f}, // Orange
+    {1000.0f, 125.0f, 2050.0f}, // Pink
+    {1850.0f, 124.0f, 1200.0f}, // Yellow
+};
 static const struct {
     Maps map;
     const JinjoPlacement *spots;
@@ -234,6 +244,7 @@ static const struct {
     {MAP_FUNGI, jinjos_fungi},
     {MAP_DK_ISLES_OVERWORLD, jinjos_isles},
     {MAP_AZTEC, jinjos_aztec},
+    {MAP_CAVES, jinjos_caves},
 };
 
 typedef enum {

@@ -151,6 +151,13 @@ static const TokenPlacement tokens_aztec[] = {
     {3280.0f, 120.0f, 2050.0f, 4}, // Beside the way down from the tunnel.
     {3700.0f, 120.0f, 4200.0f, 8}, // The main area's south sand, above the note trail.
 };
+
+// Crystal Caves: in the Kremlings' camp, on the north-east round ledge and on the slope out west.
+static const TokenPlacement tokens_caves[] = {
+    {2550.0f, 14.0f, 540.0f, 0},
+    {3400.0f, 287.0f, 760.0f, 4},
+    {850.0f, 141.0f, 2050.0f, 8},
+};
 #define TOKEN_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -165,6 +172,7 @@ static const struct {
     TOKEN_MAP_SPOTS(MAP_FUNGI, tokens_fungi),
     TOKEN_MAP_SPOTS(MAP_DK_ISLES_OVERWORLD, tokens_isles),
     TOKEN_MAP_SPOTS(MAP_AZTEC, tokens_aztec),
+    TOKEN_MAP_SPOTS(MAP_CAVES, tokens_caves),
 };
 // The most tokens on one map (collected bits are one u32).
 #define TOKEN_COUNT_MAX 8

@@ -233,6 +233,9 @@ Gfx *jiggy_trunker_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_grabba_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_ancient_ones_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_slappas_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_boggy_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_wozza_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_sir_slush_draw(Gfx *dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
     f32 temp_f0_3;
@@ -403,6 +406,9 @@ block_47:
     dl = jiggy_grabba_draw(dl, arg1);       // @jiggy: Grabba in Angry Aztec (jiggy_grabba.c)
     dl = jiggy_ancient_ones_draw(dl, arg1); // @jiggy: the Ancient Ones in Angry Aztec (jiggy_ancient_ones.c)
     dl = jiggy_slappas_draw(dl, arg1);      // @jiggy: Slappas in Angry Aztec (jiggy_slappas.c)
+    dl = jiggy_boggy_draw(dl, arg1); // @jiggy: Boggy, his kids and their presents in Crystal Caves (jiggy_boggy.c)
+    dl = jiggy_wozza_draw(dl, arg1); // @jiggy: Wozza hiding in Crystal Caves (jiggy_wozza.c)
+    dl = jiggy_sir_slush_draw(dl, arg1); // @jiggy: Sir Slush and his snowballs in Crystal Caves (jiggy_sir_slush.c)
     return dl;
 }
 

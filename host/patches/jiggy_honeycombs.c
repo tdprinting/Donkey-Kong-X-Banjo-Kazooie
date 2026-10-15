@@ -192,6 +192,17 @@ static const HoneycombPlacement pieces_aztec[] = {
     {1400.0f, 120.0f, 1220.0f}, // The east corridor, off the note trail.
     {2950.0f, 120.0f, 4420.0f}, // The main area's south sand, below the note trail.
 };
+
+// Crystal Caves: a piece south of the ice arch, one in the Kremlings' camp east of the
+// entrance; a Honeycomb on each of the east and south-east shelves, where Sir Slush throws.
+static const HoneycombPlacement pieces_caves[] = {
+    {1500.0f, 91.0f, 1650.0f},
+    {2300.0f, 14.0f, 300.0f},
+};
+static const HoneycombPlacement combs_caves[] = {
+    {3250.0f, 108.0f, 1960.0f},
+    {2700.0f, 166.0f, 2300.0f},
+};
 #define HONEYCOMB_MAP(map, pieces, combs) \
     {map, pieces, sizeof(pieces) / sizeof(pieces[0]), combs, sizeof(combs) / sizeof(combs[0])}
 static const struct {
@@ -209,6 +220,7 @@ static const struct {
     HONEYCOMB_MAP(MAP_FUNGI, pieces_fungi, combs_fungi),
     {MAP_DK_ISLES_OVERWORLD, pieces_isles, sizeof(pieces_isles) / sizeof(pieces_isles[0]), NULL, 0},
     {MAP_AZTEC, pieces_aztec, sizeof(pieces_aztec) / sizeof(pieces_aztec[0]), NULL, 0},
+    HONEYCOMB_MAP(MAP_CAVES, pieces_caves, combs_caves),
 };
 // The most of each on one map (collected bits are one u32).
 #define PIECE_COUNT_MAX 8
