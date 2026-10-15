@@ -33,10 +33,10 @@
 
 #define BOTTLES_MODEL 0x387  // ASSET_387_MODEL_BOTTLES
 #define MOLEHILL_MODEL 0x388 // ASSET_388_MODEL_MOLEHILL
-// Bottles converts to about 22 KiB, with 37 bones and about 60 pose commands; the molehill
+// Bottles converts to about 22 KiB, with 37 bones and up to about 110 pose commands; the molehill
 // to about 7.5 KiB, with 2 bones and 12 commands.
 #define BOTTLES_BLOCK_MAX 0x8000
-#define BOTTLES_GFX_MAX 96
+#define BOTTLES_GFX_MAX 160
 #define BOTTLES_MTX_MAX 40
 #define MOLEHILL_BLOCK_MAX 0x3000
 #define MOLEHILL_GFX_MAX 32

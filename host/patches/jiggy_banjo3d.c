@@ -392,7 +392,7 @@ static void banjo_set_selectors(void) {
 
 static s32 banjo_here(Actor *actor) {
     return actor == gPlayerPointer && cc_number_of_players == 1 &&
-           (current_map == MAP_DK_ISLES_OVERWORLD || current_map == MAP_TRAINING_GROUNDS);
+           (current_map == MAP_DK_ISLES_OVERWORLD || current_map == MAP_TRAINING_GROUNDS || current_map == MAP_JAPES);
 }
 
 // Whether Banjo is standing in for this actor, so its own model shouldn't be drawn
