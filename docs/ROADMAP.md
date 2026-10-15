@@ -95,7 +95,8 @@ The foundation every later step needs: reading both games' files from the player
   the host evaluates BK's animation assets directly).
 - [ ] Golden Bananas look like Jiggies: Banjo-Kazooie's Jiggy model is drawn in place of
   every Golden Banana, placed (props) or rewarded (actors), keeping its spin and size
-  (`host/patches/jiggy_collectibles.c`). Built, not yet tested in game.
+  (`host/patches/jiggy_collectibles.c`). Tested in game; still drawn flat gold, without
+  Banjo-Kazooie's shine.
 - [ ] Animated textures (segments 11-15) for the models that use them. Banjo's doesn't: his
   eyes are geometry picked by selectors, so blinking already works.
 - Texture and palette conversion where formats differ.
@@ -108,8 +109,11 @@ The foundation every later step needs: reading both games' files from the player
 
 - [x] First step: D-pad left swaps the player to Banjo & Kazooie (their model and
   animations over DK's moves and physics) in the Training Grounds and DK Isles, and back.
-- Rebuild the core moveset (Feathery Flap, Rat-a-tat Rap, Talon Trot, Beak Barge, Egg
-  Firing) as DK64 patches, using the BK decompilation as the behaviour reference.
+- [x] Banjo's animations for DK's moves (Claw Swipe, Beak Barge, crouch, backflip) and
+  Banjo-Kazooie's air moves: Feathery Flap, Rat-a-tat Rap and Beak Buster
+  (`host/patches/jiggy_banjo3d.c`), tested in game.
+- Rebuild the rest of the moveset (Talon Trot, Egg Firing, Wonderwing, Shock Spring Jump)
+  as DK64 patches, using the BK decompilation as the behaviour reference.
 - Add the duo to DK64's character swap, then a quick-swap wheel in place of Tag Barrels.
 
 ## 6. Two-player split-screen co-op
