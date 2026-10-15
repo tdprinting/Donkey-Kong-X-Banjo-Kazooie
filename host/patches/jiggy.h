@@ -82,6 +82,7 @@ DECLARE_FUNC(s32, jiggy_bk_sound_stop, s32 handle);
 // Banjo-Kazooie music tracks (comusic_e) for jiggy_bk_jingle_play, with BK's volume.
 #define JIGGY_BK_JINGLE_NOTE 0x09           // COMUSIC_9_NOTE_COLLECTED, 16000/32767
 #define JIGGY_BK_JINGLE_EGG 0x0C            // COMUSIC_C_EGG_COLLECTED, 15000/32767 (track default)
+#define JIGGY_BK_JINGLE_JINJO 0x0A           // COMUSIC_A_JINJO_COLLECTED
 #define JIGGY_BK_JINGLE_JIGGY 0x0D          // COMUSIC_D_JINGLE_JIGGY_COLLECTED, 28000/32767
 
 #endif

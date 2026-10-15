@@ -100,11 +100,13 @@ The foundation every later step needs: reading both games' files from the player
 - [ ] Animated textures (segments 11-15) for the models that use them. Banjo's doesn't: his
   eyes are geometry picked by selectors, so blinking already works.
 - Texture and palette conversion where formats differ.
-- [ ] Banjo-Kazooie sounds: the host renders sound effects (sfx bank, VADPCM, with BK's
+- [x] Banjo-Kazooie sounds: the host renders sound effects (sfx bank, VADPCM, with BK's
   chains, envelopes and pitch) and pickup jingles (compact MIDI on the music bank) from the
   player's ROM and mixes them into DK64's audio (`bridge/src/bk_sound.cpp`,
   `host/src/game/jiggy_audio.cpp`; imports `jiggy_bk_sfx_play`, `jiggy_bk_jingle_play`).
-  Not yet called from the patches or heard in game.
+  Played for note and Jinjo pickups, eggs, the Feathery Flap and Talon Trot steps, with
+  DK64's pickup sound as the fallback without a Banjo-Kazooie ROM. Still to hook up: the
+  Jiggy jingle (DK64's own Golden Banana fanfare needs replacing at the same moment).
 - Music: Banjo sequences and instruments into DK64's sound bank format, or a second
   sound bank loaded alongside DK64's. (The jingle renderer above plays whole sequences, but
   only pre-rendered, so it doesn't follow DK64's music system.)
@@ -150,8 +152,13 @@ both play through every mission together.
 - Collectibles from both games side by side. DK64's colored bananas stay, alongside
   Banjo-Kazooie's Music Notes, Jiggies (in place of Golden Bananas), Jinjos, Honeycomb
   pieces, Mumbo Tokens, eggs and feathers, each with its own counter and pickup.
-- Fused worlds (for example, Fungi Forest with Click Clock Wood's seasons), a hub
-  rework, Mumbo and Funky's shops, and the tag-team final boss against Gruntilda and K. Rool.
+- Fused worlds (for example, Fungi Forest with Click Clock Wood's seasons): each one blends
+  both games' map elements into one world, fun to play and completable from start to finish,
+  with its own cutscenes and NPCs. Built from the two games' own maps, models and characters,
+  modified where needed (edits applied at runtime to what the player's ROMs supply), with
+  wholly new assets only as a last resort.
+- A hub rework, Mumbo and Funky's shops, and the tag-team final boss against Gruntilda and
+  K. Rool.
 
 ## Ground rules
 

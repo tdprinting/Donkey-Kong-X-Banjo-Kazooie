@@ -16,6 +16,7 @@
 // does the same with the player's y_rotation.
 
 #include "common_structs.h"
+#include "jiggy.h"
 
 // Banjo-Kazooie animation assets (asset_e) and how long one loop takes, in seconds.
 #define TROT_ANIM_ENTER 0x16 // ASSET_16_ANIM_BSBTROT_ENTER
@@ -87,6 +88,28 @@ static void trot_play(s32 *animation, f32 *progress, s32 id, f32 start) {
 
 // Turns the player round, so Banjo keeps facing the same way when Kazooie takes the lead or
 // hands it back.
+// Each Talon Trot step (bsbtrot_walk_update): Kazooie's "ra" and a footfall, at the two points
+// of the walk where a foot lands. The footfall is Banjo-Kazooie's ordinary-ground one (it picks
+// others for other surfaces), its pitch alternating between steps.
+#define TROT_STEP_1 0.2781f
+#define TROT_STEP_2 0.7781f
+static u8 trot_step_alt;
+
+static void trot_step_sound(f32 ra_pitch) {
+    trot_step_alt ^= 1;
+    jiggy_bk_sfx_play(JIGGY_BK_SFX_KAZOOIE_RA, 22000.0f / 32767.0f, ra_pitch);
+    jiggy_bk_sfx_play(JIGGY_BK_SFX_FOOTSTEP, 9000.0f / 32767.0f, trot_step_alt ? 1.2f : 1.4f);
+}
+
+static void trot_step_sounds(f32 before, f32 after) {
+    if (before < TROT_STEP_1 && after >= TROT_STEP_1) {
+        trot_step_sound(0.96f);
+    }
+    if (before < TROT_STEP_2 && after >= TROT_STEP_2) {
+        trot_step_sound(1.04f);
+    }
+}
+
 static void trot_turn_round(Actor *player) {
     player->y_rotation = (player->y_rotation + 0x800) & 0xFFF;
 }
@@ -157,6 +180,7 @@ s32 jiggy_banjo_trot_animate(Actor *player, s32 is_player, s32 airborne, f32 sec
     s32 state = player->control_state;
     f32 speed = player->unkB8;
     f32 rate;
+    f32 before;
 
     if (!is_player) {
         if (trot_state != TROT_OFF) {
@@ -228,7 +252,11 @@ s32 jiggy_banjo_trot_animate(Actor *player, s32 is_player, s32 airborne, f32 sec
         if (rate > 1.0f / TROT_FASTEST_SECONDS) {
             rate = 1.0f / TROT_FASTEST_SECONDS;
         }
+        before = *progress;
         *progress += seconds * rate;
+        if (is_player) {
+            trot_step_sounds(before, *progress);
+        }
     }
     while (*progress >= 1.0f) {
         *progress -= 1.0f;

@@ -224,6 +224,9 @@ static void egg_fire(Actor *player, s32 backward) {
     }
     if (backward) {
         yaw = (yaw + 0x800) & 0xFFF;
+        jiggy_bk_sfx_play(JIGGY_BK_SFX_EGG_POOP, 28000.0f / 32767.0f, 1.4f);
+    } else {
+        jiggy_bk_sfx_play(JIGGY_BK_SFX_KAZOOIE_HEGH, 1.0f, 1.0f);
     }
     // Rotations are 12-bit angles, with x along sin and z along cos, as DK64 moves its actors.
     forward_x = func_global_asm_80612794(yaw);
@@ -298,6 +301,8 @@ static void eggs_update(u32 frames) {
         f32 step;
 
         if (!func_global_asm_8067AE0C(shot) || shot->unk58 != ACTOR_PROJECTILE_COCONUTS) {
+            // It broke (SFX_D_EGGSHELL_BREAKING, at Banjo-Kazooie's slightly random pitch).
+            jiggy_bk_sfx_play(JIGGY_BK_SFX_EGGSHELL_BREAK, 13000.0f / 32767.0f, 1.6f + 0.01f * (object_timer % 11));
             *egg = eggs[--egg_count];
             continue;
         }

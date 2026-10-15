@@ -7,7 +7,7 @@
 // and then back mirrored, two ticks a frame, for a full spin, and always faces the camera.
 //
 // For now the notes only exist as a short trail in the Training Grounds (note_trail below),
-// laid out from where the player first stands there. They are drawn right after the
+// on the grass below the treehouse deck. They are drawn right after the
 // player's own model (func_global_asm_80630DCC in patches_draw.c).
 //
 // Touching a note collects it: it disappears, a pickup sound plays, and Banjo-Kazooie's note
@@ -81,20 +81,32 @@ extern s16 D_global_asm_80744494;
 s16 playSound(s16 arg0, s32 arg1, f32 arg2, f32 arg3, u8 arg4, u8 arg5);
 f32 func_global_asm_80612790(s16 angle); // cos of a 12-bit angle
 f32 func_global_asm_80612794(s16 angle); // sin of a 12-bit angle
+// The floor under (x, z), as the game looks for one (func_global_asm_80667180): writes its
+// height to *y, leaving it as it was if there's none. The return value isn't reliable.
+s32 func_global_asm_80667110(f32 x, f32 z, f32 *y);
 
-// Where the notes go. Placeholder layout until notes have real placements: each is a
-// distance ahead of where the player first stands on the map, and a step through the spin
-// so the trail doesn't turn in lockstep.
-// TODO: real placements per map (world coordinates), and more maps.
+// Where the notes go: a trail over the grass below the treehouse deck (where the player
+// starts), from the foot of the deck past the pond's edge, each spot found by walking it so
+// all can be reached on foot. Each note hovers over the floor found under its spot (or over
+// the spot's own height, if none is found near it), at a step through the spin so the trail
+// doesn't turn in lockstep.
+// TODO: placements on more maps.
 typedef struct {
-    f32 ahead;
+    f32 x, y, z;
     u8 phase;
 } NotePlacement;
 
 #define NOTE_TRAIL_MAP MAP_TRAINING_GROUNDS
 static const NotePlacement note_trail[] = {
-    {90.0f, 0}, {150.0f, 3}, {210.0f, 6}, {270.0f, 9}, {330.0f, 12},
+    {1360.0f, 37.0f, 1010.0f, 0},
+    {1366.0f, 33.0f, 940.0f, 3},
+    {1372.0f, 29.0f, 870.0f, 6},
+    {1480.0f, 34.0f, 940.0f, 9},
+    {1550.0f, 36.0f, 990.0f, 12},
 };
+// Looking for the floor under a note: from this far above its spot, trusted this close to it.
+#define NOTE_FLOOR_PROBE 20.0f
+#define NOTE_FLOOR_MAX_STEP 40.0f
 #define NOTE_COUNT (sizeof(note_trail) / sizeof(note_trail[0]))
 
 typedef enum {
@@ -205,16 +217,23 @@ static void notes_load(void) {
     note_state = NOTES_READY;
 }
 
-// Lays the trail out ahead of the player, along the way they face.
+// Lays the trail out, each note over the floor at its spot.
 static void notes_place(Actor *player) {
-    f32 forward_x = func_global_asm_80612794(player->y_rotation);
-    f32 forward_z = func_global_asm_80612790(player->y_rotation);
     u32 i;
 
     for (i = 0; i < NOTE_COUNT; i++) {
-        note_pos[i][0] = player->x_position + forward_x * note_trail[i].ahead;
-        note_pos[i][1] = player->y_position + NOTE_HOVER;
-        note_pos[i][2] = player->z_position + forward_z * note_trail[i].ahead;
+        f32 probe = note_trail[i].y + NOTE_FLOOR_PROBE;
+        f32 floor = probe;
+        f32 ground = note_trail[i].y;
+
+        func_global_asm_80667110(note_trail[i].x, note_trail[i].z, &floor);
+        if (floor != probe && floor - note_trail[i].y < NOTE_FLOOR_MAX_STEP &&
+            note_trail[i].y - floor < NOTE_FLOOR_MAX_STEP) {
+            ground = floor;
+        }
+        note_pos[i][0] = note_trail[i].x;
+        note_pos[i][1] = ground + NOTE_HOVER;
+        note_pos[i][2] = note_trail[i].z;
     }
     note_placed = TRUE;
 }
@@ -241,7 +260,10 @@ static void notes_collect(Actor *player) {
         jiggy_save_set(current_file, NOTE_SAVE_MAP_KEY(current_map), note_collected);
         jiggy_save_set(current_file, NOTE_SAVE_TOTAL_KEY, notes_total);
         hud_ticks = 0;
-        playSound(NOTE_PICKUP_SOUND, 0x7FFF, 63.0f, 1.0f, 5, 0);
+        // Banjo-Kazooie's note jingle, or DK64's pickup sound without a Banjo-Kazooie ROM.
+        if (jiggy_bk_jingle_play(JIGGY_BK_JINGLE_NOTE, 16000.0f / 32767.0f) <= 0) {
+            playSound(NOTE_PICKUP_SOUND, 0x7FFF, 63.0f, 1.0f, 5, 0);
+        }
     }
 }
 

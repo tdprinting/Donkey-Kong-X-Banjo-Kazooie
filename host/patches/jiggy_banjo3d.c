@@ -66,6 +66,9 @@
 #define FLAP_FALL_SPEED -10.0f
 #define FLAP_MAX_SECONDS 1.6f
 #define FLAP_SECONDS 0.35f
+// Kazooie grunts on each wing beat, at this point of it, once a flap has gone on this long.
+#define FLAP_GRUNT_AT 0.5698f
+#define FLAP_GRUNT_AFTER 0.7f
 // Rat-a-tat Rap (bPeck.c): B in the air hovers while Kazooie pecks.
 #define RAP_SECONDS 0.6f
 #define RAP_PECK_SECONDS 0.2f
@@ -171,12 +174,18 @@ static void banjo_play_once(s32 animation, f32 seconds, f32 elapsed) {
     }
 }
 
+static s32 flap_sound; // The flap sound playing (jiggy_bk_sfx_play's handle), or 0.
+
 static void banjo_start_air_move(Actor *player, BanjoAirMove move) {
     banjo_air_move = move;
     banjo_air_moves_used |= 1 << move;
     banjo_air_move_seconds = 0.0f;
     if (move == AIR_MOVE_FLAP) {
         player->y_velocity = FLAP_LIFT;
+        // Kazooie's flap (SFX_4E_KAZOOIE_BRUIII); a new one cuts the last, as Banjo-Kazooie
+        // plays both on one channel.
+        jiggy_bk_sound_stop(flap_sound);
+        flap_sound = jiggy_bk_sfx_play(JIGGY_BK_SFX_FLAP, 20000.0f / 32767.0f, 1.24f);
     }
 }
 
@@ -232,6 +241,7 @@ static void banjo_air_moves(Actor *player, s32 airborne, f32 seconds) {
 // Picks Banjo's animation from what the player is doing and advances it.
 static void banjo_animate(Actor *player) {
     f32 seconds;
+    f32 before;
     f32 speed = player->unkB8;
     u32 frames = object_timer - banjo_last_timer;
     s32 airborne = player->y_position - player->floor > BANJO_AIRBORNE_HEIGHT;
@@ -251,7 +261,13 @@ static void banjo_animate(Actor *player) {
     switch (banjo_air_move) {
         case AIR_MOVE_FLAP:
             banjo_play(BANJO_ANIM_FLAP);
+            before = banjo_progress;
             banjo_progress += seconds / FLAP_SECONDS;
+            // Once the flap has gone on a while, Kazooie grunts on each beat (SFX_47_KAZOOIE_HEUGH).
+            if (banjo_air_move_seconds > FLAP_GRUNT_AFTER && before < FLAP_GRUNT_AT && banjo_progress >= FLAP_GRUNT_AT) {
+                jiggy_bk_sound_stop(flap_sound);
+                flap_sound = jiggy_bk_sfx_play(JIGGY_BK_SFX_KAZOOIE_HEUGH, 22000.0f / 32767.0f, 1.0f);
+            }
             break;
         case AIR_MOVE_RAP:
             banjo_play(BANJO_ANIM_RAT_A_TAT_RAP);

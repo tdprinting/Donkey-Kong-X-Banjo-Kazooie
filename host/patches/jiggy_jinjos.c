@@ -9,8 +9,8 @@
 // side. Their eyes blink through the model's eye selector, as actors spawned with
 // ACTOR_FLAG_UNKNOWN_8 do (func_803255FC).
 //
-// For now the Jinjos only exist in the Training Grounds (jinjo_ring below), placed around
-// where the player first stands there. They are drawn right after the player's own model
+// For now the Jinjos only exist in the Training Grounds (jinjo_spots below), on the grass
+// around the treehouse. They are drawn right after the player's own model
 // (func_global_asm_80630DCC in patches_draw.c).
 //
 // Touching a Jinjo collects it: it disappears, a pickup sound plays, and Banjo-Kazooie's
@@ -71,10 +71,10 @@ static const u16 jinjo_models[JINJO_COLORS] = {
 // Game frames per second, for object_timer.
 #define GAME_FPS 30.0f
 #define JINJO_AIRBORNE_HEIGHT 6.0f
-// Placing a Jinjo on the floor under its spot: looked for from this far above the player's
-// feet, and only trusted this close to their height.
-#define JINJO_FLOOR_PROBE 60.0f
-#define JINJO_FLOOR_MAX_STEP 80.0f
+// Placing a Jinjo on the floor under its spot: looked for from this far above the spot, and
+// only trusted this close to the spot's height.
+#define JINJO_FLOOR_PROBE 20.0f
+#define JINJO_FLOOR_MAX_STEP 40.0f
 // How close the player has to come to collect a Jinjo: across, and how far the player's feet
 // can be above the Jinjo's (about its height) or below them (about the player's).
 #define JINJO_TOUCH_RADIUS 26.0f
@@ -135,23 +135,22 @@ s16 func_global_asm_80665DE0(f32 target_x, f32 target_z, f32 x, f32 z);
 // height to *y, leaving it as it was if there's none. The return value isn't reliable.
 s32 func_global_asm_80667110(f32 x, f32 z, f32 *y);
 
-// Where the Jinjos go. Placeholder layout until Jinjos have real placements: a ring around
-// where the player first stands on the map, at angles (degrees, 0 straight ahead) that keep
-// clear of jiggy_notes.c's note trail, which runs straight ahead from 90 to 330 units. The
-// last one stands beyond the end of the trail.
-// TODO: real placements per map (world coordinates), and more maps.
+// Where the Jinjos go in the Training Grounds: spots on the grass around the treehouse (the
+// player starts on its deck, at about (1346, 227, 1098)), each found by walking there, so all
+// five can be reached on foot. Heights are the ground's; each is snapped to the floor found
+// just above it when placed.
+// TODO: placements on more maps.
 typedef struct {
-    f32 angle;
-    f32 distance;
+    f32 x, y, z;
 } JinjoPlacement;
 
-#define JINJO_RING_MAP MAP_TRAINING_GROUNDS
-static const JinjoPlacement jinjo_ring[JINJO_COLORS] = {
-    {-100.0f, 170.0f}, // Blue
-    {-45.0f, 170.0f},  // Green
-    {45.0f, 170.0f},   // Orange
-    {100.0f, 170.0f},  // Pink
-    {12.0f, 430.0f},   // Yellow
+#define JINJO_MAP MAP_TRAINING_GROUNDS
+static const JinjoPlacement jinjo_spots[JINJO_COLORS] = {
+    {1128.0f, 28.0f, 1053.0f}, // Blue
+    {1165.0f, 34.0f, 851.0f},  // Green
+    {1252.0f, 24.0f, 814.0f},  // Orange
+    {1408.0f, 34.0f, 893.0f},  // Pink
+    {1619.0f, 37.0f, 1037.0f}, // Yellow
 };
 
 typedef enum {
@@ -186,7 +185,7 @@ static s32 jinjo_last_map = -1;
 static s32 jinjo_placed;
 static u32 jinjo_last_timer;
 static Jinjo jinjos[JINJO_COLORS];
-// Bit i: jinjo_ring[i] has been collected, on the map the Jinjos were last loaded for.
+// Bit i: jinjo_spots[i] has been collected, on the map the Jinjos were last loaded for.
 static u32 jinjo_collected;
 // Save key (jiggy_save_get) of a map's collected bits.
 #define JINJO_SAVE_MAP_KEY(map) (0x4A000000 | (u32)(map)) // 'J'
@@ -228,10 +227,10 @@ static f32 jinjo_angle_between(s16 from, s16 to) {
     return diff * (360.0f / 4096.0f);
 }
 
-// Where Banjo-Kazooie's own Jinjo sounds will play (see JINJO_PICKUP_SOUND); nothing yet but
-// the pickup.
+// Where Banjo-Kazooie's own Jinjo sounds play (see JINJO_PICKUP_SOUND); nothing yet but the
+// pickup: Banjo-Kazooie's Jinjo jingle, or DK64's pickup sound without a Banjo-Kazooie ROM.
 static void jinjo_play_sound(s32 pickup) {
-    if (pickup) {
+    if (pickup && jiggy_bk_jingle_play(JIGGY_BK_JINGLE_JINJO, 28000.0f / 32767.0f) <= 0) {
         playSound(JINJO_PICKUP_SOUND, 0x7FFF, 63.0f, 1.0f, 5, 0);
     }
 }
@@ -256,23 +255,22 @@ static void jinjos_load(void) {
     jinjo_state = JINJOS_READY;
 }
 
-// Stands the ring around the player, turned the way they face, each Jinjo on the floor under
-// its spot (or at the player's height, if no floor is found near it) and facing the player.
+// Stands each Jinjo on the floor at its spot (or at the spot's height, if no floor is found
+// near it), facing the player.
 static void jinjos_place(Actor *player) {
     s32 i;
 
     for (i = 0; i < JINJO_COLORS; i++) {
         Jinjo *jinjo = &jinjos[i];
-        s16 angle = (player->y_rotation + (s16)(jinjo_ring[i].angle * (4096.0f / 360.0f))) & 0xFFF;
-        f32 probe = player->y_position + JINJO_FLOOR_PROBE;
+        f32 probe = jinjo_spots[i].y + JINJO_FLOOR_PROBE;
         f32 floor = probe;
 
-        jinjo->pos[0] = player->x_position + func_global_asm_80612794(angle) * jinjo_ring[i].distance;
-        jinjo->pos[2] = player->z_position + func_global_asm_80612790(angle) * jinjo_ring[i].distance;
-        jinjo->pos[1] = player->y_position;
+        jinjo->pos[0] = jinjo_spots[i].x;
+        jinjo->pos[1] = jinjo_spots[i].y;
+        jinjo->pos[2] = jinjo_spots[i].z;
         func_global_asm_80667110(jinjo->pos[0], jinjo->pos[2], &floor);
-        if (floor != probe && floor - player->y_position < JINJO_FLOOR_MAX_STEP &&
-            player->y_position - floor < JINJO_FLOOR_MAX_STEP) {
+        if (floor != probe && floor - jinjo_spots[i].y < JINJO_FLOOR_MAX_STEP &&
+            jinjo_spots[i].y - floor < JINJO_FLOOR_MAX_STEP) {
             jinjo->pos[1] = floor;
         }
         jinjo->yaw = func_global_asm_80665DE0(player->x_position, player->z_position, jinjo->pos[0], jinjo->pos[2]) & 0xFFF;
@@ -442,7 +440,7 @@ Gfx *jiggy_jinjos_draw(Gfx *dl, Actor *actor) {
         jinjo_placed = FALSE;
         jinjo_collected = jiggy_save_get(current_file, JINJO_SAVE_MAP_KEY(current_map));
     }
-    if (current_map != JINJO_RING_MAP) {
+    if (current_map != JINJO_MAP) {
         return dl;
     }
     if (jinjo_state == JINJOS_UNLOADED) {

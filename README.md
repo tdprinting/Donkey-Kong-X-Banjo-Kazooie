@@ -43,7 +43,9 @@ project is shaped this way.
 | Banjo & Kazooie's 3D model, converted from the player's ROM, beside DK with Banjo-Kazooie's idle, walk, run and jump animations | Done, tested in game |
 | Play as Banjo & Kazooie (D-pad left, or J on keyboard): Claw Swipe, Beak Barge, crouch, backflip, Feathery Flap, Rat-a-tat Rap, Beak Buster, Talon Trot (crouch + C-left) and Egg Firing (crouch + C-up/C-down) | Done, tested in game |
 | Golden Bananas drawn as Banjo-Kazooie Jiggies | Done, tested in game (no shine yet) |
-| Music Notes as their own collectible, with Banjo-Kazooie's note counter (a few in the Training Grounds for now) | Done, tested in game |
+| Music Notes as their own collectible, with Banjo-Kazooie's note counter (a few in the Training Grounds for now), saved per save file | Done, tested in game |
+| Jinjos (all five colors) as their own collectible, with Banjo-Kazooie's five-head counter (Training Grounds for now), saved per save file | Done, tested in game |
+| Banjo-Kazooie's own sounds from the player's ROM: note and Jinjo jingles, egg, Feathery Flap and Talon Trot sounds | Done, checked in the game's audio output |
 | Android app: ROM picker and checks, in-app updates | Done, needs a test on a phone |
 | Android: engine cross-compiles, game packaged as libmain.so on SDL's activity | Done, untested on a phone |
 | Android: on-screen touch controls, controller support | Done, untested on a phone |
