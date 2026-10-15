@@ -42,10 +42,10 @@
 static const u16 wozza_talk_sfx[] = {SFX_WOZZA_NOISE};
 static const CavesSpeaker wozza_speaker = {"WOZZA", WOZZA_PORTRAIT, 8, wozza_talk_sfx, 1, 20000.0f / 32767.0f, 1.0f};
 
-// Banjo-Kazooie units to DK64 units, as jiggy_banjo3d.c scales Banjo; he's drawn at
-// Banjo-Kazooie's own size.
+// Banjo-Kazooie units to DK64 units, as jiggy_banjo3d.c scales Banjo. At Banjo-Kazooie's own
+// size (1.0) he stood about twice DK's height in game; this brings him to about DK's height.
 #define BK_TO_DK64 0.25f
-#define WOZZA_SCALE (BK_TO_DK64 * 1.0f)
+#define WOZZA_SCALE (BK_TO_DK64 * 0.55f)
 #define GAME_FPS 30.0f
 #define TURN_RATE 0.08f
 // He breathes: his height stretches by this much, this often.

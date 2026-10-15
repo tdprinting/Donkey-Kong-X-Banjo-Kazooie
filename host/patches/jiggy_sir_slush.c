@@ -32,14 +32,15 @@
 #define SNOWBALL_MODEL 0x378 // ASSET_378_MODEL_SNOWBALL
 #define HAT_MODEL 0x379      // ASSET_379_MODEL_SIR_SLUSH_HAT
 // Sir Slush converts to about 22 KiB (25 bones, 85 pose commands); a snowball and the hat to
-// under 2 KiB each (no bones, 6 commands).
-#define SLUSH_BLOCK_MAX 0x5700
-#define SLUSH_GFX_MAX 96
-#define SLUSH_MTX_MAX 28
-#define SNOWBALL_BLOCK_MAX 0x600
-#define HAT_BLOCK_MAX 0x740
-#define SMALL_GFX_MAX 12
-#define SMALL_MTX_MAX 2
+// under 2 KiB each (no bones, 6 commands). Each buffer has some room to spare, so a pose
+// can't fail (and draw nothing) for want of it.
+#define SLUSH_BLOCK_MAX 0x5C00
+#define SLUSH_GFX_MAX 128
+#define SLUSH_MTX_MAX 32
+#define SNOWBALL_BLOCK_MAX 0x800
+#define HAT_BLOCK_MAX 0x900
+#define SMALL_GFX_MAX 16
+#define SMALL_MTX_MAX 4
 
 #define SLUSH_ANIM_IDLE 0x108   // ASSET_108_ANIM_SIR_SLUSH_IDLE
 #define SLUSH_ANIM_ATTACK 0x109 // ASSET_109_ANIM_SIR_SLUSH_ATTACK

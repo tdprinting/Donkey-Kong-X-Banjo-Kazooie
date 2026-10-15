@@ -96,11 +96,13 @@ static const u16 cubs_talk_sfx[] = {0xBF, 0xC0};
 static const CavesSpeaker boggy_speaker = {"BOGGY", BOGGY_PORTRAIT, 6, boggy_talk_sfx, 1, 20000.0f / 32767.0f, 1.2f};
 static const CavesSpeaker cubs_speaker = {"BOGGY'S KIDS", CUBS_PORTRAIT, 6, cubs_talk_sfx, 2, 20000.0f / 32767.0f, 1.6f};
 
-// Banjo-Kazooie units to DK64 units, as jiggy_banjo3d.c scales Banjo, and their sizes on top:
-// Boggy a little bigger than Banjo-Kazooie's 1.0 (he's a big bear next to the Kongs), the kids
-// at 1.0 (smaller than his 1.2 against them), the presents at 1.0.
+// Banjo-Kazooie units to DK64 units, as jiggy_banjo3d.c scales Banjo, and their sizes on top.
+// Boggy's vertex-animated model comes out far bigger in game than its vertex bounds (-27 to 178)
+// say: at BK_TO_DK64 * 1.2 he filled the screen, DK the size of his hand. This scale is set from
+// that in-game look, for about 1.3 times DK's height (DK is about 50 units tall). The kids
+// (skinned models, drawn true to size) at 1.0 stand about 38 units, a little over half his height.
 #define BK_TO_DK64 0.25f
-#define BOGGY_SCALE (BK_TO_DK64 * 1.2f)
+#define BOGGY_SCALE (BK_TO_DK64 * 0.32f)
 #define CUB_SCALE (BK_TO_DK64 * 1.0f)
 #define PRESENT_SCALE (BK_TO_DK64 * 1.0f)
 #define GAME_FPS 30.0f
