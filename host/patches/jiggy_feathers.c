@@ -9,8 +9,8 @@
 // halved to 32x32 when loaded (one TMEM load each, and the size the HUD draws them at) and
 // spun and stood facing the camera like jiggy_notes.c's notes.
 //
-// For now they only exist in the Training Grounds (feather_spots below), on the grass around
-// the treehouse, between the notes, Jinjos and Honeycombs. They are drawn right after the
+// For now they only exist in the Training Grounds and Jungle Japes (feather_maps below), between
+// the notes, Jinjos and Honeycombs. They are drawn right after the
 // player's own model (func_global_asm_80630DCC in patches_draw.c).
 //
 // Touching one collects it: it disappears, Banjo-Kazooie's feather jingle plays
@@ -118,15 +118,33 @@ typedef struct {
     u8 phase; // Step through the spin, so they don't turn in lockstep.
 } FeatherPlacement;
 
-#define FEATHER_MAP MAP_TRAINING_GROUNDS
-static const FeatherPlacement feather_spots[] = {
+static const FeatherPlacement feathers_training_grounds[] = {
     {1300.0f, 32.0f, 980.0f, FEATHER_RED, 0},   // Between a note and two Honeycomb pieces.
     {1420.0f, 33.0f, 960.0f, FEATHER_RED, 5},   // Between two notes and a Jinjo.
     {1430.0f, 35.0f, 1040.0f, FEATHER_RED, 10}, // Between a note and a Honeycomb piece.
     {1145.0f, 30.0f, 960.0f, FEATHER_GOLD, 3},  // Between two Jinjos and a Honeycomb.
     {1600.0f, 35.0f, 960.0f, FEATHER_GOLD, 8},  // Between a note and a Jinjo, by the Flight pad.
 };
-#define FEATHER_COUNT (sizeof(feather_spots) / sizeof(feather_spots[0]))
+// Japes' first area, off the note trail that runs from the entrance up to the far end.
+static const FeatherPlacement feathers_japes[] = {
+    {1020.0f, 280.0f, 520.0f, FEATHER_RED, 0},  // Between the trail and a Honeycomb piece.
+    {1200.0f, 280.0f, 300.0f, FEATHER_RED, 5},  // Below the trail's bend, toward the Jinjos.
+    {1330.0f, 280.0f, 380.0f, FEATHER_RED, 10}, // Inside the trail's last stretch.
+    {1100.0f, 280.0f, 480.0f, FEATHER_GOLD, 3}, // In the middle of the area.
+};
+#define FEATHER_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
+static const struct {
+    Maps map;
+    const FeatherPlacement *spots;
+    u32 count;
+} feather_maps[] = {
+    FEATHER_MAP_SPOTS(MAP_TRAINING_GROUNDS, feathers_training_grounds),
+    FEATHER_MAP_SPOTS(MAP_JAPES, feathers_japes),
+};
+#define FEATHER_COUNT_MAX 16
+// The current map's feathers, or none.
+static const FeatherPlacement *feather_spots;
+static u32 feather_count_on_map;
 
 typedef enum {
     FEATHERS_UNLOADED,
@@ -141,12 +159,12 @@ static s16 feather_height[FEATHER_KINDS][FEATHER_MAX_FRAMES];
 static s32 feather_frames[FEATHER_KINDS];
 // A quad per frame, plain and mirrored, centered on the feather.
 static Vtx feather_vtx[FEATHER_KINDS][FEATHER_MAX_FRAMES][2][4] __attribute__((aligned(8)));
-static Mtx feather_mtx[2][FEATHER_COUNT];
+static Mtx feather_mtx[2][FEATHER_COUNT_MAX];
 static FeathersLoadState feather_state = FEATHERS_UNLOADED;
 static s32 feather_last_map = -1;
 static s32 feather_last_file = -1;
 static s32 feather_placed;
-static f32 feather_pos[FEATHER_COUNT][3];
+static f32 feather_pos[FEATHER_COUNT_MAX][3];
 // Bit i: feather_spots[i] has been collected, for the map the feathers were last loaded on.
 static u32 feather_collected;
 static s32 feather_count[FEATHER_KINDS];
@@ -174,6 +192,14 @@ static void feathers_sync(void) {
     feather_last_map = current_map;
     feather_last_file = current_file;
     feather_placed = FALSE;
+    feather_spots = NULL;
+    feather_count_on_map = 0;
+    for (k = 0; k < (s32)(sizeof(feather_maps) / sizeof(feather_maps[0])); k++) {
+        if (feather_maps[k].map == current_map) {
+            feather_spots = feather_maps[k].spots;
+            feather_count_on_map = feather_maps[k].count;
+        }
+    }
     feather_collected = jiggy_save_get(current_file, FEATHER_SAVE_MAP_KEY(current_map));
     for (k = 0; k < FEATHER_KINDS; k++) {
         feather_count[k] = jiggy_save_get(current_file, feather_save_count_keys[k]);
@@ -286,7 +312,7 @@ static void feathers_load(void) {
 static void feathers_place(void) {
     u32 i;
 
-    for (i = 0; i < FEATHER_COUNT; i++) {
+    for (i = 0; i < feather_count_on_map; i++) {
         f32 probe = feather_spots[i].y + FEATHER_FLOOR_PROBE;
         f32 floor = probe;
         f32 ground = feather_spots[i].y;
@@ -314,7 +340,7 @@ static void feather_hud_show(s32 kind) {
 static void feathers_collect(Actor *player) {
     u32 i;
 
-    for (i = 0; i < FEATHER_COUNT; i++) {
+    for (i = 0; i < feather_count_on_map; i++) {
         s32 kind = feather_spots[i].kind;
         f32 dx, dy, dz;
 
@@ -417,7 +443,7 @@ Gfx *jiggy_feathers_draw(Gfx *dl, Actor *actor) {
         return dl;
     }
     feathers_sync();
-    if (current_map != FEATHER_MAP) {
+    if (feather_count_on_map == 0) {
         return dl;
     }
     if (feather_state == FEATHERS_UNLOADED) {
@@ -447,7 +473,7 @@ Gfx *jiggy_feathers_draw(Gfx *dl, Actor *actor) {
     gDPSetRenderMode(dl++, G_RM_AA_ZB_TEX_EDGE, G_RM_AA_ZB_TEX_EDGE2);
     gDPSetPrimColor(dl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
 
-    for (i = 0; i < FEATHER_COUNT; i++) {
+    for (i = 0; i < feather_count_on_map; i++) {
         s32 kind = feather_spots[i].kind;
         s32 frames = feather_frames[kind];
         // A spin is the frames forward, then back mirrored without repeating either end.
