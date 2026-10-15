@@ -38,7 +38,7 @@
 #define BOOM_BOX_MODEL 0x428    // ASSET_428_MODEL_BOSS_BOOM_BOX
 #define BOOM_BOX_PORTRAIT 0x847 // ASSET_847_SPRITE_BOSS_BOOM_BOX
 // The box converts to about 19.5 KiB, with 16 bones and about 12 pose commands.
-#define BOOM_BOX_BLOCK_MAX 0x5000
+#define BOOM_BOX_BLOCK_MAX 0x8000
 #define BOOM_BOX_GFX_MAX 48
 #define BOOM_BOX_MTX_MAX 20
 
@@ -148,6 +148,8 @@ static const BoomBoxSize boom_box_sizes[] = {
 #define PORTRAIT_SCALE 2
 #define PORTRAIT_MAX_FRAMES 8
 #define PORTRAIT_MAX_TEXELS (32 * 32)
+// His portrait is 64x64 in the ROM; it's read whole and halved to fit the text box.
+#define PORTRAIT_READ_MAX (64 * 64)
 // Frames 0 to 6 move his mouth (gczoombox's 7 talking frames for Boss Boom Box).
 #define PORTRAIT_TALK_FRAMES 7
 #define PORTRAIT_TICKS_PER_FRAME 2
@@ -263,6 +265,7 @@ static Gfx boom_box_gfx[2][BOOM_BOX_DRAWN_MAX][BOOM_BOX_GFX_MAX];
 static Mtx boom_box_mtx[2][BOOM_BOX_DRAWN_MAX][BOOM_BOX_MTX_MAX];
 static JiggyBkPose boom_box_pose;
 static u16 portrait_texels[PORTRAIT_MAX_FRAMES][PORTRAIT_MAX_TEXELS] __attribute__((aligned(8)));
+static u16 portrait_read[PORTRAIT_READ_MAX] __attribute__((aligned(8)));
 static s16 portrait_width[PORTRAIT_MAX_FRAMES];
 static s16 portrait_height[PORTRAIT_MAX_FRAMES];
 static s32 portrait_frames;
@@ -323,15 +326,26 @@ static void boom_box_load(void) {
     }
     portrait_frames = 0;
     for (i = 0; i < count && i < PORTRAIT_TALK_FRAMES && portrait_frames < PORTRAIT_MAX_FRAMES; i++) {
-        s32 got = jiggy_bk_sprite_frame_rgba16(BOOM_BOX_PORTRAIT, i, portrait_texels[portrait_frames], sizeof(portrait_texels[0]));
+        s32 got = jiggy_bk_sprite_frame_rgba16(BOOM_BOX_PORTRAIT, i, portrait_read, sizeof(portrait_read));
         s32 width = (got >> 16) & 0xFFFF;
         s32 height = got & 0xFFFF;
+        s32 step = 1;
+        s32 x, y;
+        u16 *out = portrait_texels[portrait_frames];
 
-        if (got <= 0 || width == 0 || height == 0 || width * height > PORTRAIT_MAX_TEXELS) {
+        if (got <= 0 || width == 0 || height == 0 || width * height > PORTRAIT_READ_MAX) {
             continue;
         }
-        portrait_width[portrait_frames] = width;
-        portrait_height[portrait_frames] = height;
+        while ((width / step) * (height / step) > PORTRAIT_MAX_TEXELS) {
+            step++;
+        }
+        for (y = 0; y < height / step; y++) {
+            for (x = 0; x < width / step; x++) {
+                out[y * (width / step) + x] = portrait_read[(y * step) * width + x * step];
+            }
+        }
+        portrait_width[portrait_frames] = width / step;
+        portrait_height[portrait_frames] = height / step;
         portrait_frames++;
     }
     if (portrait_frames == 0) {

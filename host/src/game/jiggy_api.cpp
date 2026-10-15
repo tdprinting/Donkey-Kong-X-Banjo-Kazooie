@@ -471,6 +471,10 @@ extern "C" void jiggy_bk_model_build(uint8_t* rdram, recomp_context* ctx) {
         return;
     }
     const size_t size = block->bytes.size();
+    if (dst != NULLPTR && size > dst_len) {
+        fprintf(stderr, "[Jiggy] Banjo-Kazooie model 0x%X needs %zu bytes, but its block holds %u\n", id, size,
+                unsigned(dst_len));
+    }
     if (dst != NULLPTR && size <= dst_len && (base & 7) == 0) {
         // RDRAM is stored with 32-bit words byteswapped, so copy through MEM_B.
         for (size_t i = 0; i < size; i++) {
