@@ -183,6 +183,17 @@ static const FeatherPlacement feathers_isles[] = {
     {2700.0f, 500.0f, 3220.0f, FEATHER_GOLD, 3}, // Krem Isle's shore.
     {2950.0f, 497.0f, 2350.0f, FEATHER_GOLD, 8}, // Beside the tunnel, out by the water.
 };
+
+// Angry Aztec (with Gobi's Valley), each 70 or more units from the notes and the rest.
+static const FeatherPlacement feathers_aztec[] = {
+    {830.0f, 120.0f, 900.0f, FEATHER_RED, 0},    // Beside the first corridor's notes.
+    {2050.0f, 120.0f, 860.0f, FEATHER_RED, 5},   // The first sand area's entrance.
+    {2550.0f, 114.0f, 1000.0f, FEATHER_RED, 10}, // Between Gobi's rock and Trunker.
+    {3150.0f, 120.0f, 1740.0f, FEATHER_RED, 3},  // The tunnel.
+    {2450.0f, 114.0f, 3700.0f, FEATHER_RED, 8},  // By the Ancient Ones.
+    {3950.0f, 120.0f, 4380.0f, FEATHER_GOLD, 2}, // The main area's south-east corner.
+    {3650.0f, 116.0f, 3400.0f, FEATHER_GOLD, 7}, // North-east of the quicksand basin.
+};
 #define FEATHER_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -196,6 +207,7 @@ static const struct {
     FEATHER_MAP_SPOTS(MAP_FACTORY, feathers_factory),
     FEATHER_MAP_SPOTS(MAP_FUNGI, feathers_fungi),
     FEATHER_MAP_SPOTS(MAP_DK_ISLES_OVERWORLD, feathers_isles),
+    FEATHER_MAP_SPOTS(MAP_AZTEC, feathers_aztec),
 };
 #define FEATHER_COUNT_MAX 16
 // The current map's feathers, or none.

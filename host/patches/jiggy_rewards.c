@@ -25,7 +25,7 @@
 // Scratch flags, from the free ones past DK64's own (see the memory note above): one per
 // reward on screen at once.
 #define SCRATCH_FIRST 0x316
-#define SCRATCH_COUNT 3
+#define SCRATCH_COUNT 5
 // Don't spawn it on top of the player (they'd pick it up before seeing it), and wait this long
 // after it's gone before spawning it again.
 #define REWARD_CLEARANCE 30.0f

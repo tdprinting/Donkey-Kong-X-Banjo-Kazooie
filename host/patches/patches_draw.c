@@ -228,6 +228,11 @@ Gfx *jiggy_zubbas_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_brentilda_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_cheato_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_grunty_taunts_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_gobi_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_trunker_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_grabba_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_ancient_ones_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_slappas_draw(Gfx *dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
     f32 temp_f0_3;
@@ -393,6 +398,11 @@ block_47:
     dl = jiggy_brentilda_draw(dl, arg1); // @jiggy: Brentilda and her quiz in DK Isles (jiggy_brentilda.c)
     dl = jiggy_cheato_draw(dl, arg1); // @jiggy: Cheato and his pages in DK Isles (jiggy_cheato.c)
     dl = jiggy_grunty_taunts_draw(dl, arg1); // @jiggy: Gruntilda's taunts in DK Isles (jiggy_grunty_taunts.c)
+    dl = jiggy_gobi_draw(dl, arg1);         // @jiggy: Gobi in Angry Aztec (jiggy_gobi.c)
+    dl = jiggy_trunker_draw(dl, arg1);      // @jiggy: Trunker in Angry Aztec (jiggy_trunker.c)
+    dl = jiggy_grabba_draw(dl, arg1);       // @jiggy: Grabba in Angry Aztec (jiggy_grabba.c)
+    dl = jiggy_ancient_ones_draw(dl, arg1); // @jiggy: the Ancient Ones in Angry Aztec (jiggy_ancient_ones.c)
+    dl = jiggy_slappas_draw(dl, arg1);      // @jiggy: Slappas in Angry Aztec (jiggy_slappas.c)
     return dl;
 }
 

@@ -144,6 +144,13 @@ static const TokenPlacement tokens_isles[] = {
     {3675.0f, 494.0f, 1909.0f, 4},
     {3000.0f, 500.0f, 950.0f, 8},
 };
+
+// Angry Aztec (with Gobi's Valley).
+static const TokenPlacement tokens_aztec[] = {
+    {2700.0f, 120.0f, 1320.0f, 0}, // Behind Trunker, at the foot of the tunnel.
+    {3280.0f, 120.0f, 2050.0f, 4}, // Beside the way down from the tunnel.
+    {3700.0f, 120.0f, 4200.0f, 8}, // The main area's south sand, above the note trail.
+};
 #define TOKEN_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -157,6 +164,7 @@ static const struct {
     TOKEN_MAP_SPOTS(MAP_FACTORY, tokens_factory),
     TOKEN_MAP_SPOTS(MAP_FUNGI, tokens_fungi),
     TOKEN_MAP_SPOTS(MAP_DK_ISLES_OVERWORLD, tokens_isles),
+    TOKEN_MAP_SPOTS(MAP_AZTEC, tokens_aztec),
 };
 // The most tokens on one map (collected bits are one u32).
 #define TOKEN_COUNT_MAX 8

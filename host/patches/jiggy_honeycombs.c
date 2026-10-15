@@ -186,6 +186,12 @@ static const HoneycombPlacement pieces_isles[] = {
     {2250.0f, 508.0f, 1450.0f},
     {2800.0f, 500.0f, 3700.0f},
 };
+
+// Angry Aztec (with Gobi's Valley): two empty pieces, no full Honeycombs.
+static const HoneycombPlacement pieces_aztec[] = {
+    {1400.0f, 120.0f, 1220.0f}, // The east corridor, off the note trail.
+    {2950.0f, 120.0f, 4420.0f}, // The main area's south sand, below the note trail.
+};
 #define HONEYCOMB_MAP(map, pieces, combs) \
     {map, pieces, sizeof(pieces) / sizeof(pieces[0]), combs, sizeof(combs) / sizeof(combs[0])}
 static const struct {
@@ -202,6 +208,7 @@ static const struct {
     HONEYCOMB_MAP(MAP_FACTORY, pieces_factory, combs_factory),
     HONEYCOMB_MAP(MAP_FUNGI, pieces_fungi, combs_fungi),
     {MAP_DK_ISLES_OVERWORLD, pieces_isles, sizeof(pieces_isles) / sizeof(pieces_isles[0]), NULL, 0},
+    {MAP_AZTEC, pieces_aztec, sizeof(pieces_aztec) / sizeof(pieces_aztec[0]), NULL, 0},
 };
 // The most of each on one map (collected bits are one u32).
 #define PIECE_COUNT_MAX 8

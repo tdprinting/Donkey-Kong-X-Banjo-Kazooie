@@ -213,6 +213,15 @@ static const JinjoPlacement jinjos_isles[JINJO_COLORS] = {
     {3300.0f, 500.0f, 3200.0f}, // Pink
     {1095.0f, 494.0f, 2281.0f}, // Yellow
 };
+
+// Angry Aztec (with Gobi's Valley): one in each part of the map, off the note trail.
+static const JinjoPlacement jinjos_aztec[JINJO_COLORS] = {
+    {840.0f, 112.0f, 560.0f},   // Blue: the first corridor, beside the quicksand under the vines.
+    {2350.0f, 116.0f, 900.0f},  // Green: the first sand area, south of Gobi's rock.
+    {3050.0f, 120.0f, 1860.0f}, // Orange: the tunnel to the main area.
+    {2500.0f, 118.0f, 3500.0f}, // Pink: the main area's west sand, by the Ancient Ones.
+    {4050.0f, 120.0f, 3700.0f}, // Yellow: the main area's east sand.
+};
 static const struct {
     Maps map;
     const JinjoPlacement *spots;
@@ -224,6 +233,7 @@ static const struct {
     {MAP_FACTORY, jinjos_factory},
     {MAP_FUNGI, jinjos_fungi},
     {MAP_DK_ISLES_OVERWORLD, jinjos_isles},
+    {MAP_AZTEC, jinjos_aztec},
 };
 
 typedef enum {
