@@ -109,18 +109,19 @@
 // D_global_asm_8076A0B1's cutscene lock (as jiggy_bottles.c uses it): Snippets wait it out.
 #define CUTSCENE_LOCK 0x10
 
-// Where they are, map by map. Gloomy Galleon: two on the open floor by the entrance (between
-// its banana trails, clear of Blubber's pacing in jiggy_blubber.c), and one on the lighthouse's
-// island, east of its door. Each keeps to a box round its path.
+// Where they are, map by map. Gloomy Galleon: each path runs between two of DK64's own bananas
+// or coins in an open area: one past the entrance tunnel, from a Lanky banana to a Diddy banana
+// (east of Blubber's pacing in jiggy_blubber.c); one by Cranky's, between the coins north-east of
+// his door; and one on the lighthouse's island, from its coins to its banana bunch. Each keeps to a box round its path.
 typedef struct {
     Maps map;
     f32 ax, y, az; // One end of its path (y is the floor, if the floor isn't found).
     f32 bx, bz;    // The other.
 } SnippetPath;
 static const SnippetPath snippet_paths[] = {
-    {MAP_GALLEON, 2300.0f, 1610.0f, 3080.0f, 2440.0f, 3110.0f},
-    {MAP_GALLEON, 1960.0f, 1605.0f, 3060.0f, 2040.0f, 3120.0f},
-    {MAP_GALLEON, 1990.0f, 1452.0f, 600.0f, 2100.0f, 620.0f},
+    {MAP_GALLEON, 2467.0f, 1611.0f, 3227.0f, 2530.0f, 3080.0f},
+    {MAP_GALLEON, 2140.0f, 1610.0f, 4559.0f, 2210.0f, 4733.0f},
+    {MAP_GALLEON, 2179.0f, 1447.0f, 690.0f, 1920.0f, 574.0f},
 };
 #define SNIPPET_MAX 3
 // How far a Snippet strays round its path (chasing, it never leaves this box).

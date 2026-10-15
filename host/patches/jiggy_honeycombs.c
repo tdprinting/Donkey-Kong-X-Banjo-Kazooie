@@ -140,13 +140,13 @@ static const HoneycombPlacement combs_japes[] = {
     {1116.0f, 280.0f, 250.0f},
 };
 // Gloomy Galleon: one piece on the lighthouse's island, one on the open floor by the entrance;
-// a Honeycomb on the east side, by Nipper (jiggy_nipper.c), for after his claws.
+// a Honeycomb on a Diddy banana by Nipper (jiggy_nipper.c), for after his claws.
 static const HoneycombPlacement pieces_galleon[] = {
     {2050.0f, 1450.0f, 760.0f},
     {2200.0f, 1610.0f, 3360.0f},
 };
 static const HoneycombPlacement combs_galleon[] = {
-    {3220.0f, 1670.0f, 3470.0f},
+    {2545.0f, 1610.0f, 3402.0f},
 };
 
 // Creepy Castle: the pieces on the south-west walk and up the path near the top, a Honeycomb

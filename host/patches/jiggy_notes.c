@@ -168,7 +168,7 @@ static const NotePlacement notes_galleon[] = {
     {2028.0f, 1618.0f, 4740.0f, 6},
     // The east side's north end, between two bananas.
     {3256.0f, 1670.0f, 3790.0f, 9},
-    // A ring round Nipper (jiggy_nipper.c), outside his claws.
+    // A ring on the east side.
     {3370.0f, 1670.0f, 3660.0f, 12},
     {3338.0f, 1670.0f, 3738.0f, 15},
     {3182.0f, 1670.0f, 3738.0f, 0},

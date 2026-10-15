@@ -138,7 +138,7 @@ static const FeatherPlacement feathers_galleon[] = {
     {2420.0f, 1611.0f, 3050.0f, FEATHER_RED, 0},   // Between the entrance's two banana trails.
     {2600.0f, 1620.0f, 3150.0f, FEATHER_RED, 5},   // At the foot of the slope up to the east side.
     {2090.0f, 1452.0f, 560.0f, FEATHER_RED, 10},   // The lighthouse's island, east of the door.
-    {3150.0f, 1670.0f, 3610.0f, FEATHER_RED, 15},  // The east side, by Nipper's ring of notes.
+    {3150.0f, 1670.0f, 3610.0f, FEATHER_RED, 15},  // The east side, by its ring of notes.
     {1760.0f, 1455.0f, 470.0f, FEATHER_GOLD, 3},   // The lighthouse's island, west of the door.
     {2180.0f, 1610.0f, 4650.0f, FEATHER_GOLD, 8},  // By Cranky's, past the tag barrel.
 };

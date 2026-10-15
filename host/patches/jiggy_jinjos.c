@@ -166,7 +166,7 @@ static const JinjoPlacement jinjos_japes[JINJO_COLORS] = {
 // by Cranky's (two).
 static const JinjoPlacement jinjos_galleon[JINJO_COLORS] = {
     {2450.0f, 1610.0f, 3330.0f}, // Blue: by the entrance, inside the bananas' loop.
-    {3000.0f, 1670.0f, 3600.0f}, // Green: the east side, west of Nipper.
+    {3000.0f, 1670.0f, 3600.0f}, // Green: the east side.
     {1800.0f, 1460.0f, 500.0f},  // Orange: the lighthouse's island, by the door.
     {2000.0f, 1610.0f, 4640.0f}, // Pink: by Cranky's, by the north-east door.
     {1560.0f, 1610.0f, 4300.0f}, // Yellow: by Cranky's, past the coins.

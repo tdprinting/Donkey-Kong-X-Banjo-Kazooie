@@ -149,19 +149,17 @@ static const u16 nipper_talk_sfx[] = {0xF9, 0xFA, 0xFB};
 #define BOX_FADE_STEP 0x30
 #define BOX_ALPHA 0xC8
 
-// Where he is, map by map. Gloomy Galleon's east side: on the floor the Chunky bananas cross
-// (3073, 1670, 3323) to (3345, 1670, 3801), between the coins (3184, 1670, 3527) and the
-// bananas' north end, 139 units or more from all of DK64's things; a ring of notes
-// (jiggy_notes.c) goes round him outside his claws, a Honeycomb (jiggy_honeycombs.c) is by his
-// south side, and Blubber's east bullion (jiggy_blubber.c) lies past him to the north. He faces
-// south-west, where the player comes up from the entrance; his Golden Banana appears there.
+// Where he is, map by map. Gloomy Galleon: in the open lagoon-side area past the entrance
+// tunnel, on the Diddy banana (2506, 1611, 3508), east of Blubber (jiggy_blubber.c); a Honeycomb
+// (jiggy_honeycombs.c) is on the Diddy banana (2545, 1610, 3402), outside his claws. He faces
+// west, where his Golden Banana appears on the Diddy banana (2306, 1610, 3492).
 typedef struct {
     Maps map;
     f32 x, y, z;              // Where he sits (y is the floor, if the floor isn't found).
     f32 reward_x, reward_z;   // Where his Golden Banana appears.
 } NipperPlacement;
 static const NipperPlacement nipper_spots[] = {
-    {MAP_GALLEON, 3260.0f, 1670.0f, 3660.0f, 3165.0f, 3625.0f},
+    {MAP_GALLEON, 2506.0f, 1611.0f, 3508.0f, 2306.0f, 3492.0f},
 };
 
 // What he says. Each page is one press of A; lines are broken to fit the box when shown.

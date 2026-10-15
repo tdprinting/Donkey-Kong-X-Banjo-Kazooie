@@ -155,14 +155,12 @@ static const u16 blubber_talk_sfx[] = {0xF5, 0xF6, 0xF7, 0xF8};
 #define HUD_Y (96 + 3 * 36)
 #define HUD_FADE_STEP 0x20
 
-// Where he is, map by map. Gloomy Galleon: on the open floor just east of where the player
-// comes in from the lobby (2119, 1612, 2812), inside the bananas' trails (the nearest, a Lanky
-// banana at (2118, 1612, 2975), 93 units from his Golden Banana's spot) and clear of the notes
-// (jiggy_notes.c, the nearest 104 off). He paces between two spots 80 units apart. His bullions:
-// by Cranky's, between the coins (1551, 1611, 4225) and the door (1676, 1610, 4138); at the east
-// side's north end, past two Chunky bananas (3167, 1670, 3780) and (3345, 1670, 3801); and on the
-// lighthouse's island, between its door (1924, 1461, 558) and the tag barrel (1843, 1463, 722).
-// Each is snapped to the floor (or water) found under it.
+// Where he is, map by map. Gloomy Galleon: in the open area the entrance tunnel leads to (not
+// the tunnel itself), every spot on one of DK64's own bananas or coins. He paces along the Lanky
+// banana trail between (2212, 1610, 3216) and (2335, 1610, 3233); his Golden Banana appears on
+// the Lanky banana at (2128, 1610, 3123). His bullions: on the Diddy banana (2166, 1610, 3468)
+// west of the ring of notes, on the coin by Cranky's (1551, 1611, 4225), and on the lighthouse
+// island's banana bunch (1920, 1496, 574). Each is snapped to the floor (or water) found under it.
 typedef struct {
     Maps map;
     f32 ax, y, az;          // One end of his pacing (y is the floor, if it isn't found).
@@ -171,8 +169,8 @@ typedef struct {
     f32 bullions[BULLION_COUNT][3];
 } BlubberPlacement;
 static const BlubberPlacement blubber_spots[] = {
-    {MAP_GALLEON, 2230.0f, 1610.0f, 2850.0f, 2300.0f, 2890.0f, 2200.0f, 2930.0f,
-     {{1610.0f, 1610.0f, 4110.0f}, {3256.0f, 1670.0f, 3860.0f}, {1960.0f, 1458.0f, 660.0f}}},
+    {MAP_GALLEON, 2212.0f, 1610.0f, 3216.0f, 2335.0f, 3233.0f, 2128.0f, 3123.0f,
+     {{2166.0f, 1610.0f, 3468.0f}, {1551.0f, 1611.0f, 4225.0f}, {1920.0f, 1460.0f, 574.0f}}},
 };
 
 // What he says. Each page is one press of A; lines are broken to fit the box when shown.
