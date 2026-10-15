@@ -14,6 +14,9 @@
 // (D_global_asm_80756024's ranges):
 //   0x31E  The Training Grounds' Jinjo Jiggy.
 //   0x31F  Jungle Japes' Jinjo Jiggy.
+// Worlds past those have no DK64 flag of their own: their Jinjo Jiggy is a jiggy_rewards.c reward
+// (an id from the world's range in docs/GAME_PLAN.md), which keeps its own flag and save key:
+//   reward 0x40  Gloomy Galleon's Jinjo Jiggy.
 //
 // The reward is kept with the save file (jiggy_save_get/set) so it's given once: earned, and
 // where it stands. While it's earned and its flag isn't set, it's spawned again on every visit,
@@ -56,18 +59,24 @@ extern ActorSpawner *actor_spawner_pointer;
 u8 isFlagSet(s16 flagIndex, u8 flagType);
 void func_global_asm_806A5DF0(s16 actor, f32 x, f32 y, f32 z, s16 angle, u8 control_state, s16 flag, s32 arg7);
 
+// Each map's DK64 flag, or -1 and its jiggy_rewards.c reward id.
+#define NO_FLAG -1
+#define NO_REWARD -1
 static const struct {
     Maps map;
     s16 flag;
+    s16 reward;
 } jinjo_jiggy_flags[] = {
-    {MAP_TRAINING_GROUNDS, 0x31E},
-    {MAP_JAPES, 0x31F},
+    {MAP_TRAINING_GROUNDS, 0x31E, NO_REWARD},
+    {MAP_JAPES, 0x31F, NO_REWARD},
+    {MAP_GALLEON, NO_FLAG, 0x40},
 };
 
 static s32 jiggy_map = -1;
 static u32 jiggy_state;
 static f32 jiggy_spot[3];
 static s16 jiggy_flag;
+static s16 jiggy_reward; // A jiggy_rewards.c id when the map has no flag, or NO_REWARD.
 // The Golden Banana's spawner this visit (NULL until spawned), and frames until it appears.
 static ActorSpawner *jiggy_spawner;
 static s32 jiggy_wait;
@@ -84,10 +93,12 @@ static void jiggy_map_load(void) {
     jiggy_spot[0] = (s16)(spot >> 16);
     jiggy_spot[1] = (s16)(jiggy_state >> 16);
     jiggy_spot[2] = (s16)(spot & 0xFFFF);
-    jiggy_flag = -1;
+    jiggy_flag = NO_FLAG;
+    jiggy_reward = NO_REWARD;
     for (i = 0; i < (s32)(sizeof(jinjo_jiggy_flags) / sizeof(jinjo_jiggy_flags[0])); i++) {
         if (jinjo_jiggy_flags[i].map == current_map) {
             jiggy_flag = jinjo_jiggy_flags[i].flag;
+            jiggy_reward = jinjo_jiggy_flags[i].reward;
         }
     }
     jiggy_spawner = NULL;
@@ -104,7 +115,7 @@ s32 jiggy_jinjo_jiggy_earn(f32 pos[3], s32 fanfare) {
     if ((s32)current_map != jiggy_map) {
         jiggy_map_load();
     }
-    if (jiggy_flag < 0 || (jiggy_state & JINJO_JIGGY_EARNED)) {
+    if ((jiggy_flag < 0 && jiggy_reward < 0) || (jiggy_state & JINJO_JIGGY_EARNED)) {
         return FALSE;
     }
     jiggy_spot[0] = (s16)pos[0];
@@ -149,7 +160,25 @@ void jiggy_jinjo_jiggy_update(Actor *player) {
     if (frames > 4) {
         frames = 1;
     }
-    if (jiggy_flag < 0 || !(jiggy_state & JINJO_JIGGY_EARNED) || (jiggy_state & JINJO_JIGGY_COLLECTED)) {
+    if ((jiggy_flag < 0 && jiggy_reward < 0) || !(jiggy_state & JINJO_JIGGY_EARNED) ||
+        (jiggy_state & JINJO_JIGGY_COLLECTED)) {
+        return;
+    }
+    if (jiggy_flag < 0) {
+        // A jiggy_rewards.c reward: it spawns, respawns and records the Golden Banana itself.
+        if (jiggy_wait > 0) {
+            jiggy_wait -= frames;
+            return;
+        }
+        if (jiggy_reward_update(jiggy_reward, jiggy_spot[0], jiggy_spot[1] + JIGGY_HEIGHT, jiggy_spot[2], player, frames)) {
+            jiggy_state |= JINJO_JIGGY_COLLECTED;
+            jiggy_save_set(current_file, JINJO_JIGGY_SAVE_KEY(current_map), jiggy_state);
+            return;
+        }
+        if (jiggy_fanfare) {
+            jiggy_bk_jingle_play(JINGLE_JIGGY_SPAWN, 1.0f);
+            jiggy_fanfare = FALSE;
+        }
         return;
     }
     // Collected: DK64 set the flag when the player picked it up.

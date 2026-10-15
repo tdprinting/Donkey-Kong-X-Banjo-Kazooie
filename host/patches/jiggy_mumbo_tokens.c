@@ -108,6 +108,12 @@ static const TokenPlacement tokens_japes[] = {
     {1050.0f, 280.0f, 300.0f, 0}, // Above the trail's bend, between two Jinjos and the Honeycomb.
     {1400.0f, 280.0f, 330.0f, 6}, // Past the trail's end, by a Honeycomb piece.
 };
+// Gloomy Galleon: by the entrance, by Cranky's and on the east side.
+static const TokenPlacement tokens_galleon[] = {
+    {2000.0f, 1612.0f, 2850.0f, 0}, // West of where the player comes in.
+    {1750.0f, 1610.0f, 4250.0f, 6}, // Past the door by Cranky's.
+    {3150.0f, 1670.0f, 3420.0f, 3}, // The east side, between its bananas and coins.
+};
 #define TOKEN_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -116,6 +122,7 @@ static const struct {
 } token_maps[] = {
     TOKEN_MAP_SPOTS(MAP_TRAINING_GROUNDS, tokens_training_grounds),
     TOKEN_MAP_SPOTS(MAP_JAPES, tokens_japes),
+    TOKEN_MAP_SPOTS(MAP_GALLEON, tokens_galleon),
 };
 // The most tokens on one map (collected bits are one u32).
 #define TOKEN_COUNT_MAX 8

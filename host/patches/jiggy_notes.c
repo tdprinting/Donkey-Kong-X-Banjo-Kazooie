@@ -6,7 +6,7 @@
 // src/core2/code_A5BC0.c, which the sprite's header selects), the note plays them forward
 // and then back mirrored, two ticks a frame, for a full spin, and always faces the camera.
 //
-// For now the notes only exist as short trails in the Training Grounds and Jungle Japes
+// The notes exist as trails in the Training Grounds, Jungle Japes and Gloomy Galleon
 // (note_trails below). They are drawn right after the player's own model
 // (func_global_asm_80630DCC in patches_draw.c).
 //
@@ -84,6 +84,9 @@ f32 func_global_asm_80612794(s16 angle); // sin of a 12-bit angle
 // The floor under (x, z), as the game looks for one (func_global_asm_80667180): writes its
 // height to *y, leaving it as it was if there's none. The return value isn't reliable.
 s32 func_global_asm_80667110(f32 x, f32 z, f32 *y);
+// After it: whether there's water over that floor, writing the surface's height to *y if so (as
+// the game's props check, func_global_asm_8064D0C4).
+u8 func_global_asm_8066715C(f32 *y);
 
 // Where the notes go, map by map, each spot found by walking it so all can be reached on
 // foot. Each note hovers over the floor found under its spot (or over the spot's own height,
@@ -113,6 +116,79 @@ static const NotePlacement notes_japes[] = {
     {1300.0f, 280.0f, 300.0f, 2},
     {1380.0f, 280.0f, 240.0f, 5},
 };
+// Gloomy Galleon (fused with Treasure Trove Cove and Clanker's Cavern): trails between DK64's own
+// bananas and coins (each note between two of them on the same path, so on the floor they lie
+// on), and two rings. Where water covers a note's floor it floats at the surface instead.
+static const NotePlacement notes_galleon[] = {
+    // Beside the entrance: between the bananas round the open floor east of where the player comes in.
+    {2382.0f, 1612.0f, 2697.0f, 0},
+    {2428.0f, 1611.0f, 2844.0f, 3},
+    {2501.0f, 1611.0f, 3001.0f, 6},
+    {2533.0f, 1611.0f, 3144.0f, 9},
+    {2539.0f, 1610.0f, 3273.0f, 12},
+    {2542.0f, 1610.0f, 3338.0f, 15},
+    {2526.0f, 1610.0f, 3455.0f, 0},
+    {2439.0f, 1611.0f, 3503.0f, 3},
+    {2373.0f, 1610.0f, 3497.0f, 6},
+    {2236.0f, 1610.0f, 3480.0f, 9},
+    {2110.0f, 1613.0f, 3499.0f, 12},
+    // From the entrance east, between the bananas toward the slope up to the east side.
+    {2118.0f, 1612.0f, 2894.0f, 15},
+    {2123.0f, 1611.0f, 3049.0f, 0},
+    {2170.0f, 1610.0f, 3170.0f, 3},
+    {2274.0f, 1610.0f, 3224.0f, 6},
+    {2401.0f, 1610.0f, 3230.0f, 9},
+    {2596.0f, 1617.0f, 3228.0f, 12},
+    // Up the slope to the east side and north along it, between its bananas.
+    {2722.0f, 1638.0f, 3230.0f, 15},
+    {2898.0f, 1662.0f, 3268.0f, 0},
+    {2957.0f, 1665.0f, 3287.0f, 3},
+    {3015.0f, 1667.0f, 3305.0f, 6},
+    {3074.0f, 1670.0f, 3410.0f, 9},
+    {3079.0f, 1669.0f, 3582.0f, 12},
+    {3126.0f, 1669.0f, 3724.0f, 15},
+    // Up the ramp west of the entrance, between its coins.
+    {1817.0f, 1558.0f, 2978.0f, 0},
+    {1934.0f, 1586.0f, 2980.0f, 3},
+    {2056.0f, 1606.0f, 2978.0f, 6},
+    // The lighthouse side: south of the lighthouse, between the bananas (on the water when it is up).
+    {1676.0f, 1412.0f, 1062.0f, 9},
+    {1700.0f, 1413.0f, 1180.0f, 12},
+    {1796.0f, 1409.0f, 1242.0f, 15},
+    {1894.0f, 1406.0f, 1297.0f, 0},
+    {1981.0f, 1398.0f, 1387.0f, 3},
+    // Round the lighthouse door and the tag barrel.
+    {1873.0f, 1458.0f, 524.0f, 6},
+    {1897.0f, 1462.0f, 613.0f, 9},
+    {1870.0f, 1462.0f, 667.0f, 12},
+    {1922.0f, 1458.0f, 711.0f, 15},
+    {2088.0f, 1449.0f, 695.0f, 0},
+    // By Cranky's: between the coins and the door, and by the door north-east.
+    {1599.0f, 1610.0f, 4176.0f, 3},
+    {2028.0f, 1618.0f, 4740.0f, 6},
+    // The east side's north end, between two bananas.
+    {3256.0f, 1670.0f, 3790.0f, 9},
+    // A ring round Nipper (jiggy_nipper.c), outside his claws.
+    {3370.0f, 1670.0f, 3660.0f, 12},
+    {3338.0f, 1670.0f, 3738.0f, 15},
+    {3182.0f, 1670.0f, 3738.0f, 0},
+    {3150.0f, 1670.0f, 3660.0f, 3},
+    {3182.0f, 1670.0f, 3582.0f, 6},
+    {3260.0f, 1670.0f, 3550.0f, 9},
+    {3338.0f, 1670.0f, 3582.0f, 12},
+    // The east side's south end, between the coins.
+    {3254.0f, 1670.0f, 2439.0f, 15},
+    {3377.0f, 1670.0f, 2438.0f, 0},
+    // A ring on the open floor between the entrance's two banana trails.
+    {2390.0f, 1610.0f, 3360.0f, 3},
+    {2372.0f, 1610.0f, 3402.0f, 6},
+    {2330.0f, 1610.0f, 3420.0f, 9},
+    {2288.0f, 1610.0f, 3402.0f, 12},
+    {2270.0f, 1610.0f, 3360.0f, 15},
+    {2288.0f, 1610.0f, 3318.0f, 0},
+    {2330.0f, 1610.0f, 3300.0f, 3},
+    {2372.0f, 1610.0f, 3318.0f, 6},
+};
 #define NOTE_TRAIL(map, notes) {map, notes, sizeof(notes) / sizeof(notes[0])}
 static const struct {
     Maps map;
@@ -121,9 +197,15 @@ static const struct {
 } note_trails[] = {
     NOTE_TRAIL(MAP_TRAINING_GROUNDS, notes_training_grounds),
     NOTE_TRAIL(MAP_JAPES, notes_japes),
+    NOTE_TRAIL(MAP_GALLEON, notes_galleon),
 };
-// The most notes on one map (collected bits are one u32).
-#define NOTE_COUNT_MAX 16
+// The most notes on one map, and the u32s of collected bits that takes (each saved under its own
+// key: NOTE_SAVE_MAP_KEY for the first, NOTE_SAVE_MAP_WORD_KEY for the rest).
+#define NOTE_COUNT_MAX 96
+#define NOTE_WORDS ((NOTE_COUNT_MAX + 31) / 32)
+// Notes further than this from the player aren't drawn (a big map's trails would fill the
+// display list for nothing).
+#define NOTE_DRAW_DISTANCE 1400.0f
 // Looking for the floor under a note: from this far above its spot, trusted this close to it.
 #define NOTE_FLOOR_PROBE 20.0f
 #define NOTE_FLOOR_MAX_STEP 40.0f
@@ -148,12 +230,19 @@ static f32 note_pos[NOTE_COUNT_MAX][3];
 // This map's notes (none if it has none), picked when the map changes.
 static const NotePlacement *note_trail;
 static u32 note_count;
-// Bit i: note_trail[i] has been collected, for the map the notes were last loaded on.
-static u32 note_collected;
+// Bit i % 32 of word i / 32: note_trail[i] has been collected, for the map the notes were last
+// loaded on.
+static u32 note_collected[NOTE_WORDS];
 static s32 notes_total;
 // Save keys (jiggy_save_get): the collected bits of a map's notes, and the total.
 #define NOTE_SAVE_MAP_KEY(map) (0x4E000000 | (u32)(map)) // 'N'
+#define NOTE_SAVE_MAP_WORD_KEY(map, word) (0x4E000000 | ((u32)(word) << 8) | (u32)(map))
 #define NOTE_SAVE_TOTAL_KEY 0x4EFFFFFF
+#define NOTE_IS_COLLECTED(i) (note_collected[(i) >> 5] & (1u << ((i) & 31)))
+
+static u32 note_save_key(u32 word) {
+    return word == 0 ? NOTE_SAVE_MAP_KEY(current_map) : NOTE_SAVE_MAP_WORD_KEY(current_map, word);
+}
 
 static NotesLoadState hud_state = NOTES_UNLOADED;
 static u16 hud_note_texels[HUD_NOTE_MAX_FRAMES][HUD_NOTE_MAX_TEXELS] __attribute__((aligned(8)));
@@ -253,6 +342,16 @@ static void notes_place(Actor *player) {
             note_trail[i].y - floor < NOTE_FLOOR_MAX_STEP) {
             ground = floor;
         }
+        // Water over the floor (func_global_asm_8066715C, after the floor lookup): the note
+        // floats at the surface, for a swimmer to take.
+        {
+            f32 water;
+
+            if (func_global_asm_8066715C(&water) && water > ground && water - note_trail[i].y < NOTE_FLOOR_MAX_STEP &&
+                note_trail[i].y - water < NOTE_FLOOR_MAX_STEP + NOTE_HOVER) {
+                ground = water;
+            }
+        }
         note_pos[i][0] = note_trail[i].x;
         note_pos[i][1] = ground + NOTE_HOVER;
         note_pos[i][2] = note_trail[i].z;
@@ -267,7 +366,7 @@ static void notes_collect(Actor *player) {
     for (i = 0; i < note_count; i++) {
         f32 dx, dy, dz;
 
-        if (note_collected & (1 << i)) {
+        if (NOTE_IS_COLLECTED(i)) {
             continue;
         }
         dx = note_pos[i][0] - player->x_position;
@@ -277,9 +376,9 @@ static void notes_collect(Actor *player) {
             dy > NOTE_TOUCH_ABOVE) {
             continue;
         }
-        note_collected |= 1 << i;
+        note_collected[i >> 5] |= 1u << (i & 31);
         notes_total++;
-        jiggy_save_set(current_file, NOTE_SAVE_MAP_KEY(current_map), note_collected);
+        jiggy_save_set(current_file, note_save_key(i >> 5), note_collected[i >> 5]);
         jiggy_save_set(current_file, NOTE_SAVE_TOTAL_KEY, notes_total);
         hud_ticks = 0;
         // Banjo-Kazooie's note jingle, or DK64's pickup sound without a Banjo-Kazooie ROM.
@@ -370,13 +469,15 @@ Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor) {
         note_last_map = current_map;
         note_placed = FALSE;
         // Read back on every map, which also catches a different save file being loaded.
-        note_collected = jiggy_save_get(current_file, NOTE_SAVE_MAP_KEY(current_map));
+        for (i = 0; i < NOTE_WORDS; i++) {
+            note_collected[i] = jiggy_save_get(current_file, note_save_key(i));
+        }
         notes_total = jiggy_save_get(current_file, NOTE_SAVE_TOTAL_KEY);
         note_count = 0;
         for (i = 0; i < sizeof(note_trails) / sizeof(note_trails[0]); i++) {
             if (note_trails[i].map == current_map) {
                 note_trail = note_trails[i].notes;
-                note_count = note_trails[i].count;
+                note_count = note_trails[i].count < NOTE_COUNT_MAX ? note_trails[i].count : NOTE_COUNT_MAX;
             }
         }
     }
@@ -417,7 +518,9 @@ Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor) {
     }
     for (i = 0; i < note_count; i++) {
         u32 step = (object_timer / NOTE_TICKS_PER_FRAME + note_trail[i].phase) % steps;
-        if (note_collected & (1 << i)) {
+        f32 dx = note_pos[i][0] - actor->x_position;
+        f32 dz = note_pos[i][2] - actor->z_position;
+        if (NOTE_IS_COLLECTED(i) || dx * dx + dz * dz > NOTE_DRAW_DISTANCE * NOTE_DRAW_DISTANCE) {
             continue;
         }
         s32 mirrored = step >= (u32)note_frames;

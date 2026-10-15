@@ -162,12 +162,22 @@ static const JinjoPlacement jinjos_japes[JINJO_COLORS] = {
     {1180.0f, 283.0f, 172.0f}, // Pink
     {1000.0f, 280.0f, 400.0f}, // Yellow
 };
+// Gloomy Galleon: one each by the entrance, on the east side, on the lighthouse's island and
+// by Cranky's (two).
+static const JinjoPlacement jinjos_galleon[JINJO_COLORS] = {
+    {2450.0f, 1610.0f, 3330.0f}, // Blue: by the entrance, inside the bananas' loop.
+    {3000.0f, 1670.0f, 3600.0f}, // Green: the east side, west of Nipper.
+    {1800.0f, 1460.0f, 500.0f},  // Orange: the lighthouse's island, by the door.
+    {2000.0f, 1610.0f, 4640.0f}, // Pink: by Cranky's, by the north-east door.
+    {1560.0f, 1610.0f, 4300.0f}, // Yellow: by Cranky's, past the coins.
+};
 static const struct {
     Maps map;
     const JinjoPlacement *spots;
 } jinjo_maps[] = {
     {MAP_TRAINING_GROUNDS, jinjos_training_grounds},
     {MAP_JAPES, jinjos_japes},
+    {MAP_GALLEON, jinjos_galleon},
 };
 
 typedef enum {

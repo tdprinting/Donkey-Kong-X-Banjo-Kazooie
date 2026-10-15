@@ -139,6 +139,15 @@ static const HoneycombPlacement pieces_japes[] = {
 static const HoneycombPlacement combs_japes[] = {
     {1116.0f, 280.0f, 250.0f},
 };
+// Gloomy Galleon: one piece on the lighthouse's island, one on the open floor by the entrance;
+// a Honeycomb on the east side, by Nipper (jiggy_nipper.c), for after his claws.
+static const HoneycombPlacement pieces_galleon[] = {
+    {2050.0f, 1450.0f, 760.0f},
+    {2200.0f, 1610.0f, 3360.0f},
+};
+static const HoneycombPlacement combs_galleon[] = {
+    {3220.0f, 1670.0f, 3470.0f},
+};
 #define HONEYCOMB_MAP(map, pieces, combs) \
     {map, pieces, sizeof(pieces) / sizeof(pieces[0]), combs, sizeof(combs) / sizeof(combs[0])}
 static const struct {
@@ -150,6 +159,7 @@ static const struct {
 } honeycomb_maps[] = {
     HONEYCOMB_MAP(MAP_TRAINING_GROUNDS, pieces_training_grounds, combs_training_grounds),
     HONEYCOMB_MAP(MAP_JAPES, pieces_japes, combs_japes),
+    HONEYCOMB_MAP(MAP_GALLEON, pieces_galleon, combs_galleon),
 };
 // The most of each on one map (collected bits are one u32).
 #define PIECE_COUNT_MAX 8

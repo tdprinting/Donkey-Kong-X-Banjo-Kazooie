@@ -132,6 +132,16 @@ static const FeatherPlacement feathers_japes[] = {
     {1330.0f, 280.0f, 380.0f, FEATHER_RED, 10}, // Inside the trail's last stretch.
     {1100.0f, 280.0f, 480.0f, FEATHER_GOLD, 3}, // In the middle of the area.
 };
+// Gloomy Galleon: by the entrance, on the east side and on the lighthouse's island, each 40
+// or more units from DK64's bananas and coins and the notes.
+static const FeatherPlacement feathers_galleon[] = {
+    {2420.0f, 1611.0f, 3050.0f, FEATHER_RED, 0},   // Between the entrance's two banana trails.
+    {2600.0f, 1620.0f, 3150.0f, FEATHER_RED, 5},   // At the foot of the slope up to the east side.
+    {2090.0f, 1452.0f, 560.0f, FEATHER_RED, 10},   // The lighthouse's island, east of the door.
+    {3150.0f, 1670.0f, 3610.0f, FEATHER_RED, 15},  // The east side, by Nipper's ring of notes.
+    {1760.0f, 1455.0f, 470.0f, FEATHER_GOLD, 3},   // The lighthouse's island, west of the door.
+    {2180.0f, 1610.0f, 4650.0f, FEATHER_GOLD, 8},  // By Cranky's, past the tag barrel.
+};
 #define FEATHER_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -140,6 +150,7 @@ static const struct {
 } feather_maps[] = {
     FEATHER_MAP_SPOTS(MAP_TRAINING_GROUNDS, feathers_training_grounds),
     FEATHER_MAP_SPOTS(MAP_JAPES, feathers_japes),
+    FEATHER_MAP_SPOTS(MAP_GALLEON, feathers_galleon),
 };
 #define FEATHER_COUNT_MAX 16
 // The current map's feathers, or none.
