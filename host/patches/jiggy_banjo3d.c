@@ -60,9 +60,10 @@
 #define STATE_BACKFLIP 0x3E
 
 // Feathery Flap (src/core2/bs/bFlap.c): press A again in the air and hold it to flap,
-// slowing the fall, for a while. In DK64 units per second.
+// slowing the fall, for a while. In DK64 units per second; the game adds a frame of
+// gravity after the clamp, so the fall settles at about -30.
 #define FLAP_LIFT 120.0f
-#define FLAP_FALL_SPEED -60.0f
+#define FLAP_FALL_SPEED -10.0f
 #define FLAP_MAX_SECONDS 1.6f
 #define FLAP_SECONDS 0.35f
 // Rat-a-tat Rap (bPeck.c): B in the air hovers while Kazooie pecks.
@@ -181,7 +182,11 @@ static void banjo_air_moves(Actor *player, s32 airborne, f32 seconds) {
     u16 pressed = newly_pressed_input[0];
 
     if (!airborne || !banjo_is_player) {
-        banjo_air_move = AIR_MOVE_NONE;
+        // A Beak Buster plays out its landing unless the player jumps again.
+        if (airborne || !banjo_is_player || banjo_air_move != AIR_MOVE_BUSTER || banjo_progress >= 0.99f ||
+            player->control_state == STATE_JUMP) {
+            banjo_air_move = AIR_MOVE_NONE;
+        }
         banjo_air_moves_used = 0;
         return;
     }
@@ -307,7 +312,9 @@ static void banjo_set_selectors(void) {
     for (i = SEL_BOOTS_FIRST; i <= SEL_BOOTS_LAST; i++) {
         banjo_pose.selectors[i] = 1;
     }
-    if (banjo_air_move == AIR_MOVE_FLAP || banjo_air_move == AIR_MOVE_RAP) {
+    // Kazooie comes out for her own moves.
+    if (banjo_animation == BANJO_ANIM_FLAP || banjo_animation == BANJO_ANIM_RAT_A_TAT_RAP ||
+        banjo_animation == BANJO_ANIM_BEAK_BUSTER || banjo_animation == BANJO_ANIM_BEAK_BARGE) {
         for (i = 0; i < (s32)sizeof(kazooie_selectors); i++) {
             banjo_pose.selectors[kazooie_selectors[i]] = 1;
         }
