@@ -9,10 +9,19 @@
 // For now the notes only exist as a short trail in the Training Grounds (note_trail below),
 // laid out from where the player first stands there. They are drawn right after the
 // player's own model (func_global_asm_80630DCC in patches_draw.c).
-// TODO: collecting a note (touch radius, the sparkle and sound, a counter and save data).
+//
+// Touching a note collects it: it disappears, a pickup sound plays, and Banjo-Kazooie's note
+// counter (its spinning HUD note, ASSET_7D9_SPRITE_NOTE, and its bold HUD numbers) shows the
+// total for a moment in the HUD pass (jiggy_notes_hud_draw, called from patches_ui.c).
+// TODO: the collect sparkle, Banjo-Kazooie's own note sound, and keeping notes in save data.
 
 #include "common_structs.h"
+#include "ui.h"
+#include "patches_ui.h"
 #include "jiggy.h"
+
+Gfx *alignHUDGameplay(Gfx *dl, u8 alignment);
+Gfx *popHUD(Gfx *dl, u8 alignment);
 
 #define JIGGY_MUSIC_NOTE 0x6D6
 #define NOTE_MAX_FRAMES 10
@@ -32,6 +41,28 @@
 // Height of a note's center above the ground it was placed on.
 #define NOTE_HOVER 16.0f
 #define NOTE_AIRBORNE_HEIGHT 6.0f
+// How close the player has to come to collect a note: across, and up from their feet.
+#define NOTE_TOUCH_RADIUS 24.0f
+#define NOTE_TOUCH_BELOW 10.0f
+#define NOTE_TOUCH_ABOVE 50.0f
+// DK64's pickup jingle (the one ammo and feathers play in func_global_asm_806F54E0) until
+// Banjo-Kazooie's sounds can be played.
+#define NOTE_PICKUP_SOUND 0x331
+
+// The HUD counter: Banjo-Kazooie's spinning HUD note and its bold numbers.
+#define JIGGY_HUD_NOTE 0x7D9
+#define HUD_NOTE_MAX_FRAMES 10
+#define HUD_NOTE_MAX_TEXELS (32 * 32)
+#define HUD_DIGIT_MAX_TEXELS (32 * 32)
+// Ticks are 1/60 s (the engine's lag counter, as in jiggy_cameo.c).
+#define HUD_SHOW_TICKS 150
+#define HUD_FADE_TICKS 20
+#define HUD_TICKS_PER_FRAME 4
+#define HUD_MAX_DIGITS 3
+// The HUD note's color: the sprite is intensity only, tinted the way the game's notes are.
+#define HUD_NOTE_R 0xFF
+#define HUD_NOTE_G 0xC8
+#define HUD_NOTE_B 0x00
 
 extern Actor *gPlayerPointer;
 extern Maps current_map;
@@ -39,6 +70,9 @@ extern u8 cc_number_of_players;
 extern u8 cc_player_index;
 extern u8 D_global_asm_807444FC;
 extern u32 object_timer;
+extern u32 D_global_asm_80744478;
+extern s16 D_global_asm_80744494;
+s16 playSound(s16 arg0, s32 arg1, f32 arg2, f32 arg3, u8 arg4, u8 arg5);
 f32 func_global_asm_80612790(s16 angle); // cos of a 12-bit angle
 f32 func_global_asm_80612794(s16 angle); // sin of a 12-bit angle
 
@@ -74,6 +108,20 @@ static NotesLoadState note_state = NOTES_UNLOADED;
 static s32 note_last_map = -1;
 static s32 note_placed;
 static f32 note_pos[NOTE_COUNT][3];
+// Bit i: note_trail[i] has been collected (kept across visits, not yet saved).
+static u32 note_collected;
+static s32 notes_total;
+
+static NotesLoadState hud_state = NOTES_UNLOADED;
+static u16 hud_note_texels[HUD_NOTE_MAX_FRAMES][HUD_NOTE_MAX_TEXELS] __attribute__((aligned(8)));
+static s16 hud_note_width[HUD_NOTE_MAX_FRAMES];
+static s16 hud_note_height[HUD_NOTE_MAX_FRAMES];
+static s32 hud_note_frames;
+static u16 hud_digit_texels[10][HUD_DIGIT_MAX_TEXELS] __attribute__((aligned(8)));
+static s16 hud_digit_width[10];
+static s16 hud_digit_height[10];
+// Ticks since the counter last came up; it's hidden once it reaches the show time.
+static u32 hud_ticks = HUD_SHOW_TICKS;
 
 static void note_set_vtx(Vtx *v, s32 x, s32 y, s32 s, s32 t) {
     v->v.ob[0] = x;
@@ -160,6 +208,30 @@ static void notes_place(Actor *player) {
         note_pos[i][2] = player->z_position + forward_z * note_trail[i].ahead;
     }
     note_placed = TRUE;
+}
+
+// Collects the notes the player is touching.
+static void notes_collect(Actor *player) {
+    u32 i;
+
+    for (i = 0; i < NOTE_COUNT; i++) {
+        f32 dx, dy, dz;
+
+        if (note_collected & (1 << i)) {
+            continue;
+        }
+        dx = note_pos[i][0] - player->x_position;
+        dy = note_pos[i][1] - player->y_position;
+        dz = note_pos[i][2] - player->z_position;
+        if (dx * dx + dz * dz > NOTE_TOUCH_RADIUS * NOTE_TOUCH_RADIUS || dy < -NOTE_TOUCH_BELOW ||
+            dy > NOTE_TOUCH_ABOVE) {
+            continue;
+        }
+        note_collected |= 1 << i;
+        notes_total++;
+        hud_ticks = 0;
+        playSound(NOTE_PICKUP_SOUND, 0x7FFF, 63.0f, 1.0f, 5, 0);
+    }
 }
 
 // A matrix that stands the note at pos facing the camera, sized for a frame `width` texels
@@ -259,6 +331,7 @@ Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor) {
         }
         notes_place(actor);
     }
+    notes_collect(actor);
 
     gDPPipeSync(dl++);
     gSPClearGeometryMode(dl++, G_LIGHTING | G_FOG | G_CULL_BOTH | G_TEXTURE_GEN);
@@ -279,6 +352,9 @@ Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor) {
     }
     for (i = 0; i < NOTE_COUNT; i++) {
         u32 step = (object_timer / NOTE_TICKS_PER_FRAME + note_trail[i].phase) % steps;
+        if (note_collected & (1 << i)) {
+            continue;
+        }
         s32 mirrored = step >= (u32)note_frames;
         s32 frame = mirrored ? steps - step : step;
 
@@ -287,5 +363,131 @@ Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor) {
     }
 
     gDPPipeSync(dl++);
+    return dl;
+}
+
+static s32 hud_load_rgba16(s32 size, s16 *width, s16 *height, s32 max_texels) {
+    s32 w = (size >> 16) & 0xFFFF;
+    s32 h = size & 0xFFFF;
+
+    if (size <= 0 || w == 0 || h == 0 || w * h > max_texels) {
+        return FALSE;
+    }
+    *width = w;
+    *height = h;
+    return TRUE;
+}
+
+static void hud_load(void) {
+    s32 count;
+    s32 i;
+
+    hud_state = NOTES_UNAVAILABLE;
+    if (!jiggy_bk_available()) {
+        return;
+    }
+    count = jiggy_bk_sprite_frame_count(JIGGY_HUD_NOTE);
+    if (count <= 0) {
+        return;
+    }
+    if (count > HUD_NOTE_MAX_FRAMES) {
+        count = HUD_NOTE_MAX_FRAMES;
+    }
+    for (i = 0; i < count; i++) {
+        s32 size = jiggy_bk_sprite_frame_rgba16(JIGGY_HUD_NOTE, i, hud_note_texels[i], sizeof(hud_note_texels[0]));
+        if (!hud_load_rgba16(size, &hud_note_width[i], &hud_note_height[i], HUD_NOTE_MAX_TEXELS)) {
+            return;
+        }
+    }
+    hud_note_frames = count;
+    for (i = 0; i < 10; i++) {
+        s32 size = jiggy_bk_bold_number_rgba16(i, hud_digit_texels[i], sizeof(hud_digit_texels[0]));
+        if (!hud_load_rgba16(size, &hud_digit_width[i], &hud_digit_height[i], HUD_DIGIT_MAX_TEXELS)) {
+            return;
+        }
+    }
+    hud_state = NOTES_READY;
+}
+
+// One RGBA16 image as a texture rectangle at (x, y), top left, in screen pixels. Every image
+// here fits in TMEM in one load.
+static Gfx *hud_draw_image(Gfx *dl, u16 *texels, s32 width, s32 height, s32 x, s32 y) {
+    gDPLoadTextureTile(dl++, texels, G_IM_FMT_RGBA, G_IM_SIZ_16b,
+        width, height,
+        0, 0, width - 1, height - 1,
+        0,
+        G_TX_CLAMP, G_TX_CLAMP,
+        G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
+    gSPTextureRectangle(dl++,
+        x << 2, y << 2, (x + width) << 2, (y + height) << 2,
+        G_TX_RENDERTILE,
+        0, 0, 1 << 10, 1 << 10);
+    return dl;
+}
+
+// Called once per frame from the HUD pass of the general gfx loop (patches_ui.c): the note
+// counter, for a moment after each note.
+Gfx *jiggy_notes_hud_draw(Gfx *dl) {
+    s32 digits[HUD_MAX_DIGITS];
+    s32 digit_count = 0;
+    s32 value;
+    s32 frame;
+    s32 alpha;
+    s32 x, y;
+    s32 i;
+
+    if (hud_ticks >= HUD_SHOW_TICKS || cc_number_of_players != 1) {
+        return dl;
+    }
+    if (hud_state == NOTES_UNLOADED) {
+        hud_load();
+    }
+    if (hud_state != NOTES_READY) {
+        hud_ticks = HUD_SHOW_TICKS;
+        return dl;
+    }
+    hud_ticks += D_global_asm_80744478;
+    if (hud_ticks >= HUD_SHOW_TICKS) {
+        return dl;
+    }
+    alpha = 0xFF;
+    if (hud_ticks > HUD_SHOW_TICKS - HUD_FADE_TICKS) {
+        alpha = 0xFF * (s32)(HUD_SHOW_TICKS - hud_ticks) / HUD_FADE_TICKS;
+    }
+
+    value = notes_total;
+    do {
+        digits[digit_count++] = value % 10;
+        value /= 10;
+    } while (value > 0 && digit_count < HUD_MAX_DIGITS);
+
+    frame = (object_timer / HUD_TICKS_PER_FRAME) % hud_note_frames;
+    x = 16;
+    y = D_global_asm_80744494 - hud_note_height[frame] - 20;
+
+    dl = alignHUDGameplay(dl, ALIGN_LEFT);
+    gDPPipeSync(dl++);
+    gDPSetCycleType(dl++, G_CYC_1CYCLE);
+    gDPSetTexturePersp(dl++, G_TP_NONE);
+    gDPSetTextureLUT(dl++, G_TT_NONE);
+    gDPSetTextureFilter(dl++, G_TF_POINT);
+    gDPSetCombineMode(dl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    gDPSetRenderMode(dl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
+    gDPSetPrimColor(dl++, 0, 0, HUD_NOTE_R, HUD_NOTE_G, HUD_NOTE_B, alpha);
+    dl = hud_draw_image(dl, hud_note_texels[frame], hud_note_width[frame], hud_note_height[frame], x, y);
+
+    // The numbers carry their own colors.
+    gDPPipeSync(dl++);
+    gDPSetPrimColor(dl++, 0, 0, 0xFF, 0xFF, 0xFF, alpha);
+    x += hud_note_width[frame] + 4;
+    for (i = digit_count - 1; i >= 0; i--) {
+        s32 d = digits[i];
+        s32 dy = y + (hud_note_height[frame] - hud_digit_height[d]) / 2;
+
+        dl = hud_draw_image(dl, hud_digit_texels[d], hud_digit_width[d], hud_digit_height[d], x, dy);
+        x += hud_digit_width[d];
+    }
+    gDPPipeSync(dl++);
+    dl = popHUD(dl, ALIGN_LEFT);
     return dl;
 }

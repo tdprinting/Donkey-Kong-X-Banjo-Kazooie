@@ -525,6 +525,35 @@ TEST(bk_sprite_direct_formats) {
     }
 }
 
+TEST(bk_sprite_chunks_alone_and_bold_font) {
+    std::string error;
+    // A font frame: letters are chunks at the same place, so only decode_chunk separates them.
+    // RGBA32 mask: blue byte is intensity, alpha is coverage.
+    SpriteChunk one{0, 0, 1, 2, {0, 0, 0xFF, 0xFF, 0, 0, 0x3E, 0x80}};
+    SpriteChunk two{0, 0, 2, 1, {0, 0, 0xFF, 0x00, 0, 0, 0xFF, 0xFF}};
+    Bytes mask_frame = make_frame(2, 2, {}, {one, two}, 0x14);
+    auto mask = jiggy::BkSprite::parse(make_sprite(0x800, {mask_frame}), &error);
+    CHECK(mask.has_value());
+
+    auto letter = mask->decode_chunk(0, 1, &error);
+    CHECK(letter.has_value());
+    CHECK(letter->width == 2 && letter->height == 1);
+    CHECK(pixel(*letter, 1, 0)[3] == 0xFF);
+    CHECK(!mask->decode_chunk(0, 2, &error).has_value());
+
+    // A 1x1 RGBA16 texture, pure red (5-bit 31): intensity 0xFF gives 31 * 8, 0x3E gives 31 * 2.
+    Bytes texture_frame = make_frame(1, 1, {}, {SpriteChunk{0, 0, 1, 1, {0xF8, 0x01}}}, 0x14);
+    auto texture = jiggy::BkSprite::parse(make_sprite(0x400, {texture_frame}), &error);
+    CHECK(texture.has_value());
+    auto colored = jiggy::bk_bold_font_letter(*mask, *texture, 0, &error);
+    CHECK(colored.has_value());
+    CHECK(colored->width == 1 && colored->height == 2);
+    CHECK(pixel(*colored, 0, 0)[0] == 248 && pixel(*colored, 0, 0)[1] == 0 && pixel(*colored, 0, 0)[3] == 0xFF);
+    CHECK(pixel(*colored, 0, 1)[0] == 62 && pixel(*colored, 0, 1)[3] == 0x80);
+    // Only an RGBA32 mask is a bold font.
+    CHECK(!jiggy::bk_bold_font_letter(*texture, *texture, 0, &error).has_value());
+}
+
 TEST(bk_sprite_rejects_bad_data) {
     std::string error;
     CHECK(!jiggy::BkSprite::parse(Bytes(4, 0), &error).has_value());

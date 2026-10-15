@@ -17,6 +17,9 @@ DECLARE_FUNC(s32, jiggy_bk_sprite_frame_count, u32 asset_id);
 // Decodes a sprite frame to RGBA16 texels, width padded to a multiple of 4. Returns
 // (width << 16) | height, or -1. Pass dst NULL to get the size without writing.
 DECLARE_FUNC(s32, jiggy_bk_sprite_frame_rgba16, u32 asset_id, u32 frame, void* dst, u32 dst_len);
+// Banjo-Kazooie's HUD number `digit` (0-9, the bold font in its orange gradient) as RGBA16
+// texels, like jiggy_bk_sprite_frame_rgba16.
+DECLARE_FUNC(s32, jiggy_bk_bold_number_rgba16, u32 digit, void* dst, u32 dst_len);
 // Converts a model to a block DK64 can draw, built to live at dst (8-byte aligned): its
 // F3DEX2 display lists, vertices, textures and render modes. Returns the size, writing only
 // if it fits (pass dst NULL to ask), or -1 if it isn't a model. Draw it with

@@ -51,12 +51,24 @@ public:
 
     // Decodes one frame onto a transparent canvas the size the frame header gives.
     std::optional<BkSpriteImage> decode_frame(size_t frame, std::string* error) const;
+    // Decodes one chunk of a frame on its own, the size the chunk header gives. Fonts keep a
+    // letter per chunk (src/core2/print.c print_getLettersFromFont).
+    std::optional<BkSpriteImage> decode_chunk(size_t frame, size_t chunk, std::string* error) const;
 
 private:
+    std::optional<BkSpriteImage> decode(size_t frame, const size_t* only_chunk, std::string* error) const;
+
     std::vector<uint8_t> data_; // A copy, so the sprite outlives the buffer it was parsed from.
     uint16_t type_ = 0;
     std::vector<size_t> frame_offsets_;
 };
+
+// A letter of Banjo-Kazooie's bold font (the HUD's numbers and titles): chunk `index` of the
+// font's RGBA32 alpha mask, colored by a texture sprite centered on it, as
+// print_applyTextureToBoldFontLetter does. The mask keeps intensity in its blue byte and
+// coverage in alpha.
+std::optional<BkSpriteImage> bk_bold_font_letter(const BkSprite& mask, const BkSprite& texture, size_t index,
+                                                 std::string* error);
 
 // Packs RGBA8888 pixels into the N64's RGBA5551, big-endian, alpha set when alpha >= 128.
 std::vector<uint8_t> rgba8888_to_rgba5551(std::span<const uint8_t> rgba);

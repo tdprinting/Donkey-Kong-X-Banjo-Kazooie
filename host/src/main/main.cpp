@@ -927,6 +927,7 @@ int main(int argc, char** argv) {
     REGISTER_FUNC(jiggy_bk_sprite_frame_rgba16);
     REGISTER_FUNC(jiggy_bk_model_build);
     REGISTER_FUNC(jiggy_bk_model_pose);
+    REGISTER_FUNC(jiggy_bk_bold_number_rgba16);
     recompui::register_ui_exports();
     recomputil::register_data_api_exports();
     recomptheme::set_custom_theme();
