@@ -2969,6 +2969,7 @@ Gfx *jiggy_honeycombs_hud_draw(Gfx *dl);
 Gfx *jiggy_feathers_hud_draw(Gfx *dl);
 Gfx *jiggy_mumbo_tokens_hud_draw(Gfx *dl);
 Gfx *jiggy_bottles_hud_draw(Gfx *dl);
+Gfx *jiggy_conga_hud_draw(Gfx *dl);
 
 // @recomp: General gfx loop
 RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx **arg2) {
@@ -3163,6 +3164,7 @@ RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx
         dl = jiggy_feathers_hud_draw(dl); // @jiggy: the Red and Gold Feather counters (jiggy_feathers.c)
         dl = jiggy_mumbo_tokens_hud_draw(dl); // @jiggy: the Mumbo Token counter (jiggy_mumbo_tokens.c)
         dl = jiggy_bottles_hud_draw(dl); // @jiggy: Bottles' text box (jiggy_bottles.c)
+        dl = jiggy_conga_hud_draw(dl); // @jiggy: Conga's text box (jiggy_conga.c)
         func_global_asm_806FBC34();
         func_global_asm_8068C0B4();
         func_global_asm_80722280();
