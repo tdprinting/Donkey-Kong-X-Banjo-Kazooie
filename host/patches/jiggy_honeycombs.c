@@ -148,6 +148,16 @@ static const HoneycombPlacement pieces_galleon[] = {
 static const HoneycombPlacement combs_galleon[] = {
     {3220.0f, 1670.0f, 3470.0f},
 };
+
+// Creepy Castle: the pieces on the south-west walk and up the path near the top, a Honeycomb
+// on the grass past the drawbridge.
+static const HoneycombPlacement pieces_castle[] = {
+    {346.0f, 646.0f, 1669.0f},
+    {1015.0f, 1592.0f, 1626.0f},
+};
+static const HoneycombPlacement combs_castle[] = {
+    {1065.0f, 472.0f, 354.0f},
+};
 #define HONEYCOMB_MAP(map, pieces, combs) \
     {map, pieces, sizeof(pieces) / sizeof(pieces[0]), combs, sizeof(combs) / sizeof(combs[0])}
 static const struct {
@@ -160,6 +170,7 @@ static const struct {
     HONEYCOMB_MAP(MAP_TRAINING_GROUNDS, pieces_training_grounds, combs_training_grounds),
     HONEYCOMB_MAP(MAP_JAPES, pieces_japes, combs_japes),
     HONEYCOMB_MAP(MAP_GALLEON, pieces_galleon, combs_galleon),
+    HONEYCOMB_MAP(MAP_CASTLE, pieces_castle, combs_castle),
 };
 // The most of each on one map (collected bits are one u32).
 #define PIECE_COUNT_MAX 8

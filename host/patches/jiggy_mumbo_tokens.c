@@ -114,6 +114,13 @@ static const TokenPlacement tokens_galleon[] = {
     {1750.0f, 1610.0f, 4250.0f, 6}, // Past the door by Cranky's.
     {3150.0f, 1670.0f, 3420.0f, 3}, // The east side, between its bananas and coins.
 };
+
+// Creepy Castle: the middle path's east end, the west path up from the south walk, and the top.
+static const TokenPlacement tokens_castle[] = {
+    {1910.0f, 904.0f, 1600.0f, 0},
+    {350.0f, 728.0f, 1250.0f, 4},
+    {1250.0f, 1731.0f, 1250.0f, 8},
+};
 #define TOKEN_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -123,6 +130,7 @@ static const struct {
     TOKEN_MAP_SPOTS(MAP_TRAINING_GROUNDS, tokens_training_grounds),
     TOKEN_MAP_SPOTS(MAP_JAPES, tokens_japes),
     TOKEN_MAP_SPOTS(MAP_GALLEON, tokens_galleon),
+    TOKEN_MAP_SPOTS(MAP_CASTLE, tokens_castle),
 };
 // The most tokens on one map (collected bits are one u32).
 #define TOKEN_COUNT_MAX 8

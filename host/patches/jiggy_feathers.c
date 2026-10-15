@@ -142,6 +142,15 @@ static const FeatherPlacement feathers_galleon[] = {
     {1760.0f, 1455.0f, 470.0f, FEATHER_GOLD, 3},   // The lighthouse's island, west of the door.
     {2180.0f, 1610.0f, 4650.0f, FEATHER_GOLD, 8},  // By Cranky's, past the tag barrel.
 };
+
+// Creepy Castle: off the note trails, one on each tier of the hill, the Gold Feather on top.
+static const FeatherPlacement feathers_castle[] = {
+    {1300.0f, 472.0f, 380.0f, FEATHER_RED, 0},    // By the tree past the drawbridge.
+    {1900.0f, 904.0f, 1450.0f, FEATHER_RED, 5},   // The east end of the middle path.
+    {666.0f, 1134.0f, 1589.0f, FEATHER_RED, 10},  // Up the path to the top, on its west bend.
+    {1506.0f, 1731.0f, 1395.0f, FEATHER_RED, 15}, // The top, by the castle door.
+    {1230.0f, 1731.0f, 1450.0f, FEATHER_GOLD, 3}, // The top, west side.
+};
 #define FEATHER_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -151,6 +160,7 @@ static const struct {
     FEATHER_MAP_SPOTS(MAP_TRAINING_GROUNDS, feathers_training_grounds),
     FEATHER_MAP_SPOTS(MAP_JAPES, feathers_japes),
     FEATHER_MAP_SPOTS(MAP_GALLEON, feathers_galleon),
+    FEATHER_MAP_SPOTS(MAP_CASTLE, feathers_castle),
 };
 #define FEATHER_COUNT_MAX 16
 // The current map's feathers, or none.

@@ -171,6 +171,17 @@ static const JinjoPlacement jinjos_galleon[JINJO_COLORS] = {
     {2000.0f, 1610.0f, 4640.0f}, // Pink: by Cranky's, by the north-east door.
     {1560.0f, 1610.0f, 4300.0f}, // Yellow: by Cranky's, past the coins.
 };
+
+// Creepy Castle: one on each tier of the hill, beside DK64's own bananas: by the tree past the
+// drawbridge, on the east path up, on the east end of the middle path, on the south walk below
+// it, and on the open top beside the castle door.
+static const JinjoPlacement jinjos_castle[JINJO_COLORS] = {
+    {1150.0f, 472.0f, 330.0f},  // Blue
+    {1884.0f, 491.0f, 929.0f},  // Green
+    {1870.0f, 904.0f, 1650.0f}, // Orange
+    {900.0f, 648.0f, 1680.0f},  // Pink
+    {1480.0f, 1731.0f, 1450.0f}, // Yellow
+};
 static const struct {
     Maps map;
     const JinjoPlacement *spots;
@@ -178,6 +189,7 @@ static const struct {
     {MAP_TRAINING_GROUNDS, jinjos_training_grounds},
     {MAP_JAPES, jinjos_japes},
     {MAP_GALLEON, jinjos_galleon},
+    {MAP_CASTLE, jinjos_castle},
 };
 
 typedef enum {
