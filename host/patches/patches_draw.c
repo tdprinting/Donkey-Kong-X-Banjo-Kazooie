@@ -216,6 +216,9 @@ Gfx *jiggy_nipper_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_snippets_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_grunty_quiz_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_grunty_boss_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_teehees_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_motzand_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_tumblar_draw(Gfx *dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
     f32 temp_f0_3;
@@ -369,6 +372,9 @@ block_47:
     dl = jiggy_snippets_draw(dl, arg1); // @jiggy: Snippets in Gloomy Galleon (jiggy_snippets.c)
     dl = jiggy_grunty_quiz_draw(dl, arg1); // @jiggy: Gruntilda's Furnace Fun quiz in the Helm lobby (jiggy_grunty_quiz.c)
     dl = jiggy_grunty_boss_draw(dl, arg1); // @jiggy: Gruntilda's broomstick fight in Hideout Helm (jiggy_grunty_boss.c)
+    dl = jiggy_teehees_draw(dl, arg1); // @jiggy: Tee-Hees in Creepy Castle (jiggy_teehees.c)
+    dl = jiggy_motzand_draw(dl, arg1); // @jiggy: Motzand and his organ game in Creepy Castle (jiggy_motzand.c)
+    dl = jiggy_tumblar_draw(dl, arg1); // @jiggy: Tumblar and his word puzzle in Creepy Castle (jiggy_tumblar.c)
     return dl;
 }
 

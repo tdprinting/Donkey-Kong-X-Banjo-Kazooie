@@ -2975,6 +2975,8 @@ Gfx *jiggy_mumbo_hud_draw(Gfx *dl);
 Gfx *jiggy_blubber_hud_draw(Gfx *dl);
 Gfx *jiggy_nipper_hud_draw(Gfx *dl);
 Gfx *jiggy_gruntilda_hud_draw(Gfx *dl);
+Gfx *jiggy_motzand_hud_draw(Gfx *dl);
+Gfx *jiggy_tumblar_hud_draw(Gfx *dl);
 
 // @recomp: General gfx loop
 RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx **arg2) {
@@ -3175,6 +3177,8 @@ RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx
         dl = jiggy_blubber_hud_draw(dl); // @jiggy: Blubber's text box and the carried bullions (jiggy_blubber.c)
         dl = jiggy_nipper_hud_draw(dl); // @jiggy: Nipper's text box (jiggy_nipper.c)
         dl = jiggy_gruntilda_hud_draw(dl); // @jiggy: Gruntilda's text box and quiz answers (jiggy_gruntilda.c)
+        dl = jiggy_motzand_hud_draw(dl); // @jiggy: Motzand's text box and organ keys (jiggy_motzand.c)
+        dl = jiggy_tumblar_hud_draw(dl); // @jiggy: Tumblar's text box and letters (jiggy_tumblar.c)
         func_global_asm_806FBC34();
         func_global_asm_8068C0B4();
         func_global_asm_80722280();
