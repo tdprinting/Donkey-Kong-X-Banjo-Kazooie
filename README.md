@@ -41,12 +41,12 @@ project is shaped this way.
 | First Banjo asset visible in DK Isles (Banjo's portrait) | Done, needs a test on real ROMs |
 | CI: game patches build | Done |
 | Banjo & Kazooie's 3D model, converted from the player's ROM, beside DK with Banjo-Kazooie's idle, walk, run and jump animations | Done, tested in game |
-| Play as Banjo & Kazooie (D-pad left, or J on keyboard): Claw Swipe, Beak Barge, crouch, backflip, Feathery Flap, Rat-a-tat Rap, Beak Buster, Talon Trot (crouch + C-left), Egg Firing (crouch + C-up/C-down), Wonderwing (crouch + C-right) and Shock Spring Jump (A on the pad in the Training Grounds) | Done, tested in game |
+| Play as Banjo & Kazooie (D-pad left, or J on keyboard): Claw Swipe, Beak Barge, crouch, backflip, Feathery Flap, Rat-a-tat Rap, Beak Buster, Talon Trot (crouch + C-left), Egg Firing (crouch + C-up/C-down), Wonderwing (crouch + C-right), swimming and Shock Spring Jump (A on the pad in the Training Grounds) | Done, tested in game |
 | Golden Bananas drawn as Banjo-Kazooie Jiggies, with Banjo-Kazooie's Jiggy jingle on pickup | Done, tested in game (the jingle not yet heard on a real pickup) |
 | Music Notes as their own collectible, with Banjo-Kazooie's note counter (in the Training Grounds and Jungle Japes), saved per save file | Done, tested in game |
 | Jinjos (all five colors) as their own collectible, with Banjo-Kazooie's five-head counter (Training Grounds and Jungle Japes), saved per save file | Done, tested in game |
 | Empty Honeycomb pieces as their own collectible, with Banjo-Kazooie's six-piece ring counter, saved per save file; Honeycombs that give back a slice of health (Training Grounds for now) | Done, tested in game (pieces; health refill not yet) |
-| Red and Gold Feathers as their own collectible, with Banjo-Kazooie's feather counters (Training Grounds for now), saved per save file; the Wonderwing spends Gold Feathers | Pickup and counters tested in game; Wonderwing cost needs a test |
+| Red and Gold Feathers as their own collectible, with Banjo-Kazooie's feather counters (Training Grounds and Jungle Japes), saved per save file; the Wonderwing spends Gold Feathers | Pickup and counters tested in game; Wonderwing cost needs a test |
 | Flight (A on the Flight pad in the Training Grounds): flaps on Red Feathers, stick to steer and pitch, Beak Bomb with B, Z to Beak Bust | Takeoff, flying and flaps tested in game; Beak Bomb and landing need a test |
 | Banjo-Kazooie's own sounds from the player's ROM: note, Jinjo, Honeycomb and Jiggy jingles, egg, Feathery Flap, Talon Trot, Wonderwing and Shock Spring Jump sounds | Done, checked in the game's audio output |
 | Android app: ROM picker and checks, in-app updates | Done, needs a test on a phone |

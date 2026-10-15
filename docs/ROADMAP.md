@@ -127,7 +127,10 @@ The foundation every later step needs: reading both games' files from the player
 - [x] Flight from a Flight pad in the Training Grounds (`jiggy_banjo_fly.c`): flaps on Red
   Feathers, stick steering and pitch, Beak Bomb; drives DK's own jump physics. Takeoff, flight and flaps (spending Red Feathers) tested in game; Beak Bomb and landing need a test
   in game.
-- Rebuild the rest of the moveset (swimming, the Beak Bomb's crash and knockback) as DK64
+- [x] Swimming (`jiggy_banjo_swim.c`): Banjo-Kazooie's paddle, tread and dive animations and
+  splashes over DK64's water states. Surface swimming tested in game; diving needs DK64's Dive
+  move, so it is untested.
+- Rebuild the rest of the moveset (the Beak Bomb's crash and knockback) as DK64
   patches, using the BK decompilation as the behaviour reference.
 - Add the duo to DK64's character swap, then a quick-swap wheel in place of Tag Barrels.
 
