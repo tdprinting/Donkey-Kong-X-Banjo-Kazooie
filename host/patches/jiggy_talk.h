@@ -45,6 +45,7 @@ Gfx *jiggy_talk_hud_draw(Gfx *dl);
 #define JIGGY_TALK_OWNER_BRENTILDA 1
 #define JIGGY_TALK_OWNER_CHEATO 2
 #define JIGGY_TALK_OWNER_GRUNTY 3
+#define JIGGY_TALK_OWNER_STORY 4 // jiggy_story.c
 
 // jiggy_cameo.c: whether Banjo's portrait is up (others wait for it).
 s32 jiggy_cameo_showing(void);
