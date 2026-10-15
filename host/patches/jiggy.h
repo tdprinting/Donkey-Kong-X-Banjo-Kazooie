@@ -79,10 +79,14 @@ DECLARE_FUNC(s32, jiggy_bk_sound_stop, s32 handle);
                                             // pitch 0.96 (walk anim 0.2781) and 1.04 (0.7781)
 #define JIGGY_BK_SFX_FLAP 0x4E              // SFX_4E_KAZOOIE_BRUIII: Feathery Flap, 20000/32767, 1.24
 #define JIGGY_BK_SFX_KAZOOIE_HEGH 0x57      // SFX_57_KAZOOIE_HEGH: egg from the mouth (the shot), 1.0, 1.0
+#define JIGGY_BK_SFX_SWITCH_PRESS 0x90      // SFX_90_SWITCH_PRESS: an empty Honeycomb piece settling in
+                                            // its HUD ring, 0x7FF8/32767, 1.3
 // Banjo-Kazooie music tracks (comusic_e) for jiggy_bk_jingle_play, with BK's volume.
 #define JIGGY_BK_JINGLE_NOTE 0x09           // COMUSIC_9_NOTE_COLLECTED, 16000/32767
 #define JIGGY_BK_JINGLE_EGG 0x0C            // COMUSIC_C_EGG_COLLECTED, 15000/32767 (track default)
 #define JIGGY_BK_JINGLE_JINJO 0x0A           // COMUSIC_A_JINJO_COLLECTED
 #define JIGGY_BK_JINGLE_JIGGY 0x0D          // COMUSIC_D_JINGLE_JIGGY_COLLECTED, 28000/32767
+#define JIGGY_BK_JINGLE_HONEYCOMB 0x16      // COMUSIC_16_HONEYCOMB_COLLECTED, 28000/32767
+#define JIGGY_BK_JINGLE_EMPTY_HONEYCOMB 0x17 // COMUSIC_17_EMPTY_HONEYCOMB_COLLECTED, 28000/32767
 
 #endif

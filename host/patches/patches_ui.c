@@ -2965,6 +2965,7 @@ extern void set_sprite_interpolation_state(void);
 Gfx *jiggy_cameo_draw(Gfx *dl);
 Gfx *jiggy_notes_hud_draw(Gfx *dl);
 Gfx *jiggy_jinjos_hud_draw(Gfx *dl);
+Gfx *jiggy_honeycombs_hud_draw(Gfx *dl);
 
 // @recomp: General gfx loop
 RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx **arg2) {
@@ -3155,6 +3156,7 @@ RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx
         dl = jiggy_cameo_draw(dl); // @jiggy: Banjo's portrait in DK Isles (jiggy_cameo.c)
         dl = jiggy_notes_hud_draw(dl); // @jiggy: the Music Note counter (jiggy_notes.c)
         dl = jiggy_jinjos_hud_draw(dl); // @jiggy: the Jinjo counter (jiggy_jinjos.c)
+        dl = jiggy_honeycombs_hud_draw(dl); // @jiggy: the empty Honeycomb counter (jiggy_honeycombs.c)
         func_global_asm_806FBC34();
         func_global_asm_8068C0B4();
         func_global_asm_80722280();

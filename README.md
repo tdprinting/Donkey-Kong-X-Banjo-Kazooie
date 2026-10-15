@@ -45,7 +45,8 @@ project is shaped this way.
 | Golden Bananas drawn as Banjo-Kazooie Jiggies | Done, tested in game (no shine yet) |
 | Music Notes as their own collectible, with Banjo-Kazooie's note counter (a few in the Training Grounds for now), saved per save file | Done, tested in game |
 | Jinjos (all five colors) as their own collectible, with Banjo-Kazooie's five-head counter (Training Grounds for now), saved per save file | Done, tested in game |
-| Banjo-Kazooie's own sounds from the player's ROM: note and Jinjo jingles, egg, Feathery Flap and Talon Trot sounds | Done, checked in the game's audio output |
+| Empty Honeycomb pieces as their own collectible, with Banjo-Kazooie's six-piece ring counter, saved per save file; Honeycombs that give back a slice of health (Training Grounds for now) | Done, needs a test in game |
+| Banjo-Kazooie's own sounds from the player's ROM: note, Jinjo and Honeycomb jingles, egg, Feathery Flap and Talon Trot sounds | Done, checked in the game's audio output |
 | Android app: ROM picker and checks, in-app updates | Done, needs a test on a phone |
 | Android: engine cross-compiles, game packaged as libmain.so on SDL's activity | Done, untested on a phone |
 | Android: on-screen touch controls, controller support | Done, untested on a phone |

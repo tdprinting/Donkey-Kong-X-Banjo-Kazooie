@@ -202,6 +202,7 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor);
 s32 jiggy_banjo_replaces(Actor *actor);
 Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_jinjos_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_honeycombs_draw(Gfx *dl, Actor *actor);
 s32 jiggy_golden_banana_actor_draw(Gfx **dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
@@ -343,6 +344,7 @@ block_47:
     dl = jiggy_banjo_draw(dl, arg1); // @jiggy: Banjo beside the player (jiggy_banjo3d.c)
     dl = jiggy_notes_draw(dl, arg1); // @jiggy: Music Notes, drawn with the player (jiggy_notes.c)
     dl = jiggy_jinjos_draw(dl, arg1); // @jiggy: Jinjos, drawn with the player (jiggy_jinjos.c)
+    dl = jiggy_honeycombs_draw(dl, arg1); // @jiggy: Honeycombs, drawn with the player (jiggy_honeycombs.c)
     return dl;
 }
 

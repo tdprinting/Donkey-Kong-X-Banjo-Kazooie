@@ -104,7 +104,7 @@ The foundation every later step needs: reading both games' files from the player
   chains, envelopes and pitch) and pickup jingles (compact MIDI on the music bank) from the
   player's ROM and mixes them into DK64's audio (`bridge/src/bk_sound.cpp`,
   `host/src/game/jiggy_audio.cpp`; imports `jiggy_bk_sfx_play`, `jiggy_bk_jingle_play`).
-  Played for note and Jinjo pickups, eggs, the Feathery Flap and Talon Trot steps, with
+  Played for note, Jinjo and Honeycomb pickups, eggs, the Feathery Flap and Talon Trot steps, with
   DK64's pickup sound as the fallback without a Banjo-Kazooie ROM. Still to hook up: the
   Jiggy jingle (DK64's own Golden Banana fanfare needs replacing at the same moment).
 - Music: Banjo sequences and instruments into DK64's sound bank format, or a second
@@ -152,6 +152,10 @@ both play through every mission together.
 - Collectibles from both games side by side. DK64's colored bananas stay, alongside
   Banjo-Kazooie's Music Notes, Jiggies (in place of Golden Bananas), Jinjos, Honeycomb
   pieces, Mumbo Tokens, eggs and feathers, each with its own counter and pickup.
+  Done so far, in the Training Grounds: Music Notes, Jinjos, empty Honeycomb pieces (with
+  Banjo-Kazooie's piece ring; six pieces don't give anything yet) and Honeycombs (a slice of
+  DK64 health each), all saved per save file but the Honeycombs, which come back like
+  Banjo-Kazooie's.
 - Fused worlds (for example, Fungi Forest with Click Clock Wood's seasons): each one blends
   both games' map elements into one world, fun to play and completable from start to finish,
   with its own cutscenes and NPCs. Built from the two games' own maps, models and characters,
