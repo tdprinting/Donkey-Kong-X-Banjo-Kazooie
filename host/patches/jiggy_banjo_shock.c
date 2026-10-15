@@ -45,9 +45,9 @@
 // Player speed where Banjo walks, as in jiggy_banjo3d.c.
 #define SHOCK_WALK_SPEED 8.0f
 
-// Where the pad goes in the Training Grounds: on the grass in front of the treehouse, clear
-// of the notes, Jinjos and Honeycombs placed there (the
-// player starts on its deck, at about (1346, 227, 1098)). Snapped to the floor when placed.
+// Where the pad goes in the Training Grounds: on the grass in front of the treehouse (the
+// player starts on its deck, at about (1346, 227, 1098)), clear of the notes, Jinjos and
+// Honeycombs there. Snapped to the floor when placed.
 #define PAD_MAP MAP_TRAINING_GROUNDS
 #define PAD_X 1215.0f
 #define PAD_Y 30.0f
@@ -141,6 +141,7 @@ static u8 shock_a_held;      // A, held last frame.
 static u8 shock_boosted;     // DK's jump for the spring has been sped up.
 static u8 shock_left_ground; // And has left the ground.
 static u8 shock_launch_wait; // Frames left for DK's jump to start.
+static u32 shock_launch_timer; // When the spring handed DK its A press (object_timer).
 static u8 shock_inject;      // Button reads left to hand DK an A press in.
 
 static f32 shock_walk_top_speed(void) {
@@ -181,15 +182,19 @@ static void pad_place(void) {
     pad_placed = TRUE;
 }
 
-// Whether the player stands on the pad.
-static s32 pad_under(Actor *player) {
+// Whether the player is over the pad, with their feet at its height.
+static s32 pad_at(Actor *player) {
     f32 dx = player->x_position - pad_pos[0];
     f32 dz = player->z_position - pad_pos[2];
     f32 dy = player->y_position - pad_pos[1];
 
     return pad_state == PAD_READY && pad_placed && current_map == PAD_MAP &&
-           player->y_position - player->floor <= SHOCK_AIRBORNE_HEIGHT && dx * dx + dz * dz < PAD_RADIUS * PAD_RADIUS &&
-           dy < PAD_FEET_ABOVE && dy > -PAD_FEET_BELOW;
+           dx * dx + dz * dz < PAD_RADIUS * PAD_RADIUS && dy < PAD_FEET_ABOVE && dy > -PAD_FEET_BELOW;
+}
+
+// Whether the player stands on the pad.
+static s32 pad_under(Actor *player) {
+    return pad_at(player) && player->y_position - player->floor <= SHOCK_AIRBORNE_HEIGHT;
 }
 
 static void shock_play(s32 *animation, f32 *progress, s32 id, f32 start) {
@@ -221,6 +226,7 @@ static void shock_launch(s32 *animation, f32 *progress) {
     shock_boosted = FALSE;
     shock_left_ground = FALSE;
     shock_launch_wait = SHOCK_LAUNCH_FRAMES;
+    shock_launch_timer = object_timer;
     shock_inject = 2; // The held buttons, then the newly pressed ones.
     *animation = SHOCK_ANIM_JUMP;
     *progress = SHOCK_JUMP_START;
@@ -264,8 +270,8 @@ s32 jiggy_banjo_shock_animate(Actor *player, s32 is_player, s32 airborne, f32 se
         return FALSE;
     }
     if (shock_state == SHOCK_OFF) {
-        if (!(pressed & A_BUTTON) || !pad_under(player) ||
-            (player->control_state != STATE_IDLE && player->control_state != STATE_WALK)) {
+        // DK64 handles the A before this runs, so DK's jump off the pad has already started.
+        if (!(pressed & A_BUTTON) || !pad_at(player) || player->control_state != STATE_JUMP) {
             return FALSE;
         }
         // DK jumps on this A: the hop, with Banjo's "ahoo", Banjo-Kazooie's jump sound on a
@@ -279,6 +285,10 @@ s32 jiggy_banjo_shock_animate(Actor *player, s32 is_player, s32 airborne, f32 se
     }
     // In the air, B, Z or a fresh A hands over to Banjo's air moves, as Banjo-Kazooie allows a
     // Feathery Flap or Beak Buster out of the crouch and the spring.
+    // The A press handed to DK for the spring comes back here as newly pressed, so it's not one.
+    if (shock_state == SHOCK_JUMP && object_timer - shock_launch_timer <= SHOCK_LAUNCH_FRAMES) {
+        pressed &= ~A_BUTTON;
+    }
     if (airborne && (pressed & (A_BUTTON | B_BUTTON | Z_TRIG)) && shock_state != SHOCK_HOP) {
         shock_stop(player);
         return FALSE;
