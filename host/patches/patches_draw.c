@@ -206,6 +206,7 @@ Gfx *jiggy_honeycombs_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_feathers_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_mumbo_tokens_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_bottles_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_grublins_draw(Gfx *dl, Actor *actor);
 s32 jiggy_golden_banana_actor_draw(Gfx **dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
@@ -351,6 +352,7 @@ block_47:
     dl = jiggy_feathers_draw(dl, arg1); // @jiggy: Red and Gold Feathers, drawn with the player (jiggy_feathers.c)
     dl = jiggy_mumbo_tokens_draw(dl, arg1); // @jiggy: Mumbo Tokens, drawn with the player (jiggy_mumbo_tokens.c)
     dl = jiggy_bottles_draw(dl, arg1); // @jiggy: Bottles and his molehill in Jungle Japes (jiggy_bottles.c)
+    dl = jiggy_grublins_draw(dl, arg1); // @jiggy: Grublins in Jungle Japes (jiggy_grublins.c)
     return dl;
 }
 
