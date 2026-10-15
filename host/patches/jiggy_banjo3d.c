@@ -346,6 +346,8 @@ s32 jiggy_banjo_replaces(Actor *actor) {
     return banjo_is_player && banjo_state == BANJO_READY && banjo_here(actor);
 }
 
+Gfx *jiggy_banjo_eggs(Gfx *dl, Actor *player, s32 banjo_is_player, s32 *animation, f32 *progress, s32 *selectors);
+
 // Called after an actor is drawn (func_global_asm_80630DCC in patches_draw.c).
 Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     f32 yaw;
@@ -369,6 +371,8 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     }
     banjo_animate(actor);
     banjo_set_selectors();
+    // Egg Firing (jiggy_banjo_eggs.c): fires and draws eggs, and plays its own move on Banjo.
+    dl = jiggy_banjo_eggs(dl, actor, banjo_is_player, &banjo_animation, &banjo_progress, banjo_pose.selectors);
 
     // Rotations are 12-bit angles. Banjo faces where the player faces, in their place or one
     // step to their side.
