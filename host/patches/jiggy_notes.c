@@ -190,26 +190,7 @@ static const NotePlacement notes_galleon[] = {
     {2372.0f, 1610.0f, 3318.0f, 6},
 };
 
-// The Training Grounds: over the grass below the treehouse deck (where the player starts),
-// from the foot of the deck past the pond's edge.
-static const NotePlacement notes_training_grounds[] = {
-    {1360.0f, 37.0f, 1010.0f, 0},
-    {1366.0f, 33.0f, 940.0f, 3},
-    {1372.0f, 29.0f, 870.0f, 6},
-    {1480.0f, 34.0f, 940.0f, 9},
-    {1550.0f, 36.0f, 990.0f, 12},
-};
-// Jungle Japes: along the path from the entrance through the first clearing.
-static const NotePlacement notes_japes[] = {
-    {945.0f, 280.0f, 660.0f, 0},
-    {962.0f, 280.0f, 560.0f, 3},
-    {985.0f, 280.0f, 450.0f, 6},
-    {1060.0f, 280.0f, 395.0f, 9},
-    {1150.0f, 280.0f, 385.0f, 12},
-    {1225.0f, 280.0f, 350.0f, 15},
-    {1300.0f, 280.0f, 300.0f, 2},
-    {1380.0f, 280.0f, 240.0f, 5},
-};
+
 // Creepy Castle (fused with Mad Monster Mansion): trails up the castle's hill, each note between
 // two of DK64's own colored bananas (the yellow ones round the lower paths, the red ones up the
 // path to the top) where the floor runs unbroken from one to the other, so every note sits on
