@@ -59,7 +59,8 @@ static const u16 grunty_talk_sfx[] = {0xEC, 0xED, 0xEE};
 #define TEXT_Y(y) (((y) - 117) * 4 / 5 + 120)
 #define TEXT_MAX_LINES 5
 #define TEXT_PAGE_LINES 4
-#define TEXT_PROMPT_LINES 2
+// A choice's prompt gets the lines its answers leave (at least two).
+#define TEXT_PROMPT_LINES_MIN 2
 #define TEXT_LINE_MAX 48
 #define TEXT_CHARS_PER_FRAME 1
 #define BOX_FADE_STEP 0x30
@@ -394,6 +395,7 @@ void grunty_talk_pages(const char *const *pages, s32 count) {
 }
 
 void grunty_talk_choice(const char *prompt, const char *const *answers, s32 answer_count) {
+    s32 prompt_lines;
     s32 i;
 
     if (answer_count > GRUNTY_ANSWERS_MAX) {
@@ -404,7 +406,12 @@ void grunty_talk_choice(const char *prompt, const char *const *answers, s32 answ
     talk_answer_count = answer_count;
     talk_cursor = 0;
     talk_cursor_wait = 0;
-    talk_typed_lines = talk_wrap(prompt, 0, TEXT_PROMPT_LINES);
+    prompt_lines = TEXT_MAX_LINES - answer_count;
+    if (prompt_lines < TEXT_PROMPT_LINES_MIN) {
+        prompt_lines = TEXT_PROMPT_LINES_MIN;
+    }
+    // The answers start on the line after the prompt's last.
+    talk_typed_lines = talk_wrap(prompt, 0, prompt_lines);
     talk_line_count = talk_typed_lines;
     for (i = 0; i < answer_count && talk_line_count < TEXT_MAX_LINES; i++) {
         s32 n = 0;

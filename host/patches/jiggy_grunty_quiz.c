@@ -237,6 +237,10 @@ static void quiz_answered(Actor *player, s32 answer) {
             grunty_talk_pages(quiz_won, ARRAY_COUNT_OF(quiz_won));
             return;
         }
+        // "Right again?" only once one's already been right.
+        if (quiz_right == 1 && pick == 2) {
+            pick = (s32)(grunty_random() * 2) % 2;
+        }
         grunty_talk_pages(quiz_right_lines[pick], 1);
     } else {
         jiggy_bk_jingle_play(GRUNTY_JINGLE_BUZZER, 22000.0f / 32767.0f);
