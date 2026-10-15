@@ -75,11 +75,15 @@ public:
     // through segment 2.
     const std::vector<std::array<uint32_t, 2>>& commands() const { return commands_; }
     const std::vector<uint8_t>& texture_data() const { return texture_data_; }
+    // The geo list (render commands: bones, LODs, selectors, which sub-lists to draw), from
+    // its start to the end of the file, since commands address each other by offset.
+    const std::vector<uint8_t>& geo_list() const { return geo_list_; }
 
     std::optional<BkModelImage> decode_texture(size_t index, std::string* error) const;
 
 private:
     std::vector<uint8_t> texture_data_;
+    std::vector<uint8_t> geo_list_;
     std::vector<BkModelVertex> vertices_;
     std::vector<BkModelTexture> textures_;
     std::vector<BkModelTriangle> triangles_;

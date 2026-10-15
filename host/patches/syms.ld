@@ -85,3 +85,4 @@ jiggy_bk_asset_read = 0x8F000408;
 jiggy_bk_sprite_frame_count = 0x8F00040C;
 jiggy_bk_sprite_frame_rgba16 = 0x8F000410;
 jiggy_bk_model_build = 0x8F000414;
+jiggy_bk_model_pose = 0x8F000418;

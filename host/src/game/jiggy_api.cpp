@@ -7,14 +7,18 @@
 #include "jiggy_host.h"
 
 #include <algorithm>
+#include <cstring>
 #include <fstream>
+#include <map>
 #include <mutex>
 #include <optional>
 #include <utility>
 
+#include "jiggy/bk_anim.hpp"
 #include "jiggy/bk_assets.hpp"
 #include "jiggy/bk_gfx.hpp"
 #include "jiggy/bk_model.hpp"
+#include "jiggy/bk_pose.hpp"
 #include "jiggy/bk_sprite.hpp"
 #include "jiggy/rom.hpp"
 #include "librecomp/helpers.hpp"
@@ -29,6 +33,18 @@ namespace {
     std::optional<jiggy::BkAssetTable> banjo_assets;
     // The last sprite asked for, so drawing a frame at a time doesn't re-inflate it.
     std::optional<std::pair<uint32_t, jiggy::BkSprite>> cached_sprite;
+
+    // Models built into N64 memory with jiggy_bk_model_build, by asset id: what posing them
+    // needs. The block's bytes are dropped once copied.
+    struct BuiltModel {
+        uint32_t address = 0;
+        jiggy::BkModel model;
+        jiggy::BkSkeleton skeleton;
+        jiggy::BkGfxBlock block;
+    };
+    std::mutex model_mutex;
+    std::map<uint32_t, BuiltModel> built_models;
+    std::map<uint32_t, std::optional<jiggy::BkAnimation>> animations;
 
     // Expects banjo_mutex to be held.
     bool adopt_rom(jiggy::Rom rom, std::string& error) {
@@ -48,6 +64,11 @@ namespace {
         banjo_rom = std::move(rom);
         banjo_assets = std::move(assets);
         cached_sprite.reset();
+        {
+            std::lock_guard models_lock{model_mutex};
+            built_models.clear();
+            animations.clear();
+        }
         return true;
     }
 
@@ -265,11 +286,141 @@ extern "C" void jiggy_bk_model_build(uint8_t* rdram, recomp_context* ctx) {
         _return<s32>(ctx, -1);
         return;
     }
-    if (dst != NULLPTR && block->bytes.size() <= dst_len) {
+    const size_t size = block->bytes.size();
+    if (dst != NULLPTR && size <= dst_len && (base & 7) == 0) {
         // RDRAM is stored with 32-bit words byteswapped, so copy through MEM_B.
-        for (size_t i = 0; i < block->bytes.size(); i++) {
+        for (size_t i = 0; i < size; i++) {
             MEM_B(i, dst) = static_cast<s8>(block->bytes[i]);
         }
+        auto skeleton = jiggy::BkSkeleton::parse(*data, &error);
+        if (skeleton) {
+            block->bytes.clear();
+            block->bytes.shrink_to_fit();
+            std::lock_guard lock{model_mutex};
+            built_models[id] = BuiltModel{base, std::move(*model), std::move(*skeleton), std::move(*block)};
+        } else {
+            fprintf(stderr, "[Jiggy] Banjo-Kazooie model 0x%X has no usable skeleton: %s\n", id, error.c_str());
+        }
     }
-    _return<s32>(ctx, s32(block->bytes.size()));
+    _return<s32>(ctx, s32(size));
+}
+
+namespace {
+    // JiggyBkPose (patches/jiggy.h), field offsets.
+    constexpr uint32_t pose_model = 0x00;
+    constexpr uint32_t pose_block = 0x04;
+    constexpr uint32_t pose_animation = 0x08;
+    constexpr uint32_t pose_progress = 0x0C;
+    constexpr uint32_t pose_world = 0x10;
+    constexpr uint32_t pose_selectors = 0x50;
+    constexpr uint32_t pose_gfx = 0xF8;
+    constexpr uint32_t pose_gfx_capacity = 0xFC;
+    constexpr uint32_t pose_mtx = 0x100;
+    constexpr uint32_t pose_mtx_capacity = 0x104;
+
+    float read_f32(uint8_t* rdram, gpr base, uint32_t offset) {
+        const uint32_t bits = uint32_t(MEM_W(offset, base));
+        float value;
+        std::memcpy(&value, &bits, sizeof(value));
+        return value;
+    }
+
+    // Reads and caches an animation, so later frames only look it up. Takes banjo_mutex (to
+    // read the asset) and model_mutex, so callers must hold neither.
+    void cache_animation(uint32_t id) {
+        {
+            std::lock_guard lock{model_mutex};
+            if (animations.contains(id)) {
+                return;
+            }
+        }
+        std::optional<jiggy::BkAnimation> animation;
+        std::string error = "not in the ROM";
+        auto data = load_asset(id);
+        if (data) {
+            animation = jiggy::BkAnimation::parse(*data, &error);
+        }
+        if (!animation) {
+            fprintf(stderr, "[Jiggy] Banjo-Kazooie asset 0x%X is not a usable animation: %s\n", id, error.c_str());
+        }
+        std::lock_guard lock{model_mutex};
+        animations.emplace(id, std::move(animation));
+    }
+}
+
+// s32 jiggy_bk_model_pose(JiggyBkPose* pose): writes a display list drawing a model built
+// with jiggy_bk_model_build in an animation's pose (bridge/include/jiggy/bk_pose.hpp), and
+// the bone matrices it loads. Returns the display list's command count, or -1 if the model
+// wasn't built at that address or the buffers are too small.
+extern "C" void jiggy_bk_model_pose(uint8_t* rdram, recomp_context* ctx) {
+    const gpr pose = ctx->r4;
+    const uint32_t id = uint32_t(MEM_W(pose_model, pose));
+    const uint32_t block_address = uint32_t(MEM_W(pose_block, pose));
+    const auto animation_id = int32_t(MEM_W(pose_animation, pose));
+    const float progress = read_f32(rdram, pose, pose_progress);
+    jiggy::BkMatrix world;
+    for (uint32_t i = 0; i < 16; i++) {
+        world[i / 4][i % 4] = read_f32(rdram, pose, pose_world + i * 4);
+    }
+    jiggy::BkSelectors selectors;
+    for (uint32_t i = 0; i < selectors.size(); i++) {
+        selectors[i] = int32_t(MEM_W(pose_selectors + i * 4, pose));
+    }
+    const gpr gfx = MEM_W(pose_gfx, pose);
+    const uint32_t gfx_capacity = uint32_t(MEM_W(pose_gfx_capacity, pose));
+    const gpr mtx = MEM_W(pose_mtx, pose);
+    const uint32_t mtx_capacity = uint32_t(MEM_W(pose_mtx_capacity, pose));
+
+    if (animation_id >= 0) {
+        cache_animation(uint32_t(animation_id));
+    }
+    std::lock_guard lock{model_mutex};
+    auto built = built_models.find(id);
+    if (built == built_models.end() || built->second.address != block_address) {
+        _return<s32>(ctx, -1);
+        return;
+    }
+    const BuiltModel& m = built->second;
+    std::vector<jiggy::BkBoneTransform> transforms;
+    if (animation_id >= 0) {
+        auto animation = animations.find(uint32_t(animation_id));
+        if (animation != animations.end() && animation->second) {
+            transforms = animation->second->sample(progress);
+        }
+    }
+    const auto bones = jiggy::bk_skeleton_matrices(m.skeleton, transforms);
+    if (bones.size() + 1 > mtx_capacity) {
+        _return<s32>(ctx, -1);
+        return;
+    }
+
+    // The root matrix first, then one per skeleton entry, each placed in the world.
+    auto write_mtx = [&](uint32_t index, const jiggy::BkMatrix& matrix) {
+        const auto bytes = jiggy::bk_matrix_to_mtx(matrix);
+        for (uint32_t i = 0; i < bytes.size(); i++) {
+            MEM_B(index * 64 + i, mtx) = static_cast<s8>(bytes[i]);
+        }
+        return uint32_t(mtx) + index * 64;
+    };
+    const uint32_t root = write_mtx(0, world);
+    std::vector<uint32_t> addresses;
+    addresses.reserve(bones.size());
+    for (size_t i = 0; i < bones.size(); i++) {
+        addresses.push_back(write_mtx(uint32_t(i + 1), jiggy::bk_matrix_multiply(bones[i], world)));
+    }
+
+    std::string error;
+    auto list = jiggy::bk_pose_display_list(m.model, m.block, m.address, root, addresses, selectors, &error);
+    if (!list || list->commands.size() > gfx_capacity) {
+        if (!list) {
+            fprintf(stderr, "[Jiggy] Banjo-Kazooie model 0x%X can't be posed: %s\n", id, error.c_str());
+        }
+        _return<s32>(ctx, -1);
+        return;
+    }
+    for (size_t i = 0; i < list->commands.size(); i++) {
+        MEM_W(i * 8, gfx) = s32(list->commands[i][0]);
+        MEM_W(i * 8 + 4, gfx) = s32(list->commands[i][1]);
+    }
+    _return<s32>(ctx, s32(list->commands.size()));
 }

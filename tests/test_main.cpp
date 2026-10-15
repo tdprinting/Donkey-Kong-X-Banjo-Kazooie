@@ -9,9 +9,11 @@
 #include <string>
 #include <vector>
 
+#include "jiggy/bk_anim.hpp"
 #include "jiggy/bk_assets.hpp"
 #include "jiggy/bk_gfx.hpp"
 #include "jiggy/bk_model.hpp"
+#include "jiggy/bk_pose.hpp"
 #include "jiggy/bk_sprite.hpp"
 #include "jiggy/bridge.h"
 #include "jiggy/bridge.hpp"
@@ -654,30 +656,181 @@ TEST(bk_model_to_f3dex2_converts_commands) {
     if (!block) {
         return;
     }
-    // 5 prologue + 10 model + 7 epilogue commands, then 13 render modes, 4 vertices and the
+    // 6 prologue + 7 epilogue + 10 model commands, then 13 render modes, 4 vertices and the
     // 34 bytes of texture data, padded to 8.
-    const size_t dl = 22 * 8, vertices = dl + 13 * 16, textures = vertices + 4 * 16;
-    CHECK(block->display_list_commands == 22);
+    const size_t dl = 23 * 8, vertices = dl + 13 * 16, textures = vertices + 4 * 16;
+    CHECK(block->display_list_commands == 23);
     CHECK(block->dropped_commands == 0);
+    CHECK(block->prologue_offset == 0 && block->epilogue_offset == 6 * 8 && block->commands_offset == 13 * 8);
     CHECK(block->bytes.size() == ((textures + 34 + 7) & ~size_t(7)));
     auto w = [&](size_t at) { return read_be32_at(block->bytes, at); };
     auto cmd = [&](size_t i, uint32_t w0, uint32_t w1) { return w(i * 8) == w0 && w(i * 8 + 4) == w1; };
-    CHECK(cmd(5, 0xD7000002, 0xFFFFFFFF));                          // G_TEXTURE
-    CHECK(cmd(6, 0xFD100000, base + uint32_t(textures)));           // palette
-    CHECK(cmd(7, 0xFD500000, base + uint32_t(textures) + 0x20));    // texels
-    CHECK(cmd(8, 0x01003006, base + uint32_t(vertices)));           // G_VTX 3 at slot 0
-    CHECK(cmd(9, 0x05000204, 0));                                   // G_TRI1
-    CHECK(cmd(10, 0x01001008, base + uint32_t(vertices) + 0x30));   // G_VTX 1 at slot 3
-    CHECK(cmd(11, 0x06000206, 0x00020406));                         // G_TRI2
-    CHECK(cmd(12, 0xFD100000, base + uint32_t(textures)));          // animated: frame 0 stand-in
-    CHECK(cmd(14, 0x00000000, 0));                                  // model's ENDDL
-    CHECK(cmd(21, 0xDF000000, 0));                                  // block's own ENDDL
+    CHECK(cmd(5, 0xDF000000, 0));                                   // prologue's end
+    CHECK(cmd(12, 0xDF000000, 0));                                  // epilogue's end
+    CHECK(cmd(13, 0xD7000002, 0xFFFFFFFF));                         // G_TEXTURE
+    CHECK(cmd(14, 0xFD100000, base + uint32_t(textures)));          // palette
+    CHECK(cmd(15, 0xFD500000, base + uint32_t(textures) + 0x20));   // texels
+    CHECK(cmd(16, 0x01003006, base + uint32_t(vertices)));          // G_VTX 3 at slot 0
+    CHECK(cmd(17, 0x05000204, 0));                                  // G_TRI1
+    CHECK(cmd(18, 0x01001008, base + uint32_t(vertices) + 0x30));   // G_VTX 1 at slot 3
+    CHECK(cmd(19, 0x06000206, 0x00020406));                         // G_TRI2
+    CHECK(cmd(20, 0xFD100000, base + uint32_t(textures)));          // animated: frame 0 stand-in
+    CHECK(cmd(22, 0xDF000000, 0));                                  // model's ENDDL
     // Render mode table entry 1, then the vertices and texture data.
     CHECK(w(dl + 16) == 0xE200001C && w(dl + 20) == 0x0C192078 && w(dl + 24) == 0xDF000000);
     CHECK(w(vertices + 16) == 0x00640000);                          // vertex 1: x 100, y 0
     CHECK(block->bytes[textures] == 0xF8 && block->bytes[textures + 32] == 0x01);
 
     CHECK(!jiggy::bk_model_to_f3dex2(*model, base + 4, &error).has_value());
+}
+
+// The test model plus a two-bone skeleton and a geo list: a bone with a skinned joint, then
+// a selector choosing between two sub-lists.
+Bytes make_test_bk_model_with_bones() {
+    Bytes m = make_test_bk_model();
+    auto put_f32 = [&m](size_t at, float v) {
+        uint32_t bits;
+        std::memcpy(&bits, &v, 4);
+        put_be32(m, at, bits);
+    };
+    const size_t skeleton = m.size();
+    put_be32(m, 0x18, uint32_t(skeleton));
+    m.resize(skeleton + 8 + 2 * 16, 0);
+    put_f32(skeleton, 10.0f);
+    put_be16(m, skeleton + 4, 2);
+    put_be16(m, skeleton + 8 + 12, 1);       // entry 0: bone 1 at the origin, no parent
+    put_be16(m, skeleton + 8 + 14, 0xFFFF);
+    put_f32(skeleton + 24, 100.0f);          // entry 1: bone 2 pivoting at x 100, on entry 0
+    put_be16(m, skeleton + 24 + 12, 2);
+    put_be16(m, skeleton + 24 + 14, 0);
+
+    const size_t geo = m.size();
+    put_be32(m, 0x04, uint32_t(geo));
+    m.resize(geo + 0x58, 0);
+    put_be32(m, geo + 0x00, 2);              // BONE entry 1, its children at +0x10
+    put_be32(m, geo + 0x04, 0x20);
+    m[geo + 0x08] = 0x10;
+    m[geo + 0x09] = 1;
+    put_be32(m, geo + 0x10, 5);              // SKINNING lists 0 and 5
+    put_be16(m, geo + 0x18, 0);
+    put_be16(m, geo + 0x1A, 5);
+    put_be32(m, geo + 0x20, 0x0C);           // SELECTOR 3 of two branches
+    put_be16(m, geo + 0x28, 2);
+    put_be16(m, geo + 0x2A, 3);
+    put_be32(m, geo + 0x2C, 0x18);
+    put_be32(m, geo + 0x30, 0x28);
+    put_be32(m, geo + 0x38, 3);              // LOADDL 7
+    put_be16(m, geo + 0x40, 7);
+    put_be32(m, geo + 0x48, 3);              // LOADDL 8
+    put_be16(m, geo + 0x50, 8);
+    return m;
+}
+
+TEST(bk_pose_display_list_walks_bones) {
+    std::string error;
+    const Bytes bytes = make_test_bk_model_with_bones();
+    auto model = jiggy::BkModel::parse(bytes, &error);
+    CHECK(model.has_value());
+    auto skeleton = jiggy::BkSkeleton::parse(bytes, &error);
+    CHECK(skeleton.has_value() && skeleton->bones.size() == 2);
+    if (!model || !skeleton) {
+        return;
+    }
+    CHECK(skeleton->scale == 10.0f && skeleton->bones[1].pivot[0] == 100.0f && skeleton->bones[1].parent == 0);
+    const uint32_t base = 0x80400000;
+    auto block = jiggy::bk_model_to_f3dex2(*model, base, &error);
+    CHECK(block.has_value());
+    if (!block) {
+        return;
+    }
+    const uint32_t root = 0x80500000, a = 0x80500040, b = 0x80500080;
+    const uint32_t bones[] = {a, b};
+    jiggy::BkSelectors selectors{};
+    selectors[3] = 2;
+    auto pose = jiggy::bk_pose_display_list(*model, *block, base, root, bones, selectors, &error);
+    CHECK(pose.has_value());
+    if (!pose) {
+        return;
+    }
+    const uint32_t list = base + block->commands_offset;
+    const std::vector<std::array<uint32_t, 2>> expected = {
+        {0xDE000000, base + block->prologue_offset},
+        {0xDA380002, root},     // push the root matrix
+        {0xDE000000, list},     // skinning: first list with the enclosing (root) matrix
+        {0xDA380003, b},
+        {0xDE000000, list + 5 * 8},
+        {0xDA380003, root},     // the selector's second branch, outside the bone
+        {0xDE000000, list + 8 * 8},
+        {0xD8380002, 0x40},
+        {0xDE000000, base + block->epilogue_offset},
+        {0xDF000000, 0},
+    };
+    CHECK(pose->commands == expected);
+    CHECK(pose->sub_lists == 3);
+
+    // Hidden selector branches and a bone the skeleton lacks.
+    selectors[3] = 0;
+    pose = jiggy::bk_pose_display_list(*model, *block, base, root, bones, selectors, &error);
+    CHECK(pose.has_value() && pose->sub_lists == 2);
+    CHECK(!jiggy::bk_pose_display_list(*model, *block, base, root, std::span<const uint32_t>(bones, 1), selectors, &error));
+}
+
+TEST(bk_animation_poses_skeleton) {
+    // Frames 0-10: bone 2 turns from yaw 0 to 90 degrees and moves 1 unit (x 10 scale) in x.
+    Bytes anim(8 + 4 + 8 + 4 + 4, 0);
+    put_be16(anim, 2, 10);
+    put_be16(anim, 4, 2);
+    put_be16(anim, 8, (2 << 4) | 1);
+    put_be16(anim, 10, 2);
+    put_be16(anim, 12, 0);
+    put_be16(anim, 14, 0);
+    put_be16(anim, 16, 10);
+    put_be16(anim, 18, 90 * 64);
+    put_be16(anim, 20, (2 << 4) | 6);
+    put_be16(anim, 22, 1);
+    put_be16(anim, 24, 0);
+    put_be16(anim, 26, 64);
+    std::string error;
+    auto animation = jiggy::BkAnimation::parse(anim, &error);
+    CHECK(animation.has_value());
+    auto skeleton = jiggy::BkSkeleton::parse(make_test_bk_model_with_bones(), &error);
+    CHECK(skeleton.has_value());
+    if (!animation || !skeleton) {
+        return;
+    }
+    CHECK(animation->tracks().size() == 2 && animation->tracks()[0].keys[1].value == 90 * 64);
+    const auto pose = animation->sample(0.5f);
+    CHECK(pose.size() == 3 && pose[2].rotation[1] == 45.0f && pose[2].translation[0] == 1.0f);
+    const auto matrices = jiggy::bk_skeleton_matrices(*skeleton, pose);
+    CHECK(matrices.size() == 2);
+    if (matrices.size() != 2) {
+        return;
+    }
+    CHECK(matrices[0] == jiggy::bk_matrix_identity());
+    auto apply = [](const jiggy::BkMatrix& m, float x, float y, float z, int axis) {
+        return x * m[0][axis] + y * m[1][axis] + z * m[2][axis] + m[3][axis];
+    };
+    auto near = [](float a, float b) { return a - b < 0.001f && b - a < 0.001f; };
+    // The pivot moves by the translation; a point beside it turns about it.
+    CHECK(near(apply(matrices[1], 100, 0, 0, 0), 110.0f) && near(apply(matrices[1], 100, 0, 0, 2), 0.0f));
+    CHECK(near(apply(matrices[1], 101, 0, 0, 0), 110.70711f) && near(apply(matrices[1], 101, 0, 0, 2), -0.70711f));
+    // At rest, everything stays where it is modelled.
+    const auto rest = jiggy::bk_skeleton_matrices(*skeleton, {});
+    CHECK(rest[1] == jiggy::bk_matrix_identity());
+
+    auto bad = anim;
+    put_be16(bad, 16, 0); // keys out of order
+    CHECK(!jiggy::BkAnimation::parse(bad, &error));
+}
+
+TEST(bk_matrix_to_mtx_fixed_point) {
+    auto m = jiggy::bk_matrix_identity();
+    m[3][0] = 1.5f;
+    m[3][1] = -2.0f;
+    const auto mtx = jiggy::bk_matrix_to_mtx(m);
+    CHECK(mtx[0] == 0x00 && mtx[1] == 0x01 && mtx[32] == 0 && mtx[33] == 0);  // [0][0] = 1
+    CHECK(mtx[24] == 0x00 && mtx[25] == 0x01 && mtx[56] == 0x80 && mtx[57] == 0x00); // [3][0] = 1.5
+    CHECK(mtx[26] == 0xFF && mtx[27] == 0xFE && mtx[58] == 0x00 && mtx[59] == 0x00); // [3][1] = -2
 }
 
 TEST(bk_model_rejects_bad_data) {

@@ -76,6 +76,10 @@ std::optional<BkModel> BkModel::parse(std::span<const uint8_t> data, std::string
     const uint32_t gfx_list = read_be32(data, 0x0C);
     const uint32_t vtx_list = read_be32(data, 0x10);
     model.header_tri_count_ = read_be16(data, 0x30);
+    const uint32_t geo_list = read_be32(data, 0x04);
+    if (geo_list != 0 && geo_list < data.size()) {
+        model.geo_list_.assign(data.begin() + std::ptrdiff_t(geo_list), data.end());
+    }
 
     if (vtx_list == 0 || !range_ok(data, vtx_list, kVertexListHeaderSize)) {
         set_error(error, "model has no vertex list");

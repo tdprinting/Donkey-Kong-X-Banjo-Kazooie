@@ -16,6 +16,7 @@ void set_error(std::string* error, std::string message) {
 namespace f3dex {
 constexpr uint8_t G_VTX = 0x04;
 constexpr uint8_t G_DL = 0x06;
+constexpr uint8_t G_POPMTX = 0xBD;
 constexpr uint8_t G_TRI2 = 0xB1;
 constexpr uint8_t G_RDPHALF_2 = 0xB3;
 constexpr uint8_t G_RDPHALF_1 = 0xB4;
@@ -116,10 +117,20 @@ std::optional<BkGfxBlock> bk_model_to_f3dex2(const BkModel& model, uint32_t base
     emit(0xE3000A01, 0x00100000); // gsDPSetCycleType(G_CYC_2CYCLE)
     emit(uint32_t(G_SETENVCOLOR) << 24, 0xFFFFFFFF);
     emit(uint32_t(G_SETBLENDCOLOR) << 24, 0x00000080);
+    emit(f3dex2::G_ENDDL << 24, 0);
 
-    const size_t prologue = dl.size();
-    const size_t epilogue = 7;
-    const size_t dl_bytes = (prologue + model.commands().size() + epilogue) * 8;
+    // Epilogue: back to DK64's usual 1-cycle state.
+    const size_t epilogue_at = dl.size();
+    emit(uint32_t(G_RDPPIPESYNC) << 24, 0);
+    emit(0xE3000A01, 0x00000000); // gsDPSetCycleType(G_CYC_1CYCLE)
+    emit(0xE3000800, 0x00000000); // gsDPPipelineMode(G_PM_NPRIMITIVE)
+    emit(0xE3001001, 0x00000000); // gsDPSetTextureLUT(G_TT_NONE)
+    emit(f3dex2::G_TEXTURE << 24, 0); // gsSPTexture(0, 0, 0, 0, G_OFF)
+    emit(uint32_t(G_RDPPIPESYNC) << 24, 0);
+    emit(f3dex2::G_ENDDL << 24, 0);
+
+    const size_t commands_at = dl.size();
+    const size_t dl_bytes = (commands_at + model.commands().size()) * 8;
     const size_t render_modes_at = dl_bytes;
     const size_t vertices_at = render_modes_at + kRenderModes.size() * 16;
     const size_t textures_at = align8(vertices_at + model.vertices().size() * kVertexSize);
@@ -215,8 +226,12 @@ std::optional<BkGfxBlock> bk_model_to_f3dex2(const BkModel& model, uint32_t base
                 emit((f3dex2::G_RDPHALF_2 << 24) | (w0 & 0x00FFFFFF), w1);
                 continue;
             case f3dex::G_ENDDL:
+                emit(f3dex2::G_ENDDL << 24, 0);
+                continue;
             case f3dex::G_NOOP:
-                // The model's sub-lists are drawn back to back, so their ends become no-ops.
+            case f3dex::G_POPMTX:
+                // Skinning pops back to the enclosing bone's matrix before loading that bone's
+                // vertices; the pose display list loads that matrix before calling the list.
                 emit(f3dex2::G_NOOP << 24, 0);
                 continue;
             default:
@@ -233,21 +248,12 @@ std::optional<BkGfxBlock> bk_model_to_f3dex2(const BkModel& model, uint32_t base
                     emit(w0, w1);
                     continue;
                 }
-                // Matrix pops (bone skinning), CULLDL, MOVEWORD and the like.
+                // CULLDL, MOVEWORD and the like.
                 break;
         }
         dropped++;
         emit(f3dex2::G_NOOP << 24, 0);
     }
-
-    // Epilogue: back to DK64's usual 1-cycle state.
-    emit(uint32_t(G_RDPPIPESYNC) << 24, 0);
-    emit(0xE3000A01, 0x00000000); // gsDPSetCycleType(G_CYC_1CYCLE)
-    emit(0xE3000800, 0x00000000); // gsDPPipelineMode(G_PM_NPRIMITIVE)
-    emit(0xE3001001, 0x00000000); // gsDPSetTextureLUT(G_TT_NONE)
-    emit(f3dex2::G_TEXTURE << 24, 0); // gsSPTexture(0, 0, 0, 0, G_OFF)
-    emit(uint32_t(G_RDPPIPESYNC) << 24, 0);
-    emit(f3dex2::G_ENDDL << 24, 0);
 
     BkGfxBlock block;
     block.bytes.assign(total, 0);
@@ -277,6 +283,9 @@ std::optional<BkGfxBlock> bk_model_to_f3dex2(const BkModel& model, uint32_t base
     }
     std::copy(model.texture_data().begin(), model.texture_data().end(), block.bytes.begin() + std::ptrdiff_t(textures_at));
 
+    block.prologue_offset = 0;
+    block.epilogue_offset = uint32_t(epilogue_at * 8);
+    block.commands_offset = uint32_t(commands_at * 8);
     block.display_list_commands = dl.size();
     block.dropped_commands = dropped;
     return block;
