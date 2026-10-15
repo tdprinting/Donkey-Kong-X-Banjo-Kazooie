@@ -14,7 +14,7 @@ animations, sounds and text from the player's own ROM.
 | DK Isles (hub) | Gruntilda's Lair, Spiral Mountain | Bottles' hints, Brentilda, Cheato, Gruntilda's taunts | 0x00-0x0F |
 | Jungle Japes | Mumbo's Mountain | Bottles, Conga, Chimpy, Grublins, Jinjos | 0x10-0x1F |
 | Angry Aztec | Gobi's Valley | Gobi, Jinxy, Trunker, Grabba, Ancient Ones | 0x20-0x2F |
-| Frantic Factory | Rusty Bucket Bay | Boss Boom Box, Snorkel, whistles, Grimlets | 0x30-0x3F |
+| Frantic Factory | Rusty Bucket Bay | Boss Boom Box (0x31), Snorkel and the whistles (0x32), Flotsams; Jinjo Jiggy 0x30 | 0x30-0x3F |
 | Gloomy Galleon | Treasure Trove Cove, Clanker's Cavern | Captain Blubber, Nipper, Clanker, Snippets | 0x40-0x4F |
 | Fungi Forest | Click Clock Wood | Eyrie, Gnawty, Nabnut, the seasons | 0x50-0x5F |
 | Crystal Caves | Freezeezy Peak | Boggy, Wozza, the Twinklies, Sir Slush | 0x60-0x6F |
