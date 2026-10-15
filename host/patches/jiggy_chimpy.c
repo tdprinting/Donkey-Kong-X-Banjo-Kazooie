@@ -19,7 +19,7 @@
 // Banjo-Kazooie's puzzle solved fanfare plays (COMUSIC_2D, as the orange reaching him plays it),
 // he hops off his stump to the ground beside it, and the stump rises out of the ground as
 // chchimpystump does (2.5 units a frame, scaled, with its rumble: lookup 0x6A, SFX 0x3EC at
-// pitch 0.2) with a Golden Banana (drawn as a Jiggy by jiggy_collectibles.c) appearing on top,
+// pitch 0.2) with a Golden Banana (drawn as a Jiggy by jiggy_collectibles.c) appearing beside it,
 // with Banjo-Kazooie's Jiggy jingle. The player is held in the game's cutscene lock from his
 // thanks until the Golden Banana appears.
 //
@@ -133,7 +133,7 @@ static const u16 chimpy_talk_sfx[] = {0x58, 0x59, 0x5A};
 #define REWARD_GOLDEN_BANANA 0x2D // ACTOR_GOLDEN_BANANA
 #define REWARD_SPAWNER_TYPE (REWARD_GOLDEN_BANANA - 0x10)
 #define FLAG_TYPE_PERMANENT 0
-#define REWARD_HEIGHT 6.0f // Above the raised stump's top.
+#define REWARD_HEIGHT 6.0f // Above the ground.
 #define REWARD_CLEARANCE 30.0f
 #define REWARD_RESPAWN_FRAMES 90
 
@@ -175,16 +175,18 @@ static const u16 chimpy_talk_sfx[] = {0x58, 0x59, 0x5A};
 // trail (the nearest note 205 off), the feathers (181 and 183 off), the Mumbo Tokens, Jinjos and
 // Honeycombs, south of the Grublins' middle path, and short of the out of bounds north-east
 // corner. He hops off to the ground a little south-west of his stump; the orange waits on the
-// ground beside Conga, toward the area and clear of his Golden Banana (1395, 425).
+// ground beside Conga, toward the area and clear of his Golden Banana (1395, 425). Chimpy's own
+// Golden Banana lands south-east of the stump: north-east of it is out of bounds.
 typedef struct {
     Maps map;
     f32 x, y, z;              // The stump (y is the area's floor, if the floor isn't found).
     f32 ground_x, ground_z;   // Where he stands once he's hopped off it.
     f32 orange_x, orange_z;   // Where the orange waits once Conga's beaten.
+    f32 reward_x, reward_z;   // Where his Golden Banana lands, on the ground beside the stump.
     s16 flag;                 // The Golden Banana's DK64 permanent flag.
 } ChimpyPlacement;
 static const ChimpyPlacement chimpy_spots[] = {
-    {MAP_JAPES, 1269.0f, 280.0f, 550.0f, 1224.0f, 505.0f, 1385.0f, 480.0f, 0x31C},
+    {MAP_JAPES, 1269.0f, 280.0f, 550.0f, 1224.0f, 505.0f, 1385.0f, 480.0f, 1310.0f, 475.0f, 0x31C},
 };
 
 // What he says. Each page is one press of A; lines are broken to fit the box when shown.
@@ -451,9 +453,11 @@ static void chimpy_place(Actor *player) {
         chimpy_pos[2] = chimpy_spot->z;
         reward_due = FALSE;
     }
-    reward_spot[0] = chimpy_spot->x;
-    reward_spot[1] = chimpy_floor_y + STUMP_HEIGHT;
-    reward_spot[2] = chimpy_spot->z;
+    // DK64 doesn't know the stump's there, so it can't be climbed: the Golden Banana lands on the
+    // ground beside it, in easy reach.
+    reward_spot[0] = chimpy_spot->reward_x;
+    reward_spot[1] = chimpy_floor(chimpy_spot->reward_x, chimpy_floor_y, chimpy_spot->reward_z);
+    reward_spot[2] = chimpy_spot->reward_z;
     chimpy_yaw = func_global_asm_80665DE0(player->x_position, player->z_position, chimpy_pos[0], chimpy_pos[2]) & 0xFFF;
     chimpy_start(CHIMPY_IDLE, chimpy_random());
     chimpy_placed = TRUE;

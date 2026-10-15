@@ -120,7 +120,9 @@ typedef struct {
 } GrublinPath;
 static const GrublinPath grublin_paths_japes[] = {
     {1070.0f, 340.0f, 1180.0f, 335.0f}, // Along the notes' trail, between the Mumbo Token and the bend.
-    {1250.0f, 430.0f, 1350.0f, 450.0f}, // East of the middle, below the trail's last stretch.
+    // West of Bottles, round the red feather: not by Chimpy, where a hit from the west knocked the
+    // player into the out of bounds north-east corner.
+    {990.0f, 460.0f, 1070.0f, 530.0f},
     {1220.0f, 245.0f, 1330.0f, 225.0f}, // North, between the Jinjos and the trail.
 };
 #define GRUBLIN_MAX 3
