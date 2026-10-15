@@ -8,7 +8,7 @@
 // Buster. Crouched, C-left Talon Trots (jiggy_banjo_trot.c), C-right Wonderwings
 // (jiggy_banjo_wonderwing.c) and C-up and C-down fire eggs (jiggy_banjo_eggs.c); A on the
 // Shock Spring Jump pad springs (jiggy_banjo_shock.c) and A on the Flight pad flies
-// (jiggy_banjo_fly.c).
+// (jiggy_banjo_fly.c). In the water Banjo swims as in Banjo-Kazooie (jiggy_banjo_swim.c).
 //
 // The host converts the model once (jiggy_bk_model_build) and, every frame, poses it with
 // an animation and writes the display list and bone matrices that draw it
@@ -122,6 +122,11 @@ f32 jiggy_banjo_fly_pitch(void);
 f32 jiggy_banjo_fly_roll(void);
 f32 jiggy_banjo_fly_lift(Actor *player);
 Gfx *jiggy_banjo_fly_pad_draw(Gfx *dl, Actor *player);
+// Swimming (jiggy_banjo_swim.c).
+s32 jiggy_banjo_swimming(Actor *player);
+s32 jiggy_banjo_swim_animate(Actor *player, s32 is_player, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_swim_selectors(s32 *selectors);
+f32 jiggy_banjo_swim_lift(void);
 
 typedef enum {
     BANJO_UNLOADED,
@@ -264,6 +269,8 @@ static void banjo_animate(Actor *player) {
     f32 speed = player->unkB8;
     u32 frames = object_timer - banjo_last_timer;
     s32 airborne = player->y_position - player->floor > BANJO_AIRBORNE_HEIGHT;
+    // In the water Banjo only swims: his other moves stop as they do when DK takes over.
+    s32 moves_on = banjo_is_player && !jiggy_banjo_swimming(player);
     s32 i;
 
     banjo_last_timer = object_timer;
@@ -273,10 +280,16 @@ static void banjo_animate(Actor *player) {
     }
     seconds = frames / GAME_FPS;
 
-    if (jiggy_banjo_trot_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress) ||
-        jiggy_banjo_wonderwing_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress) ||
-        jiggy_banjo_shock_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress) ||
-        jiggy_banjo_fly_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress)) {
+    if (jiggy_banjo_trot_animate(player, moves_on, airborne, seconds, &banjo_animation, &banjo_progress) ||
+        jiggy_banjo_wonderwing_animate(player, moves_on, airborne, seconds, &banjo_animation, &banjo_progress) ||
+        jiggy_banjo_shock_animate(player, moves_on, airborne, seconds, &banjo_animation, &banjo_progress) ||
+        jiggy_banjo_fly_animate(player, moves_on, airborne, seconds, &banjo_animation, &banjo_progress)) {
+        return;
+    }
+    if (jiggy_banjo_swim_animate(player, banjo_is_player, seconds, &banjo_animation, &banjo_progress)) {
+        // No air moves in the water: A and B swim, and DK64 counts it as off the floor.
+        banjo_air_move = AIR_MOVE_NONE;
+        banjo_air_moves_used = 0;
         return;
     }
     banjo_air_moves(player, airborne, seconds);
@@ -368,6 +381,7 @@ static void banjo_set_selectors(void) {
     jiggy_banjo_wonderwing_selectors(banjo_pose.selectors);
     jiggy_banjo_shock_selectors(banjo_pose.selectors);
     jiggy_banjo_fly_selectors(banjo_pose.selectors);
+    jiggy_banjo_swim_selectors(banjo_pose.selectors);
     if (blink < sizeof(blink_frames)) {
         eyes = blink_frames[blink];
     }
@@ -434,6 +448,8 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     guRotateF(rotate, yaw, 0.0f, 1.0f, 0.0f);
     guMtxCatF(scale, rotate, banjo_pose.world);
     lift = banjo_is_player ? jiggy_banjo_shock_lift(actor) + jiggy_banjo_fly_lift(actor) : 0.0f;
+    // Swimming, Banjo floats at his own depth, beside DK as well (jiggy_banjo_swim.c).
+    lift += jiggy_banjo_swim_lift();
     banjo_pose.world[3][0] = x;
     banjo_pose.world[3][1] = actor->y_position + lift;
     banjo_pose.world[3][2] = z;
