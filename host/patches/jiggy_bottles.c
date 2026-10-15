@@ -95,8 +95,8 @@ static const u16 bottles_talk_sfx[] = {0xB4, 0xBC, 0xBD};
 // The text box, in screen pixels: Bottles' portrait (32x32 frames, drawn twice the size, as
 // the zoombox zooms them) on the left, his name and the text on the right.
 #define BOX_WIDTH 288
-#define BOX_HEIGHT 80
-#define BOX_BOTTOM_MARGIN 12
+#define BOX_HEIGHT 94
+#define BOX_BOTTOM_MARGIN 44 // Clear of the cutscene bar along the bottom.
 #define BOX_BORDER 2
 #define BOX_PAD 8
 #define PORTRAIT_SCALE 2
@@ -106,9 +106,12 @@ static const u16 bottles_talk_sfx[] = {0xB4, 0xBC, 0xBD};
 #define PORTRAIT_TALK_FRAMES 6
 #define PORTRAIT_TICKS_PER_FRAME 2
 #define TEXT_STYLE 6 // DK64's dialogue font (uppercase letters, digits and . , ! ? : ; ' - ( ) %).
-#define TEXT_LINE_HEIGHT 14
-#define TEXT_NAME_Y 4
-#define TEXT_FIRST_LINE_Y 19
+#define TEXT_LINE_HEIGHT 17
+#define TEXT_NAME_Y 6
+#define TEXT_FIRST_LINE_Y 24
+// printStyledText's text comes out 1.25 times as far from the middle of the screen (y 120) as
+// the box's own pixels, 3 pixels higher; this turns a box row into the y it takes for it.
+#define TEXT_Y(y) (((y) - 117) * 4 / 5 + 120)
 #define TEXT_MAX_LINES 4
 #define TEXT_LINE_MAX 48
 // Characters typed out a frame, and the box's fade in (alpha a frame).
@@ -116,15 +119,15 @@ static const u16 bottles_talk_sfx[] = {0xB4, 0xBC, 0xBD};
 #define BOX_FADE_STEP 0x30
 #define BOX_ALPHA 0xC8
 
-// Where he is, map by map: Jungle Japes' first area, on the grass to the right of the way in
-// (the player comes in at about (931, 280, 721)), clear of the notes' trail, the Jinjos, the
-// Honeycombs and the feathers.
+// Where he is, map by map: Jungle Japes' first area, on the open grass in the middle (the player
+// comes in at about (931, 280, 721)), clear of the notes' trail, the Jinjos, the Honeycombs and
+// the feathers.
 typedef struct {
     Maps map;
     f32 x, y, z;
 } BottlesPlacement;
 static const BottlesPlacement bottles_spots[] = {
-    {MAP_JAPES, 1180.0f, 280.0f, 640.0f},
+    {MAP_JAPES, 1120.0f, 280.0f, 560.0f},
 };
 
 // What he says. Each page is one press of A; lines are broken to fit the box when shown.
@@ -751,7 +754,7 @@ Gfx *jiggy_bottles_hud_draw(Gfx *dl) {
     gSPMatrix(dl++, &D_20000C0, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
     gDPPipeSync(dl++);
     gDPSetPrimColor(dl++, 0, 0, 0xF8, 0xC8, 0x40, talk_alpha);
-    dl = printStyledText(dl, TEXT_STYLE, text_x * 4, (box_y + TEXT_NAME_Y) * 4, (u8 *)"BOTTLES", 1);
+    dl = printStyledText(dl, TEXT_STYLE, text_x * 4, TEXT_Y(box_y + TEXT_NAME_Y) * 4, (u8 *)"BOTTLES", 1);
     gDPPipeSync(dl++);
     gDPSetPrimColor(dl++, 0, 0, 0xFF, 0xFF, 0xFF, talk_alpha);
     remaining = talk_shown;
@@ -767,7 +770,7 @@ Gfx *jiggy_bottles_hud_draw(Gfx *dl) {
         if (n == 0) {
             continue;
         }
-        text_y = box_y + TEXT_FIRST_LINE_Y + line * TEXT_LINE_HEIGHT;
+        text_y = TEXT_Y(box_y + TEXT_FIRST_LINE_Y + line * TEXT_LINE_HEIGHT);
         dl = printStyledText(dl, TEXT_STYLE, text_x * 4, text_y * 4, (u8 *)shown, 1);
     }
     gDPPipeSync(dl++);
