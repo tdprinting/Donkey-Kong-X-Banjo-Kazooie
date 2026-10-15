@@ -6,9 +6,9 @@
 // src/core2/code_A5BC0.c, which the sprite's header selects), the note plays them forward
 // and then back mirrored, two ticks a frame, for a full spin, and always faces the camera.
 //
-// For now the notes only exist as a short trail in the Training Grounds (note_trail below),
-// on the grass below the treehouse deck. They are drawn right after the
-// player's own model (func_global_asm_80630DCC in patches_draw.c).
+// For now the notes only exist as short trails in the Training Grounds and Jungle Japes
+// (note_trails below). They are drawn right after the player's own model
+// (func_global_asm_80630DCC in patches_draw.c).
 //
 // Touching a note collects it: it disappears, a pickup sound plays, and Banjo-Kazooie's note
 // counter (its spinning HUD note, ASSET_7D9_SPRITE_NOTE, and its bold HUD numbers) shows the
@@ -85,29 +85,48 @@ f32 func_global_asm_80612794(s16 angle); // sin of a 12-bit angle
 // height to *y, leaving it as it was if there's none. The return value isn't reliable.
 s32 func_global_asm_80667110(f32 x, f32 z, f32 *y);
 
-// Where the notes go: a trail over the grass below the treehouse deck (where the player
-// starts), from the foot of the deck past the pond's edge, each spot found by walking it so
-// all can be reached on foot. Each note hovers over the floor found under its spot (or over
-// the spot's own height, if none is found near it), at a step through the spin so the trail
-// doesn't turn in lockstep.
-// TODO: placements on more maps.
+// Where the notes go, map by map, each spot found by walking it so all can be reached on
+// foot. Each note hovers over the floor found under its spot (or over the spot's own height,
+// if none is found near it), at a step through the spin so the trail doesn't turn in lockstep.
 typedef struct {
     f32 x, y, z;
     u8 phase;
 } NotePlacement;
 
-#define NOTE_TRAIL_MAP MAP_TRAINING_GROUNDS
-static const NotePlacement note_trail[] = {
+// The Training Grounds: over the grass below the treehouse deck (where the player starts),
+// from the foot of the deck past the pond's edge.
+static const NotePlacement notes_training_grounds[] = {
     {1360.0f, 37.0f, 1010.0f, 0},
     {1366.0f, 33.0f, 940.0f, 3},
     {1372.0f, 29.0f, 870.0f, 6},
     {1480.0f, 34.0f, 940.0f, 9},
     {1550.0f, 36.0f, 990.0f, 12},
 };
+// Jungle Japes: along the path from the entrance through the first clearing.
+static const NotePlacement notes_japes[] = {
+    {945.0f, 280.0f, 660.0f, 0},
+    {962.0f, 280.0f, 560.0f, 3},
+    {985.0f, 280.0f, 450.0f, 6},
+    {1060.0f, 280.0f, 395.0f, 9},
+    {1150.0f, 280.0f, 385.0f, 12},
+    {1225.0f, 280.0f, 350.0f, 15},
+    {1300.0f, 280.0f, 300.0f, 2},
+    {1380.0f, 280.0f, 240.0f, 5},
+};
+#define NOTE_TRAIL(map, notes) {map, notes, sizeof(notes) / sizeof(notes[0])}
+static const struct {
+    Maps map;
+    const NotePlacement *notes;
+    u32 count;
+} note_trails[] = {
+    NOTE_TRAIL(MAP_TRAINING_GROUNDS, notes_training_grounds),
+    NOTE_TRAIL(MAP_JAPES, notes_japes),
+};
+// The most notes on one map (collected bits are one u32).
+#define NOTE_COUNT_MAX 16
 // Looking for the floor under a note: from this far above its spot, trusted this close to it.
 #define NOTE_FLOOR_PROBE 20.0f
 #define NOTE_FLOOR_MAX_STEP 40.0f
-#define NOTE_COUNT (sizeof(note_trail) / sizeof(note_trail[0]))
 
 typedef enum {
     NOTES_UNLOADED,
@@ -120,12 +139,15 @@ static s16 note_width[NOTE_MAX_FRAMES];
 static s16 note_height[NOTE_MAX_FRAMES];
 // A quad per strip of each frame, plain and mirrored, centered on the note.
 static Vtx note_vtx[NOTE_MAX_FRAMES][2][NOTE_MAX_STRIPS][4] __attribute__((aligned(8)));
-static Mtx note_mtx[2][NOTE_COUNT];
+static Mtx note_mtx[2][NOTE_COUNT_MAX];
 static s32 note_frames;
 static NotesLoadState note_state = NOTES_UNLOADED;
 static s32 note_last_map = -1;
 static s32 note_placed;
-static f32 note_pos[NOTE_COUNT][3];
+static f32 note_pos[NOTE_COUNT_MAX][3];
+// This map's notes (none if it has none), picked when the map changes.
+static const NotePlacement *note_trail;
+static u32 note_count;
 // Bit i: note_trail[i] has been collected, for the map the notes were last loaded on.
 static u32 note_collected;
 static s32 notes_total;
@@ -221,7 +243,7 @@ static void notes_load(void) {
 static void notes_place(Actor *player) {
     u32 i;
 
-    for (i = 0; i < NOTE_COUNT; i++) {
+    for (i = 0; i < note_count; i++) {
         f32 probe = note_trail[i].y + NOTE_FLOOR_PROBE;
         f32 floor = probe;
         f32 ground = note_trail[i].y;
@@ -242,7 +264,7 @@ static void notes_place(Actor *player) {
 static void notes_collect(Actor *player) {
     u32 i;
 
-    for (i = 0; i < NOTE_COUNT; i++) {
+    for (i = 0; i < note_count; i++) {
         f32 dx, dy, dz;
 
         if (note_collected & (1 << i)) {
@@ -350,8 +372,15 @@ Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor) {
         // Read back on every map, which also catches a different save file being loaded.
         note_collected = jiggy_save_get(current_file, NOTE_SAVE_MAP_KEY(current_map));
         notes_total = jiggy_save_get(current_file, NOTE_SAVE_TOTAL_KEY);
+        note_count = 0;
+        for (i = 0; i < sizeof(note_trails) / sizeof(note_trails[0]); i++) {
+            if (note_trails[i].map == current_map) {
+                note_trail = note_trails[i].notes;
+                note_count = note_trails[i].count;
+            }
+        }
     }
-    if (current_map != NOTE_TRAIL_MAP) {
+    if (note_count == 0) {
         return dl;
     }
     if (note_state == NOTES_UNLOADED) {
@@ -386,7 +415,7 @@ Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor) {
     if (steps == 0) {
         steps = 1;
     }
-    for (i = 0; i < NOTE_COUNT; i++) {
+    for (i = 0; i < note_count; i++) {
         u32 step = (object_timer / NOTE_TICKS_PER_FRAME + note_trail[i].phase) % steps;
         if (note_collected & (1 << i)) {
             continue;

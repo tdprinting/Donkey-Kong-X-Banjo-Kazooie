@@ -9,9 +9,9 @@
 // side. Their eyes blink through the model's eye selector, as actors spawned with
 // ACTOR_FLAG_UNKNOWN_8 do (func_803255FC).
 //
-// For now the Jinjos only exist in the Training Grounds (jinjo_spots below), on the grass
-// around the treehouse. They are drawn right after the player's own model
-// (func_global_asm_80630DCC in patches_draw.c).
+// For now the Jinjos only exist in the Training Grounds and Jungle Japes (jinjo_maps below).
+// They are drawn right after the player's own model (func_global_asm_80630DCC in
+// patches_draw.c).
 //
 // Touching a Jinjo collects it: it disappears, a pickup sound plays, and Banjo-Kazooie's
 // Jinjo counter (fxjinjoscore in src/core2/fx/jinjoscore.c: a row of five Jinjo heads,
@@ -135,22 +135,36 @@ s16 func_global_asm_80665DE0(f32 target_x, f32 target_z, f32 x, f32 z);
 // height to *y, leaving it as it was if there's none. The return value isn't reliable.
 s32 func_global_asm_80667110(f32 x, f32 z, f32 *y);
 
-// Where the Jinjos go in the Training Grounds: spots on the grass around the treehouse (the
-// player starts on its deck, at about (1346, 227, 1098)), each found by walking there, so all
-// five can be reached on foot. Heights are the ground's; each is snapped to the floor found
-// just above it when placed.
-// TODO: placements on more maps.
+// Where the Jinjos go, map by map, each spot found by walking there so all five can be
+// reached on foot. Heights are the ground's; each is snapped to the floor found just above it
+// when placed.
 typedef struct {
     f32 x, y, z;
 } JinjoPlacement;
 
-#define JINJO_MAP MAP_TRAINING_GROUNDS
-static const JinjoPlacement jinjo_spots[JINJO_COLORS] = {
+// The Training Grounds: on the grass around the treehouse (the player starts on its deck, at
+// about (1346, 227, 1098)).
+static const JinjoPlacement jinjos_training_grounds[JINJO_COLORS] = {
     {1128.0f, 28.0f, 1053.0f}, // Blue
     {1165.0f, 34.0f, 851.0f},  // Green
     {1252.0f, 24.0f, 814.0f},  // Orange
     {1408.0f, 34.0f, 893.0f},  // Pink
     {1619.0f, 37.0f, 1037.0f}, // Yellow
+};
+// Jungle Japes: around the first clearing past the entrance path.
+static const JinjoPlacement jinjos_japes[JINJO_COLORS] = {
+    {1108.0f, 280.0f, 199.0f}, // Blue
+    {1256.0f, 288.0f, 152.0f}, // Green
+    {1460.0f, 280.0f, 214.0f}, // Orange
+    {1180.0f, 283.0f, 172.0f}, // Pink
+    {1000.0f, 280.0f, 400.0f}, // Yellow
+};
+static const struct {
+    Maps map;
+    const JinjoPlacement *spots;
+} jinjo_maps[] = {
+    {MAP_TRAINING_GROUNDS, jinjos_training_grounds},
+    {MAP_JAPES, jinjos_japes},
 };
 
 typedef enum {
@@ -185,6 +199,8 @@ static s32 jinjo_last_map = -1;
 static s32 jinjo_placed;
 static u32 jinjo_last_timer;
 static Jinjo jinjos[JINJO_COLORS];
+// This map's Jinjos (NULL if it has none), picked when the map changes.
+static const JinjoPlacement *jinjo_spots;
 // Bit i: jinjo_spots[i] has been collected, on the map the Jinjos were last loaded for.
 static u32 jinjo_collected;
 // Save key (jiggy_save_get) of a map's collected bits.
@@ -439,8 +455,14 @@ Gfx *jiggy_jinjos_draw(Gfx *dl, Actor *actor) {
         jinjo_last_map = current_map;
         jinjo_placed = FALSE;
         jinjo_collected = jiggy_save_get(current_file, JINJO_SAVE_MAP_KEY(current_map));
+        jinjo_spots = NULL;
+        for (i = 0; i < (s32)(sizeof(jinjo_maps) / sizeof(jinjo_maps[0])); i++) {
+            if (jinjo_maps[i].map == current_map) {
+                jinjo_spots = jinjo_maps[i].spots;
+            }
+        }
     }
-    if (current_map != JINJO_MAP) {
+    if (jinjo_spots == NULL) {
         return dl;
     }
     if (jinjo_state == JINJOS_UNLOADED) {

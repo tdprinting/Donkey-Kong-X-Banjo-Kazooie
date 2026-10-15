@@ -7,9 +7,9 @@
 // animation -1). Like chHoneycomb_update, each spins about its upright axis at 200 degrees
 // a second, some one way and some the other.
 //
-// For now they only exist in the Training Grounds (piece_spots and comb_spots below), on the
-// grass around the treehouse, between the Jinjos and the notes. They are drawn right after
-// the player's own model (func_global_asm_80630DCC in patches_draw.c).
+// For now they only exist in the Training Grounds and Jungle Japes (honeycomb_maps below).
+// They are drawn right after the player's own model (func_global_asm_80630DCC in
+// patches_draw.c).
 //
 // Touching an empty Honeycomb piece collects it: it disappears, Banjo-Kazooie's empty
 // Honeycomb jingle plays, and Banjo-Kazooie's piece counter (fxhoneycarrierscore in
@@ -113,27 +113,47 @@ s32 func_global_asm_80667110(f32 x, f32 z, f32 *y);
 // next frame; what a melon slice does when collected. Returns TRUE if it leaves them none.
 s32 func_global_asm_806C9974(u8 playerIndex, s8 amount);
 
-// Where the Honeycombs go in the Training Grounds: spots on the grass around the treehouse
-// (the player starts on its deck, at about (1346, 227, 1098)), each between the Jinjos'
-// and notes' spots and clear of them, so all can be reached on foot. Heights are the
+// Where the Honeycombs go, map by map, each spot clear of the Jinjos' and notes' and
+// between spots found by walking them, so all can be reached on foot. Heights are the
 // ground's; each is snapped to the floor found just above it when placed.
-// TODO: placements on more maps.
 typedef struct {
     f32 x, y, z;
 } HoneycombPlacement;
 
-#define HONEYCOMB_MAP MAP_TRAINING_GROUNDS
-static const HoneycombPlacement piece_spots[] = {
+// The Training Grounds: on the grass around the treehouse (the player starts on its deck, at
+// about (1346, 227, 1098)).
+static const HoneycombPlacement pieces_training_grounds[] = {
     {1250.0f, 30.0f, 930.0f},
     {1490.0f, 35.0f, 1015.0f},
     {1300.0f, 30.0f, 1050.0f},
 };
-static const HoneycombPlacement comb_spots[] = {
+static const HoneycombPlacement combs_training_grounds[] = {
     {1200.0f, 30.0f, 960.0f},
     {1310.0f, 30.0f, 880.0f},
 };
-#define PIECE_COUNT (sizeof(piece_spots) / sizeof(piece_spots[0]))
-#define COMB_COUNT (sizeof(comb_spots) / sizeof(comb_spots[0]))
+// Jungle Japes: by the entrance path and in the first clearing.
+static const HoneycombPlacement pieces_japes[] = {
+    {1462.0f, 280.0f, 259.0f},
+    {950.0f, 280.0f, 505.0f},
+};
+static const HoneycombPlacement combs_japes[] = {
+    {1116.0f, 280.0f, 250.0f},
+};
+#define HONEYCOMB_MAP(map, pieces, combs) \
+    {map, pieces, sizeof(pieces) / sizeof(pieces[0]), combs, sizeof(combs) / sizeof(combs[0])}
+static const struct {
+    Maps map;
+    const HoneycombPlacement *pieces;
+    u32 piece_count;
+    const HoneycombPlacement *combs;
+    u32 comb_count;
+} honeycomb_maps[] = {
+    HONEYCOMB_MAP(MAP_TRAINING_GROUNDS, pieces_training_grounds, combs_training_grounds),
+    HONEYCOMB_MAP(MAP_JAPES, pieces_japes, combs_japes),
+};
+// The most of each on one map (collected bits are one u32).
+#define PIECE_COUNT_MAX 8
+#define COMB_COUNT_MAX 8
 
 typedef enum {
     HONEYCOMBS_UNLOADED,
@@ -148,17 +168,22 @@ typedef struct {
 
 static u8 piece_block[HONEYCOMB_BLOCK_MAX] __attribute__((aligned(16)));
 static u8 comb_block[HONEYCOMB_BLOCK_MAX] __attribute__((aligned(16)));
-static Gfx piece_gfx[2][PIECE_COUNT][HONEYCOMB_GFX_MAX];
-static Mtx piece_mtx[2][PIECE_COUNT][HONEYCOMB_MTX_MAX];
-static Gfx comb_gfx[2][COMB_COUNT][HONEYCOMB_GFX_MAX];
-static Mtx comb_mtx[2][COMB_COUNT][HONEYCOMB_MTX_MAX];
+static Gfx piece_gfx[2][PIECE_COUNT_MAX][HONEYCOMB_GFX_MAX];
+static Mtx piece_mtx[2][PIECE_COUNT_MAX][HONEYCOMB_MTX_MAX];
+static Gfx comb_gfx[2][COMB_COUNT_MAX][HONEYCOMB_GFX_MAX];
+static Mtx comb_mtx[2][COMB_COUNT_MAX][HONEYCOMB_MTX_MAX];
 static JiggyBkPose honeycomb_pose;
 static HoneycombsLoadState honeycomb_state = HONEYCOMBS_UNLOADED;
 static s32 honeycomb_last_map = -1;
 static s32 honeycomb_placed;
 static u32 honeycomb_last_timer;
-static Honeycomb pieces[PIECE_COUNT];
-static Honeycomb combs[COMB_COUNT];
+static Honeycomb pieces[PIECE_COUNT_MAX];
+static Honeycomb combs[COMB_COUNT_MAX];
+// This map's pieces and Honeycombs (none if it has none), picked when the map changes.
+static const HoneycombPlacement *piece_spots;
+static u32 piece_count;
+static const HoneycombPlacement *comb_spots;
+static u32 comb_count;
 // Bit i: piece_spots[i] has been collected, on the map the pieces were last loaded for.
 static u32 piece_collected;
 static s32 pieces_total;
@@ -230,10 +255,10 @@ static void honeycomb_place(Honeycomb *comb, const HoneycombPlacement *spot) {
 static void honeycombs_place(void) {
     u32 i;
 
-    for (i = 0; i < PIECE_COUNT; i++) {
+    for (i = 0; i < piece_count; i++) {
         honeycomb_place(&pieces[i], &piece_spots[i]);
     }
-    for (i = 0; i < COMB_COUNT; i++) {
+    for (i = 0; i < comb_count; i++) {
         honeycomb_place(&combs[i], &comb_spots[i]);
     }
     honeycomb_placed = TRUE;
@@ -252,7 +277,7 @@ static s32 honeycomb_touching(Honeycomb *comb, Actor *player) {
 static void honeycombs_collect(Actor *player) {
     u32 i;
 
-    for (i = 0; i < PIECE_COUNT; i++) {
+    for (i = 0; i < piece_count; i++) {
         if ((piece_collected & (1 << i)) || !honeycomb_touching(&pieces[i], player)) {
             continue;
         }
@@ -277,7 +302,7 @@ static void honeycombs_collect(Actor *player) {
             playSound(HONEYCOMB_PICKUP_SOUND, 0x7FFF, 63.0f, 1.0f, 5, 0);
         }
     }
-    for (i = 0; i < COMB_COUNT; i++) {
+    for (i = 0; i < comb_count; i++) {
         if ((comb_collected & (1 << i)) || !honeycomb_touching(&combs[i], player)) {
             continue;
         }
@@ -348,8 +373,18 @@ Gfx *jiggy_honeycombs_draw(Gfx *dl, Actor *actor) {
         piece_collected = jiggy_save_get(current_file, PIECE_SAVE_MAP_KEY(current_map));
         pieces_total = jiggy_save_get(current_file, PIECE_SAVE_TOTAL_KEY);
         comb_collected = 0;
+        piece_count = 0;
+        comb_count = 0;
+        for (i = 0; i < (s32)(sizeof(honeycomb_maps) / sizeof(honeycomb_maps[0])); i++) {
+            if (honeycomb_maps[i].map == current_map) {
+                piece_spots = honeycomb_maps[i].pieces;
+                piece_count = honeycomb_maps[i].piece_count;
+                comb_spots = honeycomb_maps[i].combs;
+                comb_count = honeycomb_maps[i].comb_count;
+            }
+        }
     }
-    if (current_map != HONEYCOMB_MAP) {
+    if (piece_count == 0 && comb_count == 0) {
         return dl;
     }
     if (honeycomb_state == HONEYCOMBS_UNLOADED) {
@@ -374,14 +409,14 @@ Gfx *jiggy_honeycombs_draw(Gfx *dl, Actor *actor) {
     if (frames > 4) {
         frames = 1;
     }
-    for (i = 0; i < PIECE_COUNT; i++) {
+    for (i = 0; i < piece_count; i++) {
         if (piece_collected & (1 << i)) {
             continue;
         }
         honeycomb_spin(&pieces[i], i, frames);
         dl = honeycomb_draw(dl, &pieces[i], HONEYCOMB_EMPTY_MODEL, piece_block, piece_gfx[buffer][i], piece_mtx[buffer][i]);
     }
-    for (i = 0; i < COMB_COUNT; i++) {
+    for (i = 0; i < comb_count; i++) {
         if (comb_collected & (1 << i)) {
             continue;
         }
