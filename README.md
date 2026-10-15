@@ -41,6 +41,7 @@ project is shaped this way.
 | First Banjo asset visible in DK Isles (Banjo's portrait) | Done, needs a test on real ROMs |
 | CI: game patches build | Done |
 | Banjo & Kazooie's 3D model, converted from the player's ROM, beside DK with Banjo-Kazooie's idle, walk, run and jump animations | Done, tested in game |
+| Play as Banjo & Kazooie (D-pad left, or J on keyboard) with DK's moves for now | Done, tested in game |
 | Android app: ROM picker and checks, in-app updates | Done, needs a test on a phone |
 | Android: engine cross-compiles, game packaged as libmain.so on SDL's activity | Done, untested on a phone |
 | Android: on-screen touch controls, controller support | Done, untested on a phone |

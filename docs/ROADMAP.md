@@ -103,6 +103,8 @@ The foundation every later step needs: reading both games' files from the player
 
 *Size: many months.*
 
+- [x] First step: D-pad left swaps the player to Banjo & Kazooie (their model and
+  animations over DK's moves and physics) in the Training Grounds and DK Isles, and back.
 - Rebuild the core moveset (Feathery Flap, Rat-a-tat Rap, Talon Trot, Beak Barge, Egg
   Firing) as DK64 patches, using the BK decompilation as the behaviour reference.
 - Add the duo to DK64's character swap, then a quick-swap wheel in place of Tag Barrels.

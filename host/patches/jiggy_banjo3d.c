@@ -1,6 +1,8 @@
 // Banjo in 3D: Banjo & Kazooie's own model (MODEL_BANJOKAZOOIE_HIGH_POLY), read from the
 // player's Banjo-Kazooie ROM, walks beside the player in DK Isles and the Training Grounds
 // outside DK's house, with Banjo-Kazooie's own idle, walk, run and jump animations.
+// D-pad left swaps who is on screen: Banjo takes the player's place (DK's moves for now)
+// and DK steps out, until it's pressed again.
 //
 // The host converts the model once (jiggy_bk_model_build) and, every frame, poses it with
 // an animation and writes the display list and bone matrices that draw it
@@ -52,6 +54,7 @@ extern Maps current_map;
 extern u8 cc_number_of_players;
 extern u8 D_global_asm_807444FC;
 extern u32 object_timer;
+extern u16 newly_pressed_input[];
 f32 func_global_asm_80612790(s16 angle); // cos of a 12-bit angle
 f32 func_global_asm_80612794(s16 angle); // sin of a 12-bit angle
 
@@ -69,6 +72,7 @@ static BanjoLoadState banjo_state = BANJO_UNLOADED;
 static s32 banjo_animation = -1;
 static f32 banjo_progress;
 static u32 banjo_last_timer;
+static s32 banjo_is_player;
 
 static void banjo_load(void) {
     s32 size;
@@ -151,16 +155,27 @@ static void banjo_set_selectors(void) {
     }
 }
 
+static s32 banjo_here(Actor *actor) {
+    return actor == gPlayerPointer && cc_number_of_players == 1 &&
+           (current_map == MAP_DK_ISLES_OVERWORLD || current_map == MAP_TRAINING_GROUNDS);
+}
+
+// Whether Banjo is standing in for this actor, so its own model shouldn't be drawn
+// (func_global_asm_80630DCC in patches_draw.c).
+s32 jiggy_banjo_replaces(Actor *actor) {
+    return banjo_is_player && banjo_state == BANJO_READY && banjo_here(actor);
+}
+
 // Called after an actor is drawn (func_global_asm_80630DCC in patches_draw.c).
 Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     f32 yaw;
     f32 x, z;
+    f32 offset;
     f32 rotate[4][4];
     f32 scale[4][4];
     s32 buffer = D_global_asm_807444FC;
 
-    if (actor != gPlayerPointer || cc_number_of_players != 1 ||
-        (current_map != MAP_DK_ISLES_OVERWORLD && current_map != MAP_TRAINING_GROUNDS)) {
+    if (!banjo_here(actor)) {
         return dl;
     }
     if (banjo_state == BANJO_UNLOADED) {
@@ -169,13 +184,18 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     if (banjo_state != BANJO_READY) {
         return dl;
     }
+    if (newly_pressed_input[0] & L_JPAD) {
+        banjo_is_player = !banjo_is_player;
+    }
     banjo_animate(actor);
     banjo_set_selectors();
 
-    // Rotations are 12-bit angles. Banjo faces where the player faces, one step to their side.
+    // Rotations are 12-bit angles. Banjo faces where the player faces, in their place or one
+    // step to their side.
+    offset = banjo_is_player ? 0.0f : BANJO_SIDE_OFFSET;
     yaw = (actor->y_rotation & 0xFFF) * (360.0f / 4096.0f);
-    x = actor->x_position + func_global_asm_80612790(actor->y_rotation) * BANJO_SIDE_OFFSET;
-    z = actor->z_position - func_global_asm_80612794(actor->y_rotation) * BANJO_SIDE_OFFSET;
+    x = actor->x_position + func_global_asm_80612790(actor->y_rotation) * offset;
+    z = actor->z_position - func_global_asm_80612794(actor->y_rotation) * offset;
     guScaleF(scale, BANJO_SCALE, BANJO_SCALE, BANJO_SCALE);
     guRotateF(rotate, yaw, 0.0f, 1.0f, 0.0f);
     guMtxCatF(scale, rotate, banjo_pose.world);

@@ -199,6 +199,7 @@ Gfx *func_global_asm_8065D008(Gfx *dl, s16 arg1, u8 arg2);
 extern u8 cc_number_of_players;
 extern u8  D_global_asm_807444FC;
 Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor);
+s32 jiggy_banjo_replaces(Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
     f32 temp_f0_3;
@@ -327,7 +328,10 @@ block_47:
     temp_f0_3 = arg1->shadow_opacity * spB8;
     if (temp_f0_3 != 0.0f) {
         dl = func_global_asm_8065D008(dl, temp_f0_3, 1U);
-        dl = func_global_asm_80614B34(dl, arg1);
+        // @jiggy: when Banjo stands in for the player, only Banjo's model is drawn.
+        if (!jiggy_banjo_replaces(arg1)) {
+            dl = func_global_asm_80614B34(dl, arg1);
+        }
     }
     gDPPipeSync(dl++);
     gDPSetTextureLUT(dl++, G_TT_NONE);
