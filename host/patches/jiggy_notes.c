@@ -320,6 +320,109 @@ static const NotePlacement notes_factory[] = {
     {2046.0f, 862.0f, 2425.0f, 0},  {1985.0f, 862.0f, 2460.0f, 3},  {1924.0f, 862.0f, 2425.0f, 6},
     {1924.0f, 862.0f, 2355.0f, 9},  {1985.0f, 862.0f, 2320.0f, 12}, {2046.0f, 862.0f, 2355.0f, 15},
 };
+
+// Fungi Forest (fused with Click Clock Wood): 82 notes in rings and trails through its five
+// main areas, each spot on DK64's own floor (the map's floor triangles, and next to its own
+// bananas and coins), flat for 25 units round, clear of its objects and doors:
+//   up from the entrance (2309, 192, 1655) and round the clock tower's hill (330 out from the
+//   clock, 220 to 270 high);
+//   along the Tiny bananas from the clock's hill into the apple area, then round the apple's
+//   mound (400 out, over the coins' ring);
+//   round the giant mushroom, on the low ground (99) inside the walkway ring;
+//   round the mill on its plateau (400 out from it, about 245 high);
+//   along the owl tree's ring path (83 high), a quarter of the way between DK64's Tiny bananas
+//   so as not to sit on them or the little mushrooms halfway between them.
+static const NotePlacement notes_fungi[] = {
+    // From the entrance up the clock's hill.
+    {2330.0f, 207.0f, 1760.0f, 0},
+    {2353.0f, 218.0f, 1827.0f, 7},
+    {2377.0f, 228.0f, 1893.0f, 14},
+    {2400.0f, 244.0f, 1960.0f, 3},
+    // Round the clock tower.
+    {2800.0f, 257.0f, 2330.0f, 10},
+    {2775.0f, 251.0f, 2456.0f, 17},
+    {2703.0f, 239.0f, 2563.0f, 6},
+    {2596.0f, 229.0f, 2635.0f, 13},
+    {2470.0f, 222.0f, 2660.0f, 2},
+    {2344.0f, 221.0f, 2635.0f, 9},
+    {2237.0f, 229.0f, 2563.0f, 16},
+    {2165.0f, 235.0f, 2456.0f, 5},
+    {2140.0f, 257.0f, 2330.0f, 12},
+    {2165.0f, 254.0f, 2204.0f, 1},
+    {2237.0f, 262.0f, 2097.0f, 8},
+    {2344.0f, 258.0f, 2025.0f, 15},
+    {2470.0f, 259.0f, 2000.0f, 4},
+    {2596.0f, 254.0f, 2025.0f, 11},
+    {2703.0f, 268.0f, 2097.0f, 0},
+    {2775.0f, 263.0f, 2204.0f, 7},
+    // Along the Tiny bananas into the apple area.
+    {2700.0f, 201.0f, 1600.0f, 14},
+    {2780.0f, 201.0f, 1505.0f, 3},
+    {2870.0f, 201.0f, 1470.0f, 10},
+    {2985.0f, 201.0f, 1440.0f, 17},
+    {3087.0f, 203.0f, 1254.0f, 6},
+    {3120.0f, 200.0f, 1130.0f, 13},
+    // Round the apple's mound.
+    {3550.0f, 190.0f, 720.0f, 2},
+    {3510.0f, 191.0f, 894.0f, 9},
+    {3399.0f, 196.0f, 1033.0f, 16},
+    {3239.0f, 198.0f, 1110.0f, 5},
+    {3061.0f, 199.0f, 1110.0f, 12},
+    {2790.0f, 198.0f, 894.0f, 1},
+    {2750.0f, 196.0f, 720.0f, 8},
+    {2790.0f, 195.0f, 546.0f, 15},
+    {2901.0f, 190.0f, 407.0f, 4},
+    {3061.0f, 189.0f, 330.0f, 11},
+    {3239.0f, 188.0f, 330.0f, 0},
+    {3399.0f, 189.0f, 407.0f, 7},
+    {3510.0f, 187.0f, 546.0f, 14},
+    // Round the giant mushroom, on the low ground.
+    {1520.0f, 99.0f, 880.0f, 3},
+    {1487.0f, 99.0f, 1044.0f, 10},
+    {1394.0f, 99.0f, 1189.0f, 17},
+    {1250.0f, 99.0f, 1296.0f, 6},
+    {1074.0f, 99.0f, 1353.0f, 13},
+    {886.0f, 99.0f, 1353.0f, 2},
+    {710.0f, 99.0f, 1296.0f, 9},
+    {566.0f, 99.0f, 1189.0f, 16},
+    {473.0f, 99.0f, 1044.0f, 5},
+    {440.0f, 99.0f, 880.0f, 12},
+    {473.0f, 99.0f, 716.0f, 1},
+    {710.0f, 99.0f, 464.0f, 8},
+    {886.0f, 99.0f, 407.0f, 15},
+    // Round the mill.
+    {1700.0f, 239.0f, 4003.0f, 4},
+    {1613.0f, 244.0f, 4133.0f, 11},
+    {1483.0f, 250.0f, 4220.0f, 0},
+    {1330.0f, 247.0f, 4250.0f, 7},
+    {1177.0f, 248.0f, 4220.0f, 14},
+    {1047.0f, 248.0f, 4133.0f, 3},
+    {960.0f, 249.0f, 4003.0f, 10},
+    {930.0f, 243.0f, 3850.0f, 17},
+    {960.0f, 249.0f, 3697.0f, 6},
+    {1177.0f, 244.0f, 3480.0f, 13},
+    {1330.0f, 241.0f, 3450.0f, 2},
+    {1483.0f, 243.0f, 3480.0f, 9},
+    {1613.0f, 243.0f, 3567.0f, 16},
+    {1700.0f, 233.0f, 3697.0f, 5},
+    // Along the owl tree's ring path.
+    {3864.0f, 83.0f, 3591.0f, 12},
+    {3997.0f, 83.0f, 3418.0f, 1},
+    {4203.0f, 83.0f, 3270.0f, 8},
+    {4379.0f, 83.0f, 3228.0f, 15},
+    {4549.0f, 83.0f, 3223.0f, 4},
+    {4720.0f, 83.0f, 3277.0f, 11},
+    {4830.0f, 83.0f, 3394.0f, 0},
+    {4900.0f, 83.0f, 3556.0f, 7},
+    {4834.0f, 83.0f, 3742.0f, 14},
+    {4714.0f, 83.0f, 3856.0f, 3},
+    {4470.0f, 83.0f, 4055.0f, 10},
+    {4336.0f, 83.0f, 4137.0f, 17},
+    {4154.0f, 83.0f, 4124.0f, 6},
+    {4006.0f, 83.0f, 4070.0f, 13},
+    {3901.0f, 93.0f, 3944.0f, 2},
+    {3838.0f, 103.0f, 3789.0f, 9},
+};
 #define NOTE_TRAIL(map, notes) {map, notes, sizeof(notes) / sizeof(notes[0])}
 static const struct {
     Maps map;
@@ -331,6 +434,7 @@ static const struct {
     NOTE_TRAIL(MAP_GALLEON, notes_galleon),
     NOTE_TRAIL(MAP_CASTLE, notes_castle),
     NOTE_TRAIL(MAP_FACTORY, notes_factory),
+    NOTE_TRAIL(MAP_FUNGI, notes_fungi),
 };
 // The most notes on one map, and the u32s of collected bits that takes (each saved under its own
 // key: NOTE_SAVE_MAP_KEY for the first, NOTE_SAVE_MAP_WORD_KEY for the rest).

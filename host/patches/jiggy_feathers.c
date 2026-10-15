@@ -161,6 +161,17 @@ static const FeatherPlacement feathers_factory[] = {
     {645.0f, 804.0f, 2070.0f, FEATHER_RED, 7},   // The round platform, by the bridge.
     {1920.0f, 862.0f, 2470.0f, FEATHER_GOLD, 3}, // The round room at the end of the east corridor.
 };
+
+// Fungi Forest: on DK64's floor (its floor triangles), flat round about, 60 or more units from
+// the notes and everything else.
+static const FeatherPlacement feathers_fungi[] = {
+    {2150.0f, 151.0f, 2800.0f, FEATHER_RED, 0},  // At the foot of the clock tower's hill, south.
+    {3500.0f, 166.0f, 2640.0f, FEATHER_RED, 5},  // Among DK's bananas east of the clock's hill.
+    {800.0f, 101.0f, 1450.0f, FEATHER_RED, 10},  // South of the giant mushroom, on the low ground.
+    {1560.0f, 248.0f, 4040.0f, FEATHER_RED, 15}, // On the mill's plateau, inside the notes' ring.
+    {4776.0f, 83.0f, 3332.0f, FEATHER_GOLD, 3},  // On the owl tree's ring path, north-east.
+    {2600.0f, 208.0f, 1700.0f, FEATHER_GOLD, 8}, // East of the entrance.
+};
 #define FEATHER_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -172,6 +183,7 @@ static const struct {
     FEATHER_MAP_SPOTS(MAP_GALLEON, feathers_galleon),
     FEATHER_MAP_SPOTS(MAP_CASTLE, feathers_castle),
     FEATHER_MAP_SPOTS(MAP_FACTORY, feathers_factory),
+    FEATHER_MAP_SPOTS(MAP_FUNGI, feathers_fungi),
 };
 #define FEATHER_COUNT_MAX 16
 // The current map's feathers, or none.

@@ -168,6 +168,17 @@ static const HoneycombPlacement pieces_factory[] = {
 static const HoneycombPlacement combs_factory[] = {
     {1925.0f, 862.0f, 2290.0f},
 };
+
+// Fungi Forest: the empty pieces out of the way (the far north-east field, and the east edge
+// of the apple area), a Honeycomb on the clock tower's hill; all on DK64's floor, flat round
+// about and 60 or more units from the notes and the rest.
+static const HoneycombPlacement pieces_fungi[] = {
+    {4250.0f, 118.0f, 2250.0f},
+    {3600.0f, 181.0f, 450.0f},
+};
+static const HoneycombPlacement combs_fungi[] = {
+    {2000.0f, 215.0f, 2200.0f},
+};
 #define HONEYCOMB_MAP(map, pieces, combs) \
     {map, pieces, sizeof(pieces) / sizeof(pieces[0]), combs, sizeof(combs) / sizeof(combs[0])}
 static const struct {
@@ -182,6 +193,7 @@ static const struct {
     HONEYCOMB_MAP(MAP_GALLEON, pieces_galleon, combs_galleon),
     HONEYCOMB_MAP(MAP_CASTLE, pieces_castle, combs_castle),
     HONEYCOMB_MAP(MAP_FACTORY, pieces_factory, combs_factory),
+    HONEYCOMB_MAP(MAP_FUNGI, pieces_fungi, combs_fungi),
 };
 // The most of each on one map (collected bits are one u32).
 #define PIECE_COUNT_MAX 8

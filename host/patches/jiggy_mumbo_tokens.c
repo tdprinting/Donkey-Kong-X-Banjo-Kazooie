@@ -128,6 +128,14 @@ static const TokenPlacement tokens_factory[] = {
     {790.0f, 802.0f, 2440.0f, 4},  // The west walkway, between two of DK64's bananas.
     {1110.0f, 840.0f, 2090.0f, 8}, // The north room, by the whistle switches.
 };
+
+// Fungi Forest: on DK64's floor (its floor triangles), flat round about, 60 or more units from
+// the notes and everything else.
+static const TokenPlacement tokens_fungi[] = {
+    {1300.0f, 99.0f, 700.0f, 0},   // On the low ground east of the giant mushroom.
+    {650.0f, 191.0f, 3700.0f, 4},  // On the barn's plateau, west of the mill.
+    {4100.0f, 115.0f, 2050.0f, 8}, // In the far north-east field.
+};
 #define TOKEN_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -139,6 +147,7 @@ static const struct {
     TOKEN_MAP_SPOTS(MAP_GALLEON, tokens_galleon),
     TOKEN_MAP_SPOTS(MAP_CASTLE, tokens_castle),
     TOKEN_MAP_SPOTS(MAP_FACTORY, tokens_factory),
+    TOKEN_MAP_SPOTS(MAP_FUNGI, tokens_fungi),
 };
 // The most tokens on one map (collected bits are one u32).
 #define TOKEN_COUNT_MAX 8

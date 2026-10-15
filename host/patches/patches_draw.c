@@ -222,6 +222,9 @@ Gfx *jiggy_tumblar_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_boss_boom_box_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_snorkel_draw(Gfx *dl, Actor *actor);
 Gfx *jiggy_flotsam_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_eyrie_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_nabnut_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_zubbas_draw(Gfx *dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
     f32 temp_f0_3;
@@ -381,6 +384,9 @@ block_47:
     dl = jiggy_boss_boom_box_draw(dl, arg1); // @jiggy: Boss Boom Box in Frantic Factory (jiggy_boss_boom_box.c)
     dl = jiggy_snorkel_draw(dl, arg1); // @jiggy: Snorkel and the whistles in Frantic Factory (jiggy_snorkel.c)
     dl = jiggy_flotsam_draw(dl, arg1); // @jiggy: Flotsams in Frantic Factory (jiggy_flotsam.c)
+    dl = jiggy_eyrie_draw(dl, arg1); // @jiggy: Eyrie and his caterpillars in Fungi Forest (jiggy_eyrie.c)
+    dl = jiggy_nabnut_draw(dl, arg1); // @jiggy: Nabnut and his acorns in Fungi Forest (jiggy_nabnut.c)
+    dl = jiggy_zubbas_draw(dl, arg1); // @jiggy: Zubbas in Fungi Forest (jiggy_zubbas.c)
     return dl;
 }
 

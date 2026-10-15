@@ -2979,6 +2979,8 @@ Gfx *jiggy_motzand_hud_draw(Gfx *dl);
 Gfx *jiggy_tumblar_hud_draw(Gfx *dl);
 Gfx *jiggy_boss_boom_box_hud_draw(Gfx *dl);
 Gfx *jiggy_snorkel_hud_draw(Gfx *dl);
+Gfx *jiggy_eyrie_hud_draw(Gfx *dl);
+Gfx *jiggy_nabnut_hud_draw(Gfx *dl);
 
 // @recomp: General gfx loop
 RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx **arg2) {
@@ -3183,6 +3185,8 @@ RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx
         dl = jiggy_tumblar_hud_draw(dl); // @jiggy: Tumblar's text box and letters (jiggy_tumblar.c)
         dl = jiggy_boss_boom_box_hud_draw(dl); // @jiggy: Boss Boom Box's text box (jiggy_boss_boom_box.c)
         dl = jiggy_snorkel_hud_draw(dl); // @jiggy: Snorkel's text box (jiggy_snorkel.c)
+        dl = jiggy_eyrie_hud_draw(dl); // @jiggy: Eyrie's text box and the carried caterpillars (jiggy_eyrie.c)
+        dl = jiggy_nabnut_hud_draw(dl); // @jiggy: Nabnut's text box and the carried acorns (jiggy_nabnut.c)
         func_global_asm_806FBC34();
         func_global_asm_8068C0B4();
         func_global_asm_80722280();

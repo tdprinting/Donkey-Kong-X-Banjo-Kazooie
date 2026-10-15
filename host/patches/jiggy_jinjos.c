@@ -192,6 +192,16 @@ static const JinjoPlacement jinjos_factory[JINJO_COLORS] = {
     {500.0f, 804.0f, 1905.0f},  // Pink: the round platform at the end of the west walkway.
     {1700.0f, 836.0f, 2460.0f}, // Yellow: the east corridor's bend.
 };
+
+// Fungi Forest: one in each of its main areas, on DK64's floor (its floor triangles), flat
+// round about and 60 or more units from the notes and everything else.
+static const JinjoPlacement jinjos_fungi[JINJO_COLORS] = {
+    {2900.0f, 223.0f, 2050.0f}, // Blue: on the clock tower's hill, east of the clock.
+    {2150.0f, 226.0f, 350.0f},  // Green: on the apple area's west plateau, past the beanstalk.
+    {620.0f, 99.0f, 760.0f},    // Orange: on the low ground round the giant mushroom.
+    {450.0f, 189.0f, 3900.0f},  // Pink: on the barn's plateau, west of the mill.
+    {4530.0f, 83.0f, 4001.0f},  // Yellow: on the owl tree's ring path, south side.
+};
 static const struct {
     Maps map;
     const JinjoPlacement *spots;
@@ -201,6 +211,7 @@ static const struct {
     {MAP_GALLEON, jinjos_galleon},
     {MAP_CASTLE, jinjos_castle},
     {MAP_FACTORY, jinjos_factory},
+    {MAP_FUNGI, jinjos_fungi},
 };
 
 typedef enum {
