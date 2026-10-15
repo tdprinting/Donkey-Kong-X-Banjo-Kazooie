@@ -18,9 +18,9 @@
 // ASSET_7DF, recolored per Jinjo, the collected ones turning to face front) comes up for a
 // moment in the HUD pass (jiggy_jinjos_hud_draw, called from patches_ui.c).
 // TODO: the collected Jinjo's fly-away (ASSET_130/131 animations, sparkles), the Jiggy the
-// fifth Jinjo gives, Banjo-Kazooie's own sounds, and keeping Jinjos in save data: a bit per
-// Jinjo per map (5 bits a level, as Banjo-Kazooie's ITEM_12_JINJOS keeps them), which needs a
-// slot in the save file beside DK64's own flags.
+// fifth Jinjo gives and Banjo-Kazooie's own sounds. Collected Jinjos are kept with the DK64
+// save file (jiggy_save_get/set): a bit per Jinjo per map, as Banjo-Kazooie's ITEM_12_JINJOS
+// keeps 5 bits a level.
 
 #include "common_structs.h"
 #include "ui.h"
@@ -123,6 +123,7 @@ extern Maps current_map;
 extern u8 cc_number_of_players;
 extern u8 D_global_asm_807444FC;
 extern u32 object_timer;
+extern u8 current_file;
 extern u32 D_global_asm_80744478;
 extern s16 D_global_asm_80744494;
 s16 playSound(s16 arg0, s32 arg1, f32 arg2, f32 arg3, u8 arg4, u8 arg5);
@@ -185,8 +186,10 @@ static s32 jinjo_last_map = -1;
 static s32 jinjo_placed;
 static u32 jinjo_last_timer;
 static Jinjo jinjos[JINJO_COLORS];
-// Bit i: jinjo_ring[i] has been collected (kept across visits, not yet saved).
+// Bit i: jinjo_ring[i] has been collected, on the map the Jinjos were last loaded for.
 static u32 jinjo_collected;
+// Save key (jiggy_save_get) of a map's collected bits.
+#define JINJO_SAVE_MAP_KEY(map) (0x4A000000 | (u32)(map)) // 'J'
 static u32 jinjo_random_state = 0x4A494E4A;
 
 // The HUD's heads: per head and frame, the sprite recolored for that Jinjo.
@@ -299,6 +302,7 @@ static void jinjos_collect(Actor *player) {
             continue;
         }
         jinjo_collected |= 1 << i;
+        jiggy_save_set(current_file, JINJO_SAVE_MAP_KEY(current_map), jinjo_collected);
         // The counter comes up (the heads rise again if it had gone).
         if (hud_ticks >= HUD_SHOW_TICKS) {
             s32 j;
@@ -436,6 +440,7 @@ Gfx *jiggy_jinjos_draw(Gfx *dl, Actor *actor) {
     if ((s32)current_map != jinjo_last_map) {
         jinjo_last_map = current_map;
         jinjo_placed = FALSE;
+        jinjo_collected = jiggy_save_get(current_file, JINJO_SAVE_MAP_KEY(current_map));
     }
     if (current_map != JINJO_RING_MAP) {
         return dl;
