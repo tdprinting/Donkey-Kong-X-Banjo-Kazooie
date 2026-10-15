@@ -190,10 +190,11 @@ static const u16 conga_talk_sfx[] = {0xE3, 0xE4, 0xE5};
 #define BOX_FADE_STEP 0x30
 #define BOX_ALPHA 0xC8
 
-// Where he is, map by map. Jungle Japes' first area: against the rock wall at its east edge,
-// clear of Bottles' molehill (1120, 560), the Grublins' paths, the notes' trail and the
-// collectibles (the nearest, a Mumbo Token at (1400, 330) and a Red Feather at (1330, 380), are
-// over 240 units off). His Golden Banana appears a little in front of him, toward the area.
+// Where he is, map by map. Jungle Japes' first area: by the bamboo at its east edge (further
+// north along that edge is out of bounds), clear of Bottles' molehill (1120, 560), the notes'
+// trail and the collectibles (the nearest, a Mumbo Token at (1400, 330) and a Red Feather at
+// (1330, 380), are 95 and 108 units off). His Golden Banana appears a little in front of him,
+// toward the area.
 typedef struct {
     Maps map;
     f32 x, y, z;          // Where he stands (y is the area's floor, if the floor isn't found).
@@ -201,7 +202,7 @@ typedef struct {
     s16 flag;             // Its DK64 permanent flag.
 } CongaPlacement;
 static const CongaPlacement conga_spots[] = {
-    {MAP_JAPES, 1440.0f, 280.0f, 600.0f, 1405.0f, 575.0f, 0x31D},
+    {MAP_JAPES, 1430.0f, 280.0f, 420.0f, 1395.0f, 425.0f, 0x31D},
 };
 
 // What he says. Each page is one press of A; lines are broken to fit the box when shown.
