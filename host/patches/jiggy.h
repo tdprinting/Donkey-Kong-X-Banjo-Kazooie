@@ -52,6 +52,15 @@ typedef struct {
 } JiggyBkPose;
 #endif
 
+#ifndef __cplusplus
+// Golden Banana rewards past DK64's own flags (jiggy_rewards.c): ids 0-255, allocated in
+// docs/GAME_PLAN.md. jiggy_reward_update spawns reward `id`'s Golden Banana at (x, y, z) while
+// it isn't collected (call every frame while it's due; `player` keeps it off the player's
+// head) and returns TRUE once it's collected.
+s32 jiggy_reward_update(u32 id, f32 x, f32 y, f32 z, void *player, u32 frames); // player: an Actor *
+s32 jiggy_reward_collected(u32 id);
+#endif
+
 // Fills pose->gfx and pose->mtx. Returns the commands written, or -1 (model not built at
 // pose->block, or the buffers are too small). Call gSPDisplayList on pose->gfx after.
 DECLARE_FUNC(s32, jiggy_bk_model_pose, void *pose); // A JiggyBkPose.
