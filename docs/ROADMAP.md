@@ -125,7 +125,7 @@ The foundation every later step needs: reading both games' files from the player
 - [x] Wonderwing (`jiggy_banjo_wonderwing.c`) and Shock Spring Jump (`jiggy_banjo_shock.c`),
   tested in game; the Wonderwing now burns Gold Feathers (needs a test in game).
 - [x] Flight from a Flight pad in the Training Grounds (`jiggy_banjo_fly.c`): flaps on Red
-  Feathers, stick steering and pitch, Beak Bomb; drives DK's own jump physics. Needs a test
+  Feathers, stick steering and pitch, Beak Bomb; drives DK's own jump physics. Takeoff, flight and flaps (spending Red Feathers) tested in game; Beak Bomb and landing need a test
   in game.
 - Rebuild the rest of the moveset (swimming, the Beak Bomb's crash and knockback) as DK64
   patches, using the BK decompilation as the behaviour reference.
