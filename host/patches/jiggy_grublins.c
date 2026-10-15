@@ -373,6 +373,8 @@ static s32 grublin_sees(Grublin *g, Actor *player, f32 radius) {
            dy <= GRUBLIN_SEE_HEIGHT && dy >= -GRUBLIN_SEE_HEIGHT;
 }
 
+s32 jiggy_banjo_air_attack(Actor *player);
+
 // Whether the player's attack hits this Grublin this frame.
 static s32 grublin_attacked(Grublin *g, Actor *player) {
     f32 distance = distance_xz(g->pos[0], g->pos[2], player->x_position, player->z_position);
@@ -405,7 +407,8 @@ static s32 grublin_attacked(Grublin *g, Actor *player) {
         case STATE_AERIAL_ATTACK_CHUNKY:
             return distance <= ATTACK_REACH;
         default:
-            return FALSE;
+            // Banjo's Rat-a-tat Rap and Beak Buster, which DK64's states don't show.
+            return jiggy_banjo_air_attack(player) && distance <= ATTACK_REACH;
     }
 }
 

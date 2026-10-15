@@ -395,6 +395,15 @@ static s32 banjo_here(Actor *actor) {
            (current_map == MAP_DK_ISLES_OVERWORLD || current_map == MAP_TRAINING_GROUNDS || current_map == MAP_JAPES);
 }
 
+// Whether Banjo is in one of his own air attacks, which DK64's states don't show: the
+// Rat-a-tat Rap, and the Beak Buster once it slams down. Enemies take hits from them
+// (jiggy_grublins.c).
+s32 jiggy_banjo_air_attack(Actor *player) {
+    return banjo_here(player) && banjo_is_player &&
+           (banjo_air_move == AIR_MOVE_RAP ||
+            (banjo_air_move == AIR_MOVE_BUSTER && banjo_air_move_seconds >= BUSTER_HANG_SECONDS));
+}
+
 // Whether Banjo is standing in for this actor, so its own model shouldn't be drawn
 // (func_global_asm_80630DCC in patches_draw.c).
 s32 jiggy_banjo_replaces(Actor *actor) {
