@@ -88,12 +88,13 @@ The foundation every later step needs: reading both games' files from the player
 - [x] Model converter (`bridge/src/bk_gfx.cpp`): re-encodes a model's F3DEX display lists as
   F3DEX2 for the DK64 engine, with its vertices, textures and render modes in one block.
   Banjo & Kazooie's model now stands beside the player in the Training Grounds and DK Isles
-  (`host/patches/jiggy_banjo3d.c`), tested in game on real ROMs. Rest pose only so far.
+  (`host/patches/jiggy_banjo3d.c`), tested in game on real ROMs.
 - [x] Bones: apply Banjo-Kazooie's skeleton (the geo list's bone and skinning commands) so
   models can pose and animate (bridge/src/bk_anim.cpp, bk_pose.cpp; jiggy_bk_model_pose).
 - [x] Play Banjo-Kazooie's own skeletal animations on its models (no retargeting needed:
   the host evaluates BK's animation assets directly).
-- [ ] Animated textures (segments 11-15: Banjo's eyes and mouth frames).
+- [ ] Animated textures (segments 11-15) for the models that use them. Banjo's doesn't: his
+  eyes are geometry picked by selectors, so blinking already works.
 - Texture and palette conversion where formats differ.
 - Music: Banjo sequences and instruments into DK64's sound bank format, or a second
   sound bank loaded alongside DK64's.
