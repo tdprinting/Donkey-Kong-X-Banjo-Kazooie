@@ -15,6 +15,7 @@
 #include "jiggy/bk_model.hpp"
 #include "jiggy/bk_pose.hpp"
 #include "jiggy/bk_sprite.hpp"
+#include "jiggy/save_store.hpp"
 #include "jiggy/bridge.h"
 #include "jiggy/bridge.hpp"
 #include "jiggy/dk64_tables.hpp"
@@ -908,6 +909,32 @@ TEST(bk_model_rejects_bad_data) {
     put_be32(m, 0, 0x0000000B);
     put_be32(m, 0x10, 0x30); // vertex list header would run past the end
     CHECK(!jiggy::BkModel::parse(m, &error));
+}
+
+TEST(save_store_round_trip_and_clear) {
+    jiggy::SaveStore store;
+    CHECK(store.get(0, 7) == 0);
+    CHECK(store.set(0, 7, 3));
+    CHECK(!store.set(0, 7, 3)); // unchanged
+    CHECK(store.set(1, 7, 9));
+    CHECK(store.set(0, 0xFFFFFFFF, 1));
+    CHECK(!store.set(2, 1, 0)); // zero is "not set"
+
+    std::string error;
+    auto copy = jiggy::SaveStore::parse(store.serialize(), &error);
+    CHECK(copy.has_value());
+    CHECK(copy->size() == 3);
+    CHECK(copy->get(0, 7) == 3 && copy->get(1, 7) == 9 && copy->get(0, 0xFFFFFFFF) == 1);
+
+    CHECK(copy->clear_file(0));
+    CHECK(copy->get(0, 7) == 0 && copy->get(0, 0xFFFFFFFF) == 0 && copy->get(1, 7) == 9);
+    CHECK(!copy->clear_file(0));
+    CHECK(copy->set(1, 7, 0) && copy->size() == 0);
+
+    Bytes bad = store.serialize();
+    bad.pop_back();
+    CHECK(!jiggy::SaveStore::parse(bad, &error).has_value());
+    CHECK(!jiggy::SaveStore::parse(Bytes{'J', 'G'}, &error).has_value());
 }
 
 TEST(rom_import_checks_and_stores) {

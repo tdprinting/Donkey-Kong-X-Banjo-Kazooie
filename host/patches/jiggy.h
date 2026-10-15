@@ -20,6 +20,13 @@ DECLARE_FUNC(s32, jiggy_bk_sprite_frame_rgba16, u32 asset_id, u32 frame, void* d
 // Banjo-Kazooie's HUD number `digit` (0-9, the bold font in its orange gradient) as RGBA16
 // texels, like jiggy_bk_sprite_frame_rgba16.
 DECLARE_FUNC(s32, jiggy_bk_bold_number_rgba16, u32 digit, void* dst, u32 dst_len);
+
+// Values Jiggy Jungle keeps with each DK64 save file (collected notes and the like), stored
+// beside DK64's own save data. Unset values read as 0.
+DECLARE_FUNC(u32, jiggy_save_get, u32 file, u32 key);
+DECLARE_FUNC(void, jiggy_save_set, u32 file, u32 key, u32 value);
+// Forgets a save file's values; called when the game starts that file afresh.
+DECLARE_FUNC(void, jiggy_save_clear, u32 file);
 // Converts a model to a block DK64 can draw, built to live at dst (8-byte aligned): its
 // F3DEX2 display lists, vertices, textures and render modes. Returns the size, writing only
 // if it fits (pass dst NULL to ask), or -1 if it isn't a model. Draw it with

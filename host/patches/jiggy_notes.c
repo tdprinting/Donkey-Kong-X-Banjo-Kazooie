@@ -13,7 +13,8 @@
 // Touching a note collects it: it disappears, a pickup sound plays, and Banjo-Kazooie's note
 // counter (its spinning HUD note, ASSET_7D9_SPRITE_NOTE, and its bold HUD numbers) shows the
 // total for a moment in the HUD pass (jiggy_notes_hud_draw, called from patches_ui.c).
-// TODO: the collect sparkle, Banjo-Kazooie's own note sound, and keeping notes in save data.
+// Collected notes and the total are kept with the DK64 save file (jiggy_save_get/set).
+// TODO: the collect sparkle and Banjo-Kazooie's own note sound.
 
 #include "common_structs.h"
 #include "ui.h"
@@ -74,6 +75,7 @@ extern u8 cc_number_of_players;
 extern u8 cc_player_index;
 extern u8 D_global_asm_807444FC;
 extern u32 object_timer;
+extern u8 current_file;
 extern u32 D_global_asm_80744478;
 extern s16 D_global_asm_80744494;
 s16 playSound(s16 arg0, s32 arg1, f32 arg2, f32 arg3, u8 arg4, u8 arg5);
@@ -112,9 +114,12 @@ static NotesLoadState note_state = NOTES_UNLOADED;
 static s32 note_last_map = -1;
 static s32 note_placed;
 static f32 note_pos[NOTE_COUNT][3];
-// Bit i: note_trail[i] has been collected (kept across visits, not yet saved).
+// Bit i: note_trail[i] has been collected, for the map the notes were last loaded on.
 static u32 note_collected;
 static s32 notes_total;
+// Save keys (jiggy_save_get): the collected bits of a map's notes, and the total.
+#define NOTE_SAVE_MAP_KEY(map) (0x4E000000 | (u32)(map)) // 'N'
+#define NOTE_SAVE_TOTAL_KEY 0x4EFFFFFF
 
 static NotesLoadState hud_state = NOTES_UNLOADED;
 static u16 hud_note_texels[HUD_NOTE_MAX_FRAMES][HUD_NOTE_MAX_TEXELS] __attribute__((aligned(8)));
@@ -233,6 +238,8 @@ static void notes_collect(Actor *player) {
         }
         note_collected |= 1 << i;
         notes_total++;
+        jiggy_save_set(current_file, NOTE_SAVE_MAP_KEY(current_map), note_collected);
+        jiggy_save_set(current_file, NOTE_SAVE_TOTAL_KEY, notes_total);
         hud_ticks = 0;
         playSound(NOTE_PICKUP_SOUND, 0x7FFF, 63.0f, 1.0f, 5, 0);
     }
@@ -318,6 +325,9 @@ Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor) {
     if ((s32)current_map != note_last_map) {
         note_last_map = current_map;
         note_placed = FALSE;
+        // Read back on every map, which also catches a different save file being loaded.
+        note_collected = jiggy_save_get(current_file, NOTE_SAVE_MAP_KEY(current_map));
+        notes_total = jiggy_save_get(current_file, NOTE_SAVE_TOTAL_KEY);
     }
     if (current_map != NOTE_TRAIL_MAP) {
         return dl;

@@ -87,3 +87,6 @@ jiggy_bk_sprite_frame_rgba16 = 0x8F000410;
 jiggy_bk_model_build = 0x8F000414;
 jiggy_bk_model_pose = 0x8F000418;
 jiggy_bk_bold_number_rgba16 = 0x8F00041C;
+jiggy_save_get = 0x8F000420;
+jiggy_save_set = 0x8F000424;
+jiggy_save_clear = 0x8F000428;

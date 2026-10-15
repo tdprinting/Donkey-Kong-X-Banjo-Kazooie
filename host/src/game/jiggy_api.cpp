@@ -10,10 +10,12 @@
 #include <array>
 #include <cstring>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <mutex>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "jiggy/bk_anim.hpp"
 #include "jiggy/bk_assets.hpp"
@@ -21,12 +23,66 @@
 #include "jiggy/bk_model.hpp"
 #include "jiggy/bk_pose.hpp"
 #include "jiggy/bk_sprite.hpp"
+#include "jiggy/save_store.hpp"
 #include "jiggy/rom.hpp"
 #include "librecomp/helpers.hpp"
 #include "recomp.h"
 
 namespace {
     constexpr const char* stored_banjo_filename = "jiggy_banjo.z64";
+    constexpr const char* save_filename = "jiggy_save.bin";
+
+    // Jiggy Jungle's additions to the save files (jiggy/save_store.hpp), written through to
+    // the app folder on every change.
+    std::mutex save_mutex;
+    std::filesystem::path save_path;
+    jiggy::SaveStore save_store;
+
+    // Expects save_mutex to be held. Writes a temporary file and renames it over the old one,
+    // so a crash mid-write can't lose what was saved before.
+    void write_save_store() {
+        if (save_path.empty()) {
+            return;
+        }
+        const auto bytes = save_store.serialize();
+        std::filesystem::path temp = save_path;
+        temp += ".tmp";
+        {
+            std::ofstream out{temp, std::ios::binary | std::ios::trunc};
+            out.write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
+            if (!out) {
+                fprintf(stderr, "[Jiggy] Couldn't write %s\n", temp.string().c_str());
+                return;
+            }
+        }
+        std::error_code ec;
+        std::filesystem::rename(temp, save_path, ec);
+        if (ec) {
+            fprintf(stderr, "[Jiggy] Couldn't replace %s: %s\n", save_path.string().c_str(), ec.message().c_str());
+        }
+    }
+
+    void load_save_store(const std::filesystem::path& app_folder) {
+        std::lock_guard lock{save_mutex};
+        save_path = app_folder / save_filename;
+        std::ifstream in{save_path, std::ios::binary};
+        if (!in) {
+            return;
+        }
+        std::vector<uint8_t> bytes{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+        std::string error;
+        auto store = jiggy::SaveStore::parse(bytes, &error);
+        if (!store) {
+            // Keep the unreadable file aside rather than writing over it.
+            fprintf(stderr, "[Jiggy] Ignoring %s: %s\n", save_path.string().c_str(), error.c_str());
+            std::error_code ec;
+            std::filesystem::path aside = save_path;
+            aside += ".bad";
+            std::filesystem::rename(save_path, aside, ec);
+            return;
+        }
+        save_store = std::move(*store);
+    }
 
     std::mutex banjo_mutex;
     std::filesystem::path stored_banjo_path;
@@ -190,6 +246,7 @@ namespace {
 }
 
 void jiggy_host::init(const std::filesystem::path& app_folder) {
+    load_save_store(app_folder);
     std::lock_guard lock{banjo_mutex};
     stored_banjo_path = app_folder / stored_banjo_filename;
 
@@ -328,6 +385,38 @@ extern "C" void jiggy_bk_bold_number_rgba16(uint8_t* rdram, recomp_context* ctx)
         }
     }
     _return<s32>(ctx, s32((image->width << 16) | image->height));
+}
+
+// u32 jiggy_save_get(u32 file, u32 key): a value kept with DK64 save file `file`, 0 if unset.
+extern "C" void jiggy_save_get(uint8_t* rdram, recomp_context* ctx) {
+    u32 file = _arg<0, u32>(rdram, ctx);
+    u32 key = _arg<1, u32>(rdram, ctx);
+
+    std::lock_guard lock{save_mutex};
+    _return<u32>(ctx, save_store.get(file, key));
+}
+
+// void jiggy_save_set(u32 file, u32 key, u32 value): keeps a value with a save file, written
+// to disk straight away.
+extern "C" void jiggy_save_set(uint8_t* rdram, recomp_context* ctx) {
+    u32 file = _arg<0, u32>(rdram, ctx);
+    u32 key = _arg<1, u32>(rdram, ctx);
+    u32 value = _arg<2, u32>(rdram, ctx);
+
+    std::lock_guard lock{save_mutex};
+    if (save_store.set(file, key, value)) {
+        write_save_store();
+    }
+}
+
+// void jiggy_save_clear(u32 file): forgets a save file's values, when the game starts it afresh.
+extern "C" void jiggy_save_clear(uint8_t* rdram, recomp_context* ctx) {
+    u32 file = _arg<0, u32>(rdram, ctx);
+
+    std::lock_guard lock{save_mutex};
+    if (save_store.clear_file(file)) {
+        write_save_store();
+    }
 }
 
 // s32 jiggy_bk_model_build(u32 asset_id, void* dst, u32 dst_len): converts a Banjo-Kazooie
