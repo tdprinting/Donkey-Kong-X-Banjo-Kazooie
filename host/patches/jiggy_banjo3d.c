@@ -5,7 +5,10 @@
 // it's pressed again. As the player, Banjo shows his own move for what DK's controls do
 // (Claw Swipe, Beak Barge, crouch, backflip) and has Banjo-Kazooie's air moves: press A
 // again in the air and hold it to Feathery Flap, B for the Rat-a-tat Rap, Z for the Beak
-// Buster.
+// Buster. Crouched, C-left Talon Trots (jiggy_banjo_trot.c), C-right Wonderwings
+// (jiggy_banjo_wonderwing.c) and C-up and C-down fire eggs (jiggy_banjo_eggs.c); A on the
+// Shock Spring Jump pad springs (jiggy_banjo_shock.c) and A on the Flight pad flies
+// (jiggy_banjo_fly.c). In the water Banjo swims as in Banjo-Kazooie (jiggy_banjo_swim.c).
 //
 // The host converts the model once (jiggy_bk_model_build) and, every frame, poses it with
 // an animation and writes the display list and bone matrices that draw it
@@ -66,6 +69,9 @@
 #define FLAP_FALL_SPEED -10.0f
 #define FLAP_MAX_SECONDS 1.6f
 #define FLAP_SECONDS 0.35f
+// Kazooie grunts on each wing beat, at this point of it, once a flap has gone on this long.
+#define FLAP_GRUNT_AT 0.5698f
+#define FLAP_GRUNT_AFTER 0.7f
 // Rat-a-tat Rap (bPeck.c): B in the air hovers while Kazooie pecks.
 #define RAP_SECONDS 0.6f
 #define RAP_PECK_SECONDS 0.2f
@@ -96,6 +102,31 @@ extern u16 newly_pressed_input[];
 extern OSContPad D_global_asm_807ECD58; // Buttons held this frame.
 f32 func_global_asm_80612790(s16 angle); // cos of a 12-bit angle
 f32 func_global_asm_80612794(s16 angle); // sin of a 12-bit angle
+// Talon Trot (jiggy_banjo_trot.c).
+s32 jiggy_banjo_trot_animate(Actor *player, s32 is_player, s32 airborne, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_trot_selectors(s32 *selectors);
+f32 jiggy_banjo_trot_yaw(void);
+// Wonderwing (jiggy_banjo_wonderwing.c).
+s32 jiggy_banjo_wonderwing_animate(Actor *player, s32 is_player, s32 airborne, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_wonderwing_selectors(s32 *selectors);
+Gfx *jiggy_banjo_wonderwing_draw(Gfx *dl, Actor *player);
+// Shock Spring Jump (jiggy_banjo_shock.c).
+s32 jiggy_banjo_shock_animate(Actor *player, s32 is_player, s32 airborne, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_shock_selectors(s32 *selectors);
+f32 jiggy_banjo_shock_lift(Actor *player);
+Gfx *jiggy_banjo_shock_pad_draw(Gfx *dl, Actor *player);
+// Flight (jiggy_banjo_fly.c).
+s32 jiggy_banjo_fly_animate(Actor *player, s32 is_player, s32 airborne, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_fly_selectors(s32 *selectors);
+f32 jiggy_banjo_fly_pitch(void);
+f32 jiggy_banjo_fly_roll(void);
+f32 jiggy_banjo_fly_lift(Actor *player);
+Gfx *jiggy_banjo_fly_pad_draw(Gfx *dl, Actor *player);
+// Swimming (jiggy_banjo_swim.c).
+s32 jiggy_banjo_swimming(Actor *player);
+s32 jiggy_banjo_swim_animate(Actor *player, s32 is_player, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_swim_selectors(s32 *selectors);
+f32 jiggy_banjo_swim_lift(void);
 
 typedef enum {
     BANJO_UNLOADED,
@@ -167,12 +198,18 @@ static void banjo_play_once(s32 animation, f32 seconds, f32 elapsed) {
     }
 }
 
+static s32 flap_sound; // The flap sound playing (jiggy_bk_sfx_play's handle), or 0.
+
 static void banjo_start_air_move(Actor *player, BanjoAirMove move) {
     banjo_air_move = move;
     banjo_air_moves_used |= 1 << move;
     banjo_air_move_seconds = 0.0f;
     if (move == AIR_MOVE_FLAP) {
         player->y_velocity = FLAP_LIFT;
+        // Kazooie's flap (SFX_4E_KAZOOIE_BRUIII); a new one cuts the last, as Banjo-Kazooie
+        // plays both on one channel.
+        jiggy_bk_sound_stop(flap_sound);
+        flap_sound = jiggy_bk_sfx_play(JIGGY_BK_SFX_FLAP, 20000.0f / 32767.0f, 1.24f);
     }
 }
 
@@ -228,9 +265,12 @@ static void banjo_air_moves(Actor *player, s32 airborne, f32 seconds) {
 // Picks Banjo's animation from what the player is doing and advances it.
 static void banjo_animate(Actor *player) {
     f32 seconds;
+    f32 before;
     f32 speed = player->unkB8;
     u32 frames = object_timer - banjo_last_timer;
     s32 airborne = player->y_position - player->floor > BANJO_AIRBORNE_HEIGHT;
+    // In the water Banjo only swims: his other moves stop as they do when DK takes over.
+    s32 moves_on = banjo_is_player && !jiggy_banjo_swimming(player);
     s32 i;
 
     banjo_last_timer = object_timer;
@@ -240,11 +280,29 @@ static void banjo_animate(Actor *player) {
     }
     seconds = frames / GAME_FPS;
 
+    if (jiggy_banjo_trot_animate(player, moves_on, airborne, seconds, &banjo_animation, &banjo_progress) ||
+        jiggy_banjo_wonderwing_animate(player, moves_on, airborne, seconds, &banjo_animation, &banjo_progress) ||
+        jiggy_banjo_shock_animate(player, moves_on, airborne, seconds, &banjo_animation, &banjo_progress) ||
+        jiggy_banjo_fly_animate(player, moves_on, airborne, seconds, &banjo_animation, &banjo_progress)) {
+        return;
+    }
+    if (jiggy_banjo_swim_animate(player, banjo_is_player, seconds, &banjo_animation, &banjo_progress)) {
+        // No air moves in the water: A and B swim, and DK64 counts it as off the floor.
+        banjo_air_move = AIR_MOVE_NONE;
+        banjo_air_moves_used = 0;
+        return;
+    }
     banjo_air_moves(player, airborne, seconds);
     switch (banjo_air_move) {
         case AIR_MOVE_FLAP:
             banjo_play(BANJO_ANIM_FLAP);
+            before = banjo_progress;
             banjo_progress += seconds / FLAP_SECONDS;
+            // Once the flap has gone on a while, Kazooie grunts on each beat (SFX_47_KAZOOIE_HEUGH).
+            if (banjo_air_move_seconds > FLAP_GRUNT_AFTER && before < FLAP_GRUNT_AT && banjo_progress >= FLAP_GRUNT_AT) {
+                jiggy_bk_sound_stop(flap_sound);
+                flap_sound = jiggy_bk_sfx_play(JIGGY_BK_SFX_KAZOOIE_HEUGH, 22000.0f / 32767.0f, 1.0f);
+            }
             break;
         case AIR_MOVE_RAP:
             banjo_play(BANJO_ANIM_RAT_A_TAT_RAP);
@@ -319,6 +377,11 @@ static void banjo_set_selectors(void) {
             banjo_pose.selectors[kazooie_selectors[i]] = 1;
         }
     }
+    jiggy_banjo_trot_selectors(banjo_pose.selectors);
+    jiggy_banjo_wonderwing_selectors(banjo_pose.selectors);
+    jiggy_banjo_shock_selectors(banjo_pose.selectors);
+    jiggy_banjo_fly_selectors(banjo_pose.selectors);
+    jiggy_banjo_swim_selectors(banjo_pose.selectors);
     if (blink < sizeof(blink_frames)) {
         eyes = blink_frames[blink];
     }
@@ -329,7 +392,16 @@ static void banjo_set_selectors(void) {
 
 static s32 banjo_here(Actor *actor) {
     return actor == gPlayerPointer && cc_number_of_players == 1 &&
-           (current_map == MAP_DK_ISLES_OVERWORLD || current_map == MAP_TRAINING_GROUNDS);
+           (current_map == MAP_DK_ISLES_OVERWORLD || current_map == MAP_TRAINING_GROUNDS || current_map == MAP_JAPES);
+}
+
+// Whether Banjo is in one of his own air attacks, which DK64's states don't show: the
+// Rat-a-tat Rap, and the Beak Buster once it slams down. Enemies take hits from them
+// (jiggy_grublins.c).
+s32 jiggy_banjo_air_attack(Actor *player) {
+    return banjo_here(player) && banjo_is_player &&
+           (banjo_air_move == AIR_MOVE_RAP ||
+            (banjo_air_move == AIR_MOVE_BUSTER && banjo_air_move_seconds >= BUSTER_HANG_SECONDS));
 }
 
 // Whether Banjo is standing in for this actor, so its own model shouldn't be drawn
@@ -338,6 +410,8 @@ s32 jiggy_banjo_replaces(Actor *actor) {
     return banjo_is_player && banjo_state == BANJO_READY && banjo_here(actor);
 }
 
+Gfx *jiggy_banjo_eggs(Gfx *dl, Actor *player, s32 banjo_is_player, s32 *animation, f32 *progress, s32 *selectors);
+
 // Called after an actor is drawn (func_global_asm_80630DCC in patches_draw.c).
 Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     f32 yaw;
@@ -345,6 +419,9 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     f32 offset;
     f32 rotate[4][4];
     f32 scale[4][4];
+    f32 tilt[4][4];
+    f32 tilted[4][4];
+    f32 lift;
     s32 buffer = D_global_asm_807444FC;
 
     if (!banjo_here(actor)) {
@@ -361,18 +438,29 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     }
     banjo_animate(actor);
     banjo_set_selectors();
+    // Egg Firing (jiggy_banjo_eggs.c): fires and draws eggs, and plays its own move on Banjo.
+    dl = jiggy_banjo_eggs(dl, actor, banjo_is_player, &banjo_animation, &banjo_progress, banjo_pose.selectors);
 
     // Rotations are 12-bit angles. Banjo faces where the player faces, in their place or one
     // step to their side.
     offset = banjo_is_player ? 0.0f : BANJO_SIDE_OFFSET;
-    yaw = (actor->y_rotation & 0xFFF) * (360.0f / 4096.0f);
+    yaw = (actor->y_rotation & 0xFFF) * (360.0f / 4096.0f) + jiggy_banjo_trot_yaw();
     x = actor->x_position + func_global_asm_80612790(actor->y_rotation) * offset;
     z = actor->z_position - func_global_asm_80612794(actor->y_rotation) * offset;
     guScaleF(scale, BANJO_SCALE, BANJO_SCALE, BANJO_SCALE);
+    // Flying, Banjo banks (about where he faces) and pitches (about his side) first
+    // (jiggy_banjo_fly.c).
+    guRotateF(tilt, jiggy_banjo_fly_roll(), 0.0f, 0.0f, 1.0f);
+    guMtxCatF(scale, tilt, tilted);
+    guRotateF(tilt, jiggy_banjo_fly_pitch(), 1.0f, 0.0f, 0.0f);
+    guMtxCatF(tilted, tilt, scale);
     guRotateF(rotate, yaw, 0.0f, 1.0f, 0.0f);
     guMtxCatF(scale, rotate, banjo_pose.world);
+    lift = banjo_is_player ? jiggy_banjo_shock_lift(actor) + jiggy_banjo_fly_lift(actor) : 0.0f;
+    // Swimming, Banjo floats at his own depth, beside DK as well (jiggy_banjo_swim.c).
+    lift += jiggy_banjo_swim_lift();
     banjo_pose.world[3][0] = x;
-    banjo_pose.world[3][1] = actor->y_position;
+    banjo_pose.world[3][1] = actor->y_position + lift;
     banjo_pose.world[3][2] = z;
 
     banjo_pose.model = JIGGY_BANJO_MODEL;
@@ -383,11 +471,12 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     banjo_pose.gfx_capacity = BANJO_GFX_MAX;
     banjo_pose.mtx = banjo_mtx[buffer];
     banjo_pose.mtx_capacity = BANJO_MTX_MAX;
-    if (jiggy_bk_model_pose(&banjo_pose) <= 0) {
-        return dl;
+    if (jiggy_bk_model_pose(&banjo_pose) > 0) {
+        gDPPipeSync(dl++);
+        gSPDisplayList(dl++, banjo_gfx[buffer]);
     }
-
-    gDPPipeSync(dl++);
-    gSPDisplayList(dl++, banjo_gfx[buffer]);
-    return dl;
+    // The Wonderwing's sparkles, the Shock Spring Jump pad and the Flight pad.
+    dl = jiggy_banjo_wonderwing_draw(dl, actor);
+    dl = jiggy_banjo_shock_pad_draw(dl, actor);
+    return jiggy_banjo_fly_pad_draw(dl, actor);
 }

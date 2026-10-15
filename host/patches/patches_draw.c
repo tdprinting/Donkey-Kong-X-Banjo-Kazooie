@@ -201,7 +201,41 @@ extern u8  D_global_asm_807444FC;
 Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor);
 s32 jiggy_banjo_replaces(Actor *actor);
 Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_jinjos_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_honeycombs_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_feathers_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_mumbo_tokens_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_bottles_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_grublins_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_conga_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_chimpy_draw(Gfx *dl, Actor *actor);
 s32 jiggy_golden_banana_actor_draw(Gfx **dl, Actor *actor);
+Gfx *jiggy_mumbo_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_blubber_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_nipper_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_snippets_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_grunty_quiz_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_grunty_boss_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_teehees_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_motzand_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_tumblar_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_boss_boom_box_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_snorkel_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_flotsam_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_eyrie_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_nabnut_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_zubbas_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_brentilda_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_cheato_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_grunty_taunts_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_gobi_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_trunker_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_grabba_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_ancient_ones_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_slappas_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_boggy_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_wozza_draw(Gfx *dl, Actor *actor);
+Gfx *jiggy_sir_slush_draw(Gfx *dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
     f32 temp_f0_3;
@@ -341,6 +375,40 @@ block_47:
     gDPPipeSync(dl++);
     dl = jiggy_banjo_draw(dl, arg1); // @jiggy: Banjo beside the player (jiggy_banjo3d.c)
     dl = jiggy_notes_draw(dl, arg1); // @jiggy: Music Notes, drawn with the player (jiggy_notes.c)
+    dl = jiggy_jinjos_draw(dl, arg1); // @jiggy: Jinjos, drawn with the player (jiggy_jinjos.c)
+    dl = jiggy_honeycombs_draw(dl, arg1); // @jiggy: Honeycombs, drawn with the player (jiggy_honeycombs.c)
+    dl = jiggy_feathers_draw(dl, arg1); // @jiggy: Red and Gold Feathers, drawn with the player (jiggy_feathers.c)
+    dl = jiggy_mumbo_tokens_draw(dl, arg1); // @jiggy: Mumbo Tokens, drawn with the player (jiggy_mumbo_tokens.c)
+    dl = jiggy_bottles_draw(dl, arg1); // @jiggy: Bottles and his molehill in Jungle Japes (jiggy_bottles.c)
+    dl = jiggy_grublins_draw(dl, arg1); // @jiggy: Grublins in Jungle Japes (jiggy_grublins.c)
+    dl = jiggy_conga_draw(dl, arg1); // @jiggy: Conga and his oranges in Jungle Japes (jiggy_conga.c)
+    dl = jiggy_chimpy_draw(dl, arg1); // @jiggy: Chimpy, his stump and the orange in Jungle Japes (jiggy_chimpy.c)
+    dl = jiggy_mumbo_draw(dl, arg1); // @jiggy: Mumbo and his skull hut in the Training Grounds (jiggy_mumbo.c)
+    dl = jiggy_blubber_draw(dl, arg1); // @jiggy: Captain Blubber and his gold in Gloomy Galleon (jiggy_blubber.c)
+    dl = jiggy_nipper_draw(dl, arg1); // @jiggy: Nipper in Gloomy Galleon (jiggy_nipper.c)
+    dl = jiggy_snippets_draw(dl, arg1); // @jiggy: Snippets in Gloomy Galleon (jiggy_snippets.c)
+    dl = jiggy_grunty_quiz_draw(dl, arg1); // @jiggy: Gruntilda's Furnace Fun quiz in the Helm lobby (jiggy_grunty_quiz.c)
+    dl = jiggy_grunty_boss_draw(dl, arg1); // @jiggy: Gruntilda's broomstick fight in Hideout Helm (jiggy_grunty_boss.c)
+    dl = jiggy_teehees_draw(dl, arg1); // @jiggy: Tee-Hees in Creepy Castle (jiggy_teehees.c)
+    dl = jiggy_motzand_draw(dl, arg1); // @jiggy: Motzand and his organ game in Creepy Castle (jiggy_motzand.c)
+    dl = jiggy_tumblar_draw(dl, arg1); // @jiggy: Tumblar and his word puzzle in Creepy Castle (jiggy_tumblar.c)
+    dl = jiggy_boss_boom_box_draw(dl, arg1); // @jiggy: Boss Boom Box in Frantic Factory (jiggy_boss_boom_box.c)
+    dl = jiggy_snorkel_draw(dl, arg1); // @jiggy: Snorkel and the whistles in Frantic Factory (jiggy_snorkel.c)
+    dl = jiggy_flotsam_draw(dl, arg1); // @jiggy: Flotsams in Frantic Factory (jiggy_flotsam.c)
+    dl = jiggy_eyrie_draw(dl, arg1); // @jiggy: Eyrie and his caterpillars in Fungi Forest (jiggy_eyrie.c)
+    dl = jiggy_nabnut_draw(dl, arg1); // @jiggy: Nabnut and his acorns in Fungi Forest (jiggy_nabnut.c)
+    dl = jiggy_zubbas_draw(dl, arg1); // @jiggy: Zubbas in Fungi Forest (jiggy_zubbas.c)
+    dl = jiggy_brentilda_draw(dl, arg1); // @jiggy: Brentilda and her quiz in DK Isles (jiggy_brentilda.c)
+    dl = jiggy_cheato_draw(dl, arg1); // @jiggy: Cheato and his pages in DK Isles (jiggy_cheato.c)
+    dl = jiggy_grunty_taunts_draw(dl, arg1); // @jiggy: Gruntilda's taunts in DK Isles (jiggy_grunty_taunts.c)
+    dl = jiggy_gobi_draw(dl, arg1);         // @jiggy: Gobi in Angry Aztec (jiggy_gobi.c)
+    dl = jiggy_trunker_draw(dl, arg1);      // @jiggy: Trunker in Angry Aztec (jiggy_trunker.c)
+    dl = jiggy_grabba_draw(dl, arg1);       // @jiggy: Grabba in Angry Aztec (jiggy_grabba.c)
+    dl = jiggy_ancient_ones_draw(dl, arg1); // @jiggy: the Ancient Ones in Angry Aztec (jiggy_ancient_ones.c)
+    dl = jiggy_slappas_draw(dl, arg1);      // @jiggy: Slappas in Angry Aztec (jiggy_slappas.c)
+    dl = jiggy_boggy_draw(dl, arg1); // @jiggy: Boggy, his kids and their presents in Crystal Caves (jiggy_boggy.c)
+    dl = jiggy_wozza_draw(dl, arg1); // @jiggy: Wozza hiding in Crystal Caves (jiggy_wozza.c)
+    dl = jiggy_sir_slush_draw(dl, arg1); // @jiggy: Sir Slush and his snowballs in Crystal Caves (jiggy_sir_slush.c)
     return dl;
 }
 

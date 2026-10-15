@@ -5,8 +5,11 @@
 // DK64 ROM the runtime already manages, and serves its assets to the recompiled game.
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
+#include <vector>
 
 namespace jiggy_host {
     // Loads the Banjo-Kazooie ROM stored in the app folder, if the player has picked one.
@@ -18,6 +21,14 @@ namespace jiggy_host {
 
     bool banjo_rom_loaded();
     size_t banjo_asset_count();
+
+    // Changes whenever a different Banjo-Kazooie ROM is adopted, so caches built from the old
+    // one can tell they're stale.
+    uint32_t banjo_rom_generation();
+    // A copy of `size` bytes of the Banjo-Kazooie ROM from `offset` (e.g. its sound banks).
+    std::optional<std::vector<uint8_t>> banjo_rom_bytes(uint32_t offset, uint32_t size);
+    // A Banjo-Kazooie asset, decompressed.
+    std::optional<std::vector<uint8_t>> banjo_asset(uint32_t id);
 }
 
 #endif

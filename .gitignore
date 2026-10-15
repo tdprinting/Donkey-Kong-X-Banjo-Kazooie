@@ -20,3 +20,4 @@
 /build-android-engine/
 /build-windows/
 /android/app/engine-libs/
+tools/dk64-setup/__pycache__/

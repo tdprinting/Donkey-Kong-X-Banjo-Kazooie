@@ -2,6 +2,8 @@
 
 #include "byte_io.hpp"
 
+#include <algorithm>
+
 namespace jiggy {
 
 namespace {
@@ -121,6 +123,14 @@ std::optional<BkSprite> BkSprite::parse(std::span<const uint8_t> data, std::stri
 }
 
 std::optional<BkSpriteImage> BkSprite::decode_frame(size_t frame, std::string* error) const {
+    return decode(frame, nullptr, error);
+}
+
+std::optional<BkSpriteImage> BkSprite::decode_chunk(size_t frame, size_t chunk, std::string* error) const {
+    return decode(frame, &chunk, error);
+}
+
+std::optional<BkSpriteImage> BkSprite::decode(size_t frame, const size_t* only_chunk, std::string* error) const {
     if (frame >= frame_offsets_.size()) {
         set_error(error, "sprite has no frame " + std::to_string(frame));
         return std::nullopt;
@@ -133,11 +143,17 @@ std::optional<BkSpriteImage> BkSprite::decode_frame(size_t frame, std::string* e
         set_error(error, "sprite frame has a bad size");
         return std::nullopt;
     }
+    if (only_chunk && *only_chunk >= size_t(chunk_count)) {
+        set_error(error, "sprite frame has no chunk " + std::to_string(*only_chunk));
+        return std::nullopt;
+    }
 
     BkSpriteImage image;
-    image.width = uint16_t(width);
-    image.height = uint16_t(height);
-    image.rgba.assign(size_t(width) * size_t(height) * 4, 0);
+    if (!only_chunk) {
+        image.width = uint16_t(width);
+        image.height = uint16_t(height);
+        image.rgba.assign(size_t(width) * size_t(height) * 4, 0);
+    }
 
     std::vector<Texel> palette;
     size_t pos = base + kFrameHeaderSize;
@@ -175,6 +191,22 @@ std::optional<BkSpriteImage> BkSprite::decode_frame(size_t frame, std::string* e
             set_error(error, "sprite chunk texels run past the end of the data");
             return std::nullopt;
         }
+        // On its own, a chunk is its own canvas.
+        int origin_x = cx;
+        int origin_y = cy;
+        if (only_chunk) {
+            if (size_t(c) != *only_chunk) {
+                pos += chunk_bytes;
+                continue;
+            }
+            origin_x = 0;
+            origin_y = 0;
+            image.width = uint16_t(cw);
+            image.height = uint16_t(ch);
+            image.rgba.assign(size_t(cw) * size_t(ch) * 4, 0);
+        }
+        const int canvas_w = image.width;
+        const int canvas_h = image.height;
 
         for (int iy = 0; iy < ch; iy++) {
             const size_t row = pos + size_t(iy) * row_bytes;
@@ -221,12 +253,12 @@ std::optional<BkSpriteImage> BkSprite::decode_frame(size_t frame, std::string* e
                         break;
                     }
                 }
-                const int x = cx + ix;
-                const int y = cy + iy;
-                if (x < 0 || y < 0 || x >= width || y >= height) {
+                const int x = origin_x + ix;
+                const int y = origin_y + iy;
+                if (x < 0 || y < 0 || x >= canvas_w || y >= canvas_h) {
                     continue;
                 }
-                uint8_t* out = &image.rgba[(size_t(y) * size_t(width) + size_t(x)) * 4];
+                uint8_t* out = &image.rgba[(size_t(y) * size_t(canvas_w) + size_t(x)) * 4];
                 out[0] = t.r;
                 out[1] = t.g;
                 out[2] = t.b;
@@ -236,6 +268,39 @@ std::optional<BkSpriteImage> BkSprite::decode_frame(size_t frame, std::string* e
         pos += chunk_bytes;
     }
     return image;
+}
+
+std::optional<BkSpriteImage> bk_bold_font_letter(const BkSprite& mask, const BkSprite& texture, size_t index,
+                                                 std::string* error) {
+    if (mask.type() != uint16_t(BkSpriteFormat::RGBA32)) {
+        set_error(error, "bold font mask is not RGBA32");
+        return std::nullopt;
+    }
+    auto letter = mask.decode_chunk(0, index, error);
+    if (!letter) {
+        return std::nullopt;
+    }
+    auto colors = texture.decode_frame(0, error);
+    if (!colors) {
+        return std::nullopt;
+    }
+    // print_setBoldFontTexturePixel: the texture's 5-bit color times intensity / 31 (integer
+    // division, as the game does), keeping the mask's alpha.
+    const int x_min = (int(colors->width) - int(letter->width)) >> 1;
+    const int y_min = (int(colors->height) - int(letter->height)) >> 1;
+    for (int y = 0; y < letter->height; y++) {
+        for (int x = 0; x < letter->width; x++) {
+            uint8_t* px = &letter->rgba[(size_t(y) * letter->width + size_t(x)) * 4];
+            const int tx = std::clamp(x + x_min, 0, int(colors->width) - 1);
+            const int ty = std::clamp(y + y_min, 0, int(colors->height) - 1);
+            const uint8_t* tc = &colors->rgba[(size_t(ty) * colors->width + size_t(tx)) * 4];
+            const int k = px[2] / 0x1F;
+            px[0] = uint8_t((tc[0] >> 3) * k);
+            px[1] = uint8_t((tc[1] >> 3) * k);
+            px[2] = uint8_t((tc[2] >> 3) * k);
+        }
+    }
+    return letter;
 }
 
 std::vector<uint8_t> rgba8888_to_rgba5551(std::span<const uint8_t> rgba) {

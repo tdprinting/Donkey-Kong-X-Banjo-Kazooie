@@ -1,5 +1,6 @@
 // Bridge tests. Every ROM here is synthetic: built in memory from made-up bytes so the
 // tests run in CI without anyone's game dumps.
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -14,7 +15,9 @@
 #include "jiggy/bk_gfx.hpp"
 #include "jiggy/bk_model.hpp"
 #include "jiggy/bk_pose.hpp"
+#include "jiggy/bk_sound.hpp"
 #include "jiggy/bk_sprite.hpp"
+#include "jiggy/save_store.hpp"
 #include "jiggy/bridge.h"
 #include "jiggy/bridge.hpp"
 #include "jiggy/dk64_tables.hpp"
@@ -525,6 +528,35 @@ TEST(bk_sprite_direct_formats) {
     }
 }
 
+TEST(bk_sprite_chunks_alone_and_bold_font) {
+    std::string error;
+    // A font frame: letters are chunks at the same place, so only decode_chunk separates them.
+    // RGBA32 mask: blue byte is intensity, alpha is coverage.
+    SpriteChunk one{0, 0, 1, 2, {0, 0, 0xFF, 0xFF, 0, 0, 0x3E, 0x80}};
+    SpriteChunk two{0, 0, 2, 1, {0, 0, 0xFF, 0x00, 0, 0, 0xFF, 0xFF}};
+    Bytes mask_frame = make_frame(2, 2, {}, {one, two}, 0x14);
+    auto mask = jiggy::BkSprite::parse(make_sprite(0x800, {mask_frame}), &error);
+    CHECK(mask.has_value());
+
+    auto letter = mask->decode_chunk(0, 1, &error);
+    CHECK(letter.has_value());
+    CHECK(letter->width == 2 && letter->height == 1);
+    CHECK(pixel(*letter, 1, 0)[3] == 0xFF);
+    CHECK(!mask->decode_chunk(0, 2, &error).has_value());
+
+    // A 1x1 RGBA16 texture, pure red (5-bit 31): intensity 0xFF gives 31 * 8, 0x3E gives 31 * 2.
+    Bytes texture_frame = make_frame(1, 1, {}, {SpriteChunk{0, 0, 1, 1, {0xF8, 0x01}}}, 0x14);
+    auto texture = jiggy::BkSprite::parse(make_sprite(0x400, {texture_frame}), &error);
+    CHECK(texture.has_value());
+    auto colored = jiggy::bk_bold_font_letter(*mask, *texture, 0, &error);
+    CHECK(colored.has_value());
+    CHECK(colored->width == 1 && colored->height == 2);
+    CHECK(pixel(*colored, 0, 0)[0] == 248 && pixel(*colored, 0, 0)[1] == 0 && pixel(*colored, 0, 0)[3] == 0xFF);
+    CHECK(pixel(*colored, 0, 1)[0] == 62 && pixel(*colored, 0, 1)[3] == 0x80);
+    // Only an RGBA32 mask is a bold font.
+    CHECK(!jiggy::bk_bold_font_letter(*texture, *texture, 0, &error).has_value());
+}
+
 TEST(bk_sprite_rejects_bad_data) {
     std::string error;
     CHECK(!jiggy::BkSprite::parse(Bytes(4, 0), &error).has_value());
@@ -881,6 +913,32 @@ TEST(bk_model_rejects_bad_data) {
     CHECK(!jiggy::BkModel::parse(m, &error));
 }
 
+TEST(save_store_round_trip_and_clear) {
+    jiggy::SaveStore store;
+    CHECK(store.get(0, 7) == 0);
+    CHECK(store.set(0, 7, 3));
+    CHECK(!store.set(0, 7, 3)); // unchanged
+    CHECK(store.set(1, 7, 9));
+    CHECK(store.set(0, 0xFFFFFFFF, 1));
+    CHECK(!store.set(2, 1, 0)); // zero is "not set"
+
+    std::string error;
+    auto copy = jiggy::SaveStore::parse(store.serialize(), &error);
+    CHECK(copy.has_value());
+    CHECK(copy->size() == 3);
+    CHECK(copy->get(0, 7) == 3 && copy->get(1, 7) == 9 && copy->get(0, 0xFFFFFFFF) == 1);
+
+    CHECK(copy->clear_file(0));
+    CHECK(copy->get(0, 7) == 0 && copy->get(0, 0xFFFFFFFF) == 0 && copy->get(1, 7) == 9);
+    CHECK(!copy->clear_file(0));
+    CHECK(copy->set(1, 7, 0) && copy->size() == 0);
+
+    Bytes bad = store.serialize();
+    bad.pop_back();
+    CHECK(!jiggy::SaveStore::parse(bad, &error).has_value());
+    CHECK(!jiggy::SaveStore::parse(Bytes{'J', 'G'}, &error).has_value());
+}
+
 TEST(rom_import_checks_and_stores) {
     namespace fs = std::filesystem;
     const fs::path dir = fs::temp_directory_path() / "jiggy_rom_import_test";
@@ -910,6 +968,325 @@ TEST(rom_import_checks_and_stores) {
     CHECK(stored == z64);
     CHECK(!fs::exists(dir / "DK64.z64.new"));
     fs::remove_all(dir);
+}
+
+namespace {
+
+// A libaudio sound bank (ctl + tbl) with one instrument and two sounds:
+//   0: ADPCM, 2 frames, a codebook that integrates (each output is the last plus the residual),
+//      every nibble 1, so it decodes to 1, 2, ... 32.
+//   1: RAW16, 100 samples of 16000 looping forever over 10-50.
+// Sfx keymaps chain sound 0 to sound 1, which starts after 3 frames (0.1 s). Music keymaps give
+// keys 0-10 to sound 0 and 11-127 to sound 1. Envelopes: no attack, 0.1 s decay at full
+// volume, no release.
+struct SoundFixture {
+    Bytes ctl;
+    Bytes tbl;
+};
+
+SoundFixture make_sound_bank(bool music) {
+    SoundFixture f;
+    f.ctl.assign(0x110, 0);
+    Bytes& c = f.ctl;
+    put_be16(c, 0x00, 0x4231);
+    put_be16(c, 0x02, 1);
+    put_be32(c, 0x04, 0x10);
+    // ALBank
+    put_be16(c, 0x10, 1);
+    put_be32(c, 0x14, 22050);
+    put_be32(c, 0x1C, 0x30);
+    // ALInstrument
+    c[0x30] = 127;
+    c[0x31] = 64;
+    put_be16(c, 0x3C, 200);
+    put_be16(c, 0x3E, 2);
+    put_be32(c, 0x40, 0x50);
+    put_be32(c, 0x44, 0x60);
+    // ALSounds: envelope, keymap, wavetable, pan, volume
+    for (uint32_t s = 0; s < 2; s++) {
+        const uint32_t at = 0x50 + s * 0x10;
+        put_be32(c, at, 0x80);
+        put_be32(c, at + 4, 0x90 + s * 8);
+        put_be32(c, at + 8, 0xA0 + s * 0x20);
+        c[at + 12] = 64;
+        c[at + 13] = 127;
+    }
+    // ALEnvelope
+    put_be32(c, 0x80, 0);
+    put_be32(c, 0x84, 100000);
+    put_be32(c, 0x88, 0);
+    c[0x8C] = 127;
+    c[0x8D] = 127;
+    // ALKeyMaps: velocityMin, velocityMax, keyMin, keyMax, keyBase, detune
+    const uint8_t sfx_maps[2][6] = {{2, 0, 0, 1, 60, 0}, {0, 3, 0, 1, 60, 0}};
+    const uint8_t music_maps[2][6] = {{0, 127, 0, 10, 60, 0}, {0, 127, 11, 127, 60, 0}};
+    for (uint32_t s = 0; s < 2; s++) {
+        for (uint32_t i = 0; i < 6; i++) {
+            c[0x90 + s * 8 + i] = music ? music_maps[s][i] : sfx_maps[s][i];
+        }
+    }
+    // ALWaveTables
+    put_be32(c, 0xA0, 0);
+    put_be32(c, 0xA4, 18);
+    c[0xA8] = 0; // ADPCM
+    put_be32(c, 0xB0, 0xE0);
+    put_be32(c, 0xC0, 18);
+    put_be32(c, 0xC4, 200);
+    c[0xC8] = 1; // RAW16
+    put_be32(c, 0xCC, 0xD0);
+    // ALRawLoop
+    put_be32(c, 0xD0, 10);
+    put_be32(c, 0xD4, 50);
+    put_be32(c, 0xD8, 0xFFFFFFFF);
+    // ALADPCMBook: order 2, 1 predictor; row 0 zero, row 1 all 1.0 (2048).
+    put_be32(c, 0xE0, 2);
+    put_be32(c, 0xE4, 1);
+    for (uint32_t i = 0; i < 8; i++) {
+        put_be16(c, 0xE8 + 16 + i * 2, 2048);
+    }
+
+    f.tbl.assign(18 + 200, 0);
+    for (uint32_t frame = 0; frame < 2; frame++) {
+        f.tbl[frame * 9] = 0x00; // scale 0, predictor 0
+        for (uint32_t i = 1; i < 9; i++) {
+            f.tbl[frame * 9 + i] = 0x11;
+        }
+    }
+    for (uint32_t i = 0; i < 100; i++) {
+        put_be16(f.tbl, 18 + i * 2, 16000);
+    }
+    return f;
+}
+
+} // namespace
+
+TEST(vadpcm_decode_frame) {
+    // A zero codebook leaves just the scaled residuals.
+    const int16_t zero_book[16] = {};
+    const uint8_t frame[9] = {0x20, 0x17, 0x8F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    int16_t state[2] = {0, 0};
+    int16_t out[16];
+    jiggy::bk_vadpcm_decode_frame(frame, zero_book, 2, 1, state, out);
+    CHECK(out[0] == 1 * 4);
+    CHECK(out[1] == 7 * 4);
+    CHECK(out[2] == -8 * 4);
+    CHECK(out[3] == -1 * 4);
+    CHECK(out[4] == 0);
+
+    // A codebook predicting the last sample: each output is the previous plus its residual,
+    // starting from the state.
+    int16_t book[16] = {};
+    for (int i = 0; i < 8; i++) {
+        book[8 + i] = 2048;
+    }
+    const uint8_t ones[9] = {0x00, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11};
+    int16_t running[2] = {0, 100};
+    jiggy::bk_vadpcm_decode_frame(ones, book, 2, 1, running, out);
+    for (int i = 0; i < 16; i++) {
+        CHECK(out[i] == 101 + i);
+    }
+    CHECK(running[0] == 115 && running[1] == 116);
+
+    // Large residuals clamp instead of wrapping.
+    const uint8_t loud[9] = {0xC0, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77};
+    int16_t near_top[2] = {0, 30000};
+    jiggy::bk_vadpcm_decode_frame(loud, book, 2, 1, near_top, out);
+    CHECK(out[15] == 32767);
+}
+
+TEST(bk_sound_bank_parse_and_decode) {
+    const auto f = make_sound_bank(false);
+    std::string error;
+    auto bank = jiggy::BkSoundBank::parse(f.ctl, f.tbl, &error);
+    CHECK(bank.has_value());
+    if (!bank) {
+        std::fprintf(stderr, "  %s\n", error.c_str());
+        return;
+    }
+    CHECK(bank->sample_rate() == 22050);
+    CHECK(bank->instruments().size() == 1);
+    const auto& sounds = bank->instruments()[0].sounds;
+    CHECK(sounds.size() == 2);
+    CHECK(sounds[0].wave.type == jiggy::BkWaveType::Adpcm);
+    CHECK(sounds[0].wave.order == 2 && sounds[0].wave.predictors == 1 && sounds[0].wave.book.size() == 16);
+    CHECK(!sounds[0].wave.has_loop);
+    CHECK(sounds[0].key_map.velocity_min == 2 && sounds[0].key_map.key_base == 60);
+    CHECK(sounds[1].wave.type == jiggy::BkWaveType::Raw16);
+    CHECK(sounds[1].wave.has_loop && sounds[1].wave.loop_start == 10 && sounds[1].wave.loop_end == 50);
+    CHECK(sounds[1].envelope.decay_time == 100000 && sounds[1].envelope.attack_volume == 127);
+
+    const auto* adpcm = bank->pcm(0, 0, &error);
+    CHECK(adpcm && adpcm->size() == 32);
+    if (adpcm) {
+        for (size_t i = 0; i < adpcm->size(); i++) {
+            CHECK((*adpcm)[i] == int16_t(i + 1));
+        }
+    }
+    const auto* raw = bank->pcm(0, 1, &error);
+    CHECK(raw && raw->size() == 100 && (*raw)[99] == 16000);
+    CHECK(bank->pcm(0, 2, &error) == nullptr);
+
+    // The same bank found inside a ROM image.
+    Bytes rom(0x1000, 0);
+    std::memcpy(rom.data() + 0x400, f.ctl.data(), f.ctl.size());
+    std::memcpy(rom.data() + 0x600, f.tbl.data(), f.tbl.size());
+    auto in_rom = jiggy::BkSoundBank::load(rom, {0x400, 0x600, 0x800}, &error);
+    CHECK(in_rom && in_rom->instruments()[0].sounds.size() == 2);
+    CHECK(!jiggy::BkSoundBank::load(rom, {0x400, 0x600, 0x2000}, &error).has_value());
+}
+
+TEST(bk_sound_bank_rejects_bad_data) {
+    std::string error;
+    auto f = make_sound_bank(false);
+    Bytes no_header = f.ctl;
+    no_header[0] = 0;
+    CHECK(!jiggy::BkSoundBank::parse(no_header, f.tbl, &error).has_value());
+    Bytes bad_sound = f.ctl;
+    put_be32(bad_sound, 0x44, 0xFFF0); // sound 1 outside the ctl
+    CHECK(!jiggy::BkSoundBank::parse(bad_sound, f.tbl, &error).has_value());
+    Bytes bad_book = f.ctl;
+    put_be32(bad_book, 0xE0, 99); // order 99
+    CHECK(!jiggy::BkSoundBank::parse(bad_book, f.tbl, &error).has_value());
+    CHECK(!jiggy::BkSoundBank::parse(Bytes(4, 0), f.tbl, &error).has_value());
+
+    // Wave data past the end of the tbl fails to decode rather than reading out of bounds.
+    auto bank = jiggy::BkSoundBank::parse(f.ctl, Bytes(10, 0), &error);
+    CHECK(bank.has_value());
+    if (bank) {
+        CHECK(bank->pcm(0, 0, &error) == nullptr);
+        CHECK(!jiggy::bk_render_sfx(*bank, 0, {}, &error).has_value());
+    }
+}
+
+TEST(bk_render_sfx_chain_envelope_and_pitch) {
+    const auto f = make_sound_bank(false);
+    std::string error;
+    auto bank = jiggy::BkSoundBank::parse(f.ctl, f.tbl, &error);
+    CHECK(bank.has_value());
+    if (!bank) {
+        return;
+    }
+    jiggy::BkSfxRenderOptions options;
+    options.output_rate = 22000;
+    // Sound 0 chains to sound 1, which starts 0.1 s in and loops until its 0.1 s decay ends.
+    auto sfx = jiggy::bk_render_sfx(*bank, 0, options, &error);
+    CHECK(sfx.has_value());
+    if (!sfx) {
+        return;
+    }
+    CHECK(sfx->chain_length == 2);
+    CHECK(!sfx->sustained);
+    CHECK(sfx->sample_rate == 22000);
+    CHECK(sfx->frames() > 4300 && sfx->frames() < 4500);
+    // In the middle of sound 1: 16000 at full volume, panned centre by equal power.
+    const float expected = 16000.0f / 32768.0f * std::cos(64.0f / 127.0f * 3.14159265f / 2.0f);
+    const float left = sfx->stereo[3300 * 2];
+    const float right = sfx->stereo[3300 * 2 + 1];
+    CHECK(std::abs(left - expected) < 0.01f);
+    CHECK(std::abs(right - left) < 0.02f);
+    // Sound 0's ramp is quiet but present before sound 1 starts; silence between them.
+    CHECK(sfx->stereo[10 * 2] > 0.0f && sfx->stereo[10 * 2] < 0.01f);
+    CHECK(sfx->stereo[1000 * 2] == 0.0f);
+
+    // The caller's pitch reaches the chain's last sound, whose envelope times shrink with it.
+    options.pitch = 2.0f;
+    auto fast = jiggy::bk_render_sfx(*bank, 0, options, &error);
+    CHECK(fast && fast->frames() > 3200 && fast->frames() < 3400);
+
+    // Half volume halves the samples.
+    options.pitch = 1.0f;
+    options.volume = 0.5f;
+    auto quiet = jiggy::bk_render_sfx(*bank, 0, options, &error);
+    CHECK(quiet && std::abs(quiet->stereo[3300 * 2] - expected / 2) < 0.01f);
+
+    // Sound 1 alone, at another output rate.
+    options.volume = 1.0f;
+    options.output_rate = 44100;
+    auto single = jiggy::bk_render_sfx(*bank, 1, options, &error);
+    CHECK(single && single->chain_length == 1);
+    CHECK(single && single->frames() > 8700 && single->frames() < 8900); // 0.1 s delay + 0.1 s decay
+
+    CHECK(!jiggy::bk_render_sfx(*bank, 2, options, &error).has_value());
+}
+
+TEST(bk_render_sfx_holds_until_the_time_limit) {
+    auto f = make_sound_bank(false);
+    put_be32(f.ctl, 0x84, 0xFFFFFFFF); // decay time -1: hold
+    put_be32(f.ctl, 0x88, 50000);      // 50 ms release
+    std::string error;
+    auto bank = jiggy::BkSoundBank::parse(f.ctl, f.tbl, &error);
+    CHECK(bank.has_value());
+    if (!bank) {
+        return;
+    }
+    jiggy::BkSfxRenderOptions options;
+    options.output_rate = 20000;
+    options.max_seconds = 0.5f;
+    auto sfx = jiggy::bk_render_sfx(*bank, 1, options, &error);
+    CHECK(sfx && sfx->sustained);
+    // Released at 0.5 s, faded out over 50 ms.
+    CHECK(sfx && sfx->frames() > 10900 && sfx->frames() < 11100);
+}
+
+TEST(bk_render_sequence_notes) {
+    const auto f = make_sound_bank(true);
+    std::string error;
+    auto bank = jiggy::BkSoundBank::parse(f.ctl, f.tbl, &error);
+    CHECK(bank.has_value());
+    if (!bank) {
+        return;
+    }
+    // One track, 96 ticks per quarter note at 500000 us per quarter: a tick is 5208 us.
+    Bytes seq(0x44, 0);
+    put_be32(seq, 0, 0x44);
+    put_be32(seq, 0x40, 96);
+    const Bytes track = {
+        0x00, 0xFF, 0x51, 0x07, 0xA1, 0x20, // tempo
+        0x00, 0xC0, 0x00,                   // program 0
+        0x00, 0x90, 0x3C, 0x64, 0x3C,       // note 60 for 60 ticks (status at track offset 10)
+        0x3C,                               // 60 ticks later...
+        0xFE, 0x00, 0x05, 0x04,             // ...the same 4 bytes again: 5 back from the 0xFE
+        0x3C, 0xFF, 0x2F,                   // end
+    };
+    seq.insert(seq.end(), track.begin(), track.end());
+
+    jiggy::BkSequenceRenderOptions options;
+    options.output_rate = 22000;
+    auto out = jiggy::bk_render_sequence(*bank, seq, options, &error);
+    CHECK(out.has_value());
+    if (!out) {
+        std::fprintf(stderr, "  %s\n", error.c_str());
+        return;
+    }
+    CHECK(out->chain_length == 2);
+    CHECK(!out->sustained);
+    // Two 0.3125 s notes back to back.
+    CHECK(out->frames() > 13600 && out->frames() < 13900);
+    CHECK(std::abs(out->stereo[3000 * 2]) > 0.05f);
+    CHECK(std::abs(out->stereo[10000 * 2]) > 0.05f);
+
+    // Lower volume scales the notes.
+    options.volume = 0.25f;
+    auto quiet = jiggy::bk_render_sequence(*bank, seq, options, &error);
+    CHECK(quiet && std::abs(quiet->stereo[3000 * 2] * 4 - out->stereo[3000 * 2]) < 0.01f);
+
+    // Truncated or malformed sequences are errors.
+    Bytes cut(seq.begin(), seq.end() - 3);
+    CHECK(!jiggy::bk_render_sequence(*bank, cut, options, &error).has_value());
+    CHECK(!jiggy::bk_render_sequence(*bank, Bytes(0x20, 0), options, &error).has_value());
+    Bytes bad_offset = seq;
+    put_be32(bad_offset, 0, 0x9999);
+    CHECK(!jiggy::bk_render_sequence(*bank, bad_offset, options, &error).has_value());
+}
+
+TEST(bk_stereo_to_wav_header) {
+    const std::vector<float> stereo = {0.0f, 1.0f, -1.0f, 0.5f};
+    const auto wav = jiggy::bk_stereo_to_wav(stereo, 32000);
+    CHECK(wav.size() == 44 + 8);
+    CHECK(std::memcmp(wav.data(), "RIFF", 4) == 0 && std::memcmp(wav.data() + 8, "WAVE", 4) == 0);
+    CHECK(wav[24] == 0x00 && wav[25] == 0x7D); // 32000 Hz
+    CHECK(wav[44 + 2] == 0xFF && wav[44 + 3] == 0x7F); // 1.0 -> 32767
+    CHECK(wav[44 + 4] == 0x01 && wav[44 + 5] == 0x80); // -1.0 -> -32767
 }
 
 JIGGY_TEST_MAIN

@@ -1,6 +1,9 @@
 // The first crossover: when the player has given us a Banjo-Kazooie ROM, Banjo's own
 // dialogue portrait (ASSET_7EF_SPRITE_BANJO, straight from their ROM) fades in at the
-// bottom left each time DK Isles loads, talks for a few seconds, then fades away.
+// bottom left each time DK Isles loads, talks for a few seconds, then fades away. Beside it
+// Banjo says a line in DK64's dialogue font (a different one each time, about what's moved
+// into the Isles), typing out on a dark strip; Gruntilda's taunts (jiggy_grunty_taunts.c) wait
+// for him to finish (jiggy_cameo_showing).
 //
 // Nothing here is new art: the portrait is decoded from the player's ROM by the host
 // (jiggy_bk_sprite_frame_rgba16) and drawn with the DK64 engine's own display list.
@@ -9,6 +12,7 @@
 #include "ui.h"
 #include "patches_ui.h"
 #include "jiggy.h"
+#include "jiggy_talk.h"
 
 Gfx *alignHUDGameplay(Gfx *dl, u8 alignment);
 Gfx *popHUD(Gfx *dl, u8 alignment);
@@ -24,6 +28,25 @@ Gfx *popHUD(Gfx *dl, u8 alignment);
 #define CAMEO_TICKS_PER_FRAME 6
 // RGBA16 texels that fit in TMEM (4 KiB) at once.
 #define TMEM_RGBA16_TEXELS 2048
+// Banjo's line: DK64's dialogue font, typed out a character every two ticks, on a dark strip
+// right of the portrait.
+#define CAPTION_STYLE 6
+#define CAPTION_LINES 4
+#define CAPTION_LINE_HEIGHT 17
+#define CAPTION_PAD 6
+#define CAPTION_WIDTH 140
+#define CAPTION_TICKS_PER_CHAR 2
+// printStyledText's y for a screen row (see jiggy_bottles.c).
+#define TEXT_Y(y) (((y) - 117) * 4 / 5 + 120)
+
+// What Banjo says, one set of lines a visit, in turn.
+static const char *const cameo_captions[][CAPTION_LINES] = {
+    {"GUH-HUH! THESE", "ISLES LOOK A BIT", "LIKE SPIRAL", "MOUNTAIN NOW!"},
+    {"KAZOOIE SAYS", "GRUNTY'S LAIR", "IS IN HERE TOO.", "LET'S GO, DK!"},
+    {"MUSIC NOTES ON", "THE BEACHES!", "LET'S GRAB THEM", "ALL, DK!"},
+    {"HEY, DK! I HEARD", "A SPELLBOOK", "CALLING FROM", "A BEACH NEARBY!"},
+};
+#define CAPTION_COUNT (sizeof(cameo_captions) / sizeof(cameo_captions[0]))
 
 extern u32 D_global_asm_80744478;
 extern s16 D_global_asm_80744490;
@@ -44,6 +67,11 @@ static CameoLoadState cameo_state = CAMEO_UNLOADED;
 static s32 cameo_last_map = -1;
 static u32 cameo_ticks;
 static u8 cameo_active;
+static u32 cameo_caption = CAPTION_COUNT - 1; // The line last said.
+
+s32 jiggy_cameo_showing(void) {
+    return cameo_active && cameo_state != CAMEO_UNAVAILABLE;
+}
 
 static void cameo_load(void) {
     s32 count;
@@ -113,6 +141,45 @@ static Gfx *cameo_draw_frame(Gfx *dl, s32 frame, s32 x, s32 y, u8 alpha) {
     return dl;
 }
 
+// Banjo's line beside the portrait, typed out as he talks, on a dark strip.
+static Gfx *cameo_draw_caption(Gfx *dl, s32 x, s32 y, s32 alpha) {
+    s32 typed = cameo_ticks > CAMEO_FADE_IN_TICKS ? (s32)(cameo_ticks - CAMEO_FADE_IN_TICKS) / CAPTION_TICKS_PER_CHAR : 0;
+    char shown[24];
+    s32 line;
+
+    gDPPipeSync(dl++);
+    gDPSetCycleType(dl++, G_CYC_1CYCLE);
+    gSPTexture(dl++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_OFF);
+    gDPSetRenderMode(dl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
+    gDPSetCombineMode(dl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
+    gDPSetPrimColor(dl++, 0, 0, 0x10, 0x10, 0x28, 0xA0 * alpha / 0xFF);
+    gDPFillRectangle(dl++, x - CAPTION_PAD, y - CAPTION_PAD, x + CAPTION_WIDTH + CAPTION_PAD,
+                     y + CAPTION_LINES * CAPTION_LINE_HEIGHT + CAPTION_PAD);
+    gDPPipeSync(dl++);
+    gSPDisplayList(dl++, &D_1000118);
+    gDPSetCombineMode(dl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    gSPMatrix(dl++, &D_2000180, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(dl++, &D_20000C0, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    gDPPipeSync(dl++);
+    gDPSetPrimColor(dl++, 0, 0, 0xFF, 0xFF, 0xFF, alpha);
+    for (line = 0; line < CAPTION_LINES && typed > 0; line++) {
+        const char *text = cameo_captions[cameo_caption][line];
+        s32 n = 0;
+
+        while (text[n] != '\0' && n < typed && n < (s32)sizeof(shown) - 1) {
+            shown[n] = text[n];
+            n++;
+        }
+        shown[n] = '\0';
+        typed -= n + 1;
+        if (n > 0) {
+            dl = printStyledText(dl, CAPTION_STYLE, x * 4, TEXT_Y(y + line * CAPTION_LINE_HEIGHT) * 4, (u8 *)shown, 1);
+        }
+    }
+    gDPPipeSync(dl++);
+    return dl;
+}
+
 // Called once per frame from the HUD pass of the general gfx loop (patches_ui.c).
 Gfx *jiggy_cameo_draw(Gfx *dl) {
     s32 frame;
@@ -124,6 +191,9 @@ Gfx *jiggy_cameo_draw(Gfx *dl) {
         cameo_last_map = current_map;
         cameo_active = (current_map == MAP_DK_ISLES_OVERWORLD);
         cameo_ticks = 0;
+        if (cameo_active) {
+            cameo_caption = (cameo_caption + 1) % CAPTION_COUNT;
+        }
     }
     if (!cameo_active || cc_number_of_players != 1) {
         return dl;
@@ -156,6 +226,8 @@ Gfx *jiggy_cameo_draw(Gfx *dl) {
 
     dl = alignHUDGameplay(dl, ALIGN_LEFT);
     dl = cameo_draw_frame(dl, frame, x, y, (u8)alpha);
+    dl = cameo_draw_caption(dl, x + cameo_width[frame] * CAMEO_SCALE + 8 + CAPTION_PAD,
+                            y + (cameo_height[frame] * CAMEO_SCALE - CAPTION_LINES * CAPTION_LINE_HEIGHT) / 2, alpha);
     dl = popHUD(dl, ALIGN_LEFT);
     return dl;
 }

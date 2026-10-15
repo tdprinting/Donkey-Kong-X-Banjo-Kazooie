@@ -2963,6 +2963,28 @@ extern void *D_global_asm_8076A080;
 extern Gfx **D_1000090;
 extern void set_sprite_interpolation_state(void);
 Gfx *jiggy_cameo_draw(Gfx *dl);
+Gfx *jiggy_notes_hud_draw(Gfx *dl);
+Gfx *jiggy_jinjos_hud_draw(Gfx *dl);
+Gfx *jiggy_honeycombs_hud_draw(Gfx *dl);
+Gfx *jiggy_feathers_hud_draw(Gfx *dl);
+Gfx *jiggy_mumbo_tokens_hud_draw(Gfx *dl);
+Gfx *jiggy_bottles_hud_draw(Gfx *dl);
+Gfx *jiggy_conga_hud_draw(Gfx *dl);
+Gfx *jiggy_chimpy_hud_draw(Gfx *dl);
+Gfx *jiggy_mumbo_hud_draw(Gfx *dl);
+Gfx *jiggy_blubber_hud_draw(Gfx *dl);
+Gfx *jiggy_nipper_hud_draw(Gfx *dl);
+Gfx *jiggy_gruntilda_hud_draw(Gfx *dl);
+Gfx *jiggy_motzand_hud_draw(Gfx *dl);
+Gfx *jiggy_tumblar_hud_draw(Gfx *dl);
+Gfx *jiggy_boss_boom_box_hud_draw(Gfx *dl);
+Gfx *jiggy_snorkel_hud_draw(Gfx *dl);
+Gfx *jiggy_eyrie_hud_draw(Gfx *dl);
+Gfx *jiggy_nabnut_hud_draw(Gfx *dl);
+Gfx *jiggy_talk_hud_draw(Gfx *dl);
+Gfx *jiggy_aztec_talk_hud_draw(Gfx *dl);
+Gfx *jiggy_caves_talk_hud_draw(Gfx *dl);
+Gfx *jiggy_boggy_hud_draw(Gfx *dl);
 
 // @recomp: General gfx loop
 RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx **arg2) {
@@ -3151,6 +3173,28 @@ RECOMP_PATCH void func_global_asm_805FD088(Struct805FD088 *arg0, Gfx **arg1, Gfx
         dl = func_global_asm_806FAB20(dl);
         dl = func_global_asm_80714060(dl);
         dl = jiggy_cameo_draw(dl); // @jiggy: Banjo's portrait in DK Isles (jiggy_cameo.c)
+        dl = jiggy_notes_hud_draw(dl); // @jiggy: the Music Note counter (jiggy_notes.c)
+        dl = jiggy_jinjos_hud_draw(dl); // @jiggy: the Jinjo counter (jiggy_jinjos.c)
+        dl = jiggy_honeycombs_hud_draw(dl); // @jiggy: the empty Honeycomb counter (jiggy_honeycombs.c)
+        dl = jiggy_feathers_hud_draw(dl); // @jiggy: the Red and Gold Feather counters (jiggy_feathers.c)
+        dl = jiggy_mumbo_tokens_hud_draw(dl); // @jiggy: the Mumbo Token counter (jiggy_mumbo_tokens.c)
+        dl = jiggy_bottles_hud_draw(dl); // @jiggy: Bottles' text box (jiggy_bottles.c)
+        dl = jiggy_conga_hud_draw(dl); // @jiggy: Conga's text box (jiggy_conga.c)
+        dl = jiggy_chimpy_hud_draw(dl); // @jiggy: Chimpy's text box and the carried orange (jiggy_chimpy.c)
+        dl = jiggy_mumbo_hud_draw(dl); // @jiggy: Mumbo's text box (jiggy_mumbo.c)
+        dl = jiggy_blubber_hud_draw(dl); // @jiggy: Blubber's text box and the carried bullions (jiggy_blubber.c)
+        dl = jiggy_nipper_hud_draw(dl); // @jiggy: Nipper's text box (jiggy_nipper.c)
+        dl = jiggy_gruntilda_hud_draw(dl); // @jiggy: Gruntilda's text box and quiz answers (jiggy_gruntilda.c)
+        dl = jiggy_motzand_hud_draw(dl); // @jiggy: Motzand's text box and organ keys (jiggy_motzand.c)
+        dl = jiggy_tumblar_hud_draw(dl); // @jiggy: Tumblar's text box and letters (jiggy_tumblar.c)
+        dl = jiggy_boss_boom_box_hud_draw(dl); // @jiggy: Boss Boom Box's text box (jiggy_boss_boom_box.c)
+        dl = jiggy_snorkel_hud_draw(dl); // @jiggy: Snorkel's text box (jiggy_snorkel.c)
+        dl = jiggy_eyrie_hud_draw(dl); // @jiggy: Eyrie's text box and the carried caterpillars (jiggy_eyrie.c)
+        dl = jiggy_nabnut_hud_draw(dl); // @jiggy: Nabnut's text box and the carried acorns (jiggy_nabnut.c)
+        dl = jiggy_talk_hud_draw(dl); // @jiggy: Brentilda's, Cheato's and Gruntilda's text box (jiggy_talk.c)
+        dl = jiggy_aztec_talk_hud_draw(dl); // @jiggy: Angry Aztec's text box (jiggy_aztec.c)
+        dl = jiggy_caves_talk_hud_draw(dl); // @jiggy: Boggy's and Wozza's text box (jiggy_caves_talk.c)
+        dl = jiggy_boggy_hud_draw(dl); // @jiggy: the carried presents (jiggy_boggy.c)
         func_global_asm_806FBC34();
         func_global_asm_8068C0B4();
         func_global_asm_80722280();

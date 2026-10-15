@@ -4,6 +4,8 @@ add_library(jiggy_bridge STATIC
     src/bk_gfx.cpp
     src/bk_anim.cpp
     src/bk_pose.cpp
+    src/save_store.cpp
+    src/bk_sound.cpp
     src/bk_sprite.cpp
     src/bridge.cpp
     src/dk64_tables.cpp

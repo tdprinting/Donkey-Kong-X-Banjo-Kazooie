@@ -100,8 +100,16 @@ The foundation every later step needs: reading both games' files from the player
 - [ ] Animated textures (segments 11-15) for the models that use them. Banjo's doesn't: his
   eyes are geometry picked by selectors, so blinking already works.
 - Texture and palette conversion where formats differ.
+- [x] Banjo-Kazooie sounds: the host renders sound effects (sfx bank, VADPCM, with BK's
+  chains, envelopes and pitch) and pickup jingles (compact MIDI on the music bank) from the
+  player's ROM and mixes them into DK64's audio (`bridge/src/bk_sound.cpp`,
+  `host/src/game/jiggy_audio.cpp`; imports `jiggy_bk_sfx_play`, `jiggy_bk_jingle_play`).
+  Played for note, Jinjo and Honeycomb pickups, eggs, the Feathery Flap and Talon Trot steps, with
+  DK64's pickup sound as the fallback without a Banjo-Kazooie ROM. Still to hook up: the
+  Jiggy jingle (DK64's own Golden Banana fanfare needs replacing at the same moment).
 - Music: Banjo sequences and instruments into DK64's sound bank format, or a second
-  sound bank loaded alongside DK64's.
+  sound bank loaded alongside DK64's. (The jingle renderer above plays whole sequences, but
+  only pre-rendered, so it doesn't follow DK64's music system.)
 
 ## 5. Playable Banjo & Kazooie
 
@@ -112,8 +120,18 @@ The foundation every later step needs: reading both games' files from the player
 - [x] Banjo's animations for DK's moves (Claw Swipe, Beak Barge, crouch, backflip) and
   Banjo-Kazooie's air moves: Feathery Flap, Rat-a-tat Rap and Beak Buster
   (`host/patches/jiggy_banjo3d.c`), tested in game.
-- Rebuild the rest of the moveset (Talon Trot, Egg Firing, Wonderwing, Shock Spring Jump)
-  as DK64 patches, using the BK decompilation as the behaviour reference.
+- [x] Talon Trot (`jiggy_banjo_trot.c`) and Egg Firing (`jiggy_banjo_eggs.c`, eggs are DK's
+  coconut shots drawn as Banjo-Kazooie's eggs), tested in game.
+- [x] Wonderwing (`jiggy_banjo_wonderwing.c`) and Shock Spring Jump (`jiggy_banjo_shock.c`),
+  tested in game; the Wonderwing now burns Gold Feathers (needs a test in game).
+- [x] Flight from a Flight pad in the Training Grounds (`jiggy_banjo_fly.c`): flaps on Red
+  Feathers, stick steering and pitch, Beak Bomb; drives DK's own jump physics. Takeoff, flight and flaps (spending Red Feathers) tested in game; Beak Bomb and landing need a test
+  in game.
+- [x] Swimming (`jiggy_banjo_swim.c`): Banjo-Kazooie's paddle, tread and dive animations and
+  splashes over DK64's water states. Surface swimming tested in game; diving needs DK64's Dive
+  move, so it is untested.
+- Rebuild the rest of the moveset (the Beak Bomb's crash and knockback) as DK64
+  patches, using the BK decompilation as the behaviour reference.
 - Add the duo to DK64's character swap, then a quick-swap wheel in place of Tag Barrels.
 
 ## 6. Two-player split-screen co-op
@@ -142,8 +160,18 @@ both play through every mission together.
 - Collectibles from both games side by side. DK64's colored bananas stay, alongside
   Banjo-Kazooie's Music Notes, Jiggies (in place of Golden Bananas), Jinjos, Honeycomb
   pieces, Mumbo Tokens, eggs and feathers, each with its own counter and pickup.
-- Fused worlds (for example, Fungi Forest with Click Clock Wood's seasons), a hub
-  rework, Mumbo and Funky's shops, and the tag-team final boss against Gruntilda and K. Rool.
+  Done so far, in the Training Grounds: Music Notes, Jinjos, empty Honeycomb pieces (with
+  Banjo-Kazooie's piece ring; six pieces don't give anything yet) and Honeycombs (a slice of
+  DK64 health each), all saved per save file but the Honeycombs, which come back like
+  Banjo-Kazooie's. Red and Gold Feathers (`jiggy_feathers.c`, saved per save file, capped at
+  50 and 10, counters on the right) need a test in game.
+- Fused worlds (for example, Fungi Forest with Click Clock Wood's seasons): each one blends
+  both games' map elements into one world, fun to play and completable from start to finish,
+  with its own cutscenes and NPCs. Built from the two games' own maps, models and characters,
+  modified where needed (edits applied at runtime to what the player's ROMs supply), with
+  wholly new assets only as a last resort.
+- A hub rework, Mumbo and Funky's shops, and the tag-team final boss against Gruntilda and
+  K. Rool.
 
 ## Ground rules
 

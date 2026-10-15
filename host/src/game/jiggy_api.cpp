@@ -7,12 +7,16 @@
 #include "jiggy_host.h"
 
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <cstring>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <mutex>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "jiggy/bk_anim.hpp"
 #include "jiggy/bk_assets.hpp"
@@ -20,19 +24,76 @@
 #include "jiggy/bk_model.hpp"
 #include "jiggy/bk_pose.hpp"
 #include "jiggy/bk_sprite.hpp"
+#include "jiggy/save_store.hpp"
 #include "jiggy/rom.hpp"
 #include "librecomp/helpers.hpp"
 #include "recomp.h"
 
 namespace {
     constexpr const char* stored_banjo_filename = "jiggy_banjo.z64";
+    constexpr const char* save_filename = "jiggy_save.bin";
+
+    // Jiggy Jungle's additions to the save files (jiggy/save_store.hpp), written through to
+    // the app folder on every change.
+    std::mutex save_mutex;
+    std::filesystem::path save_path;
+    jiggy::SaveStore save_store;
+
+    // Expects save_mutex to be held. Writes a temporary file and renames it over the old one,
+    // so a crash mid-write can't lose what was saved before.
+    void write_save_store() {
+        if (save_path.empty()) {
+            return;
+        }
+        const auto bytes = save_store.serialize();
+        std::filesystem::path temp = save_path;
+        temp += ".tmp";
+        {
+            std::ofstream out{temp, std::ios::binary | std::ios::trunc};
+            out.write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
+            if (!out) {
+                fprintf(stderr, "[Jiggy] Couldn't write %s\n", temp.string().c_str());
+                return;
+            }
+        }
+        std::error_code ec;
+        std::filesystem::rename(temp, save_path, ec);
+        if (ec) {
+            fprintf(stderr, "[Jiggy] Couldn't replace %s: %s\n", save_path.string().c_str(), ec.message().c_str());
+        }
+    }
+
+    void load_save_store(const std::filesystem::path& app_folder) {
+        std::lock_guard lock{save_mutex};
+        save_path = app_folder / save_filename;
+        std::ifstream in{save_path, std::ios::binary};
+        if (!in) {
+            return;
+        }
+        std::vector<uint8_t> bytes{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+        std::string error;
+        auto store = jiggy::SaveStore::parse(bytes, &error);
+        if (!store) {
+            // Keep the unreadable file aside rather than writing over it.
+            fprintf(stderr, "[Jiggy] Ignoring %s: %s\n", save_path.string().c_str(), error.c_str());
+            std::error_code ec;
+            std::filesystem::path aside = save_path;
+            aside += ".bad";
+            std::filesystem::rename(save_path, aside, ec);
+            return;
+        }
+        save_store = std::move(*store);
+    }
 
     std::mutex banjo_mutex;
     std::filesystem::path stored_banjo_path;
     std::optional<jiggy::Rom> banjo_rom;
     std::optional<jiggy::BkAssetTable> banjo_assets;
+    std::atomic<uint32_t> banjo_generation{0};
     // The last sprite asked for, so drawing a frame at a time doesn't re-inflate it.
     std::optional<std::pair<uint32_t, jiggy::BkSprite>> cached_sprite;
+    // Clears the HUD numbers made from the last ROM (defined with them below).
+    void reset_bold_numbers();
 
     // Models built into N64 memory with jiggy_bk_model_build, by asset id: what posing them
     // needs. The block's bytes are dropped once copied.
@@ -63,7 +124,9 @@ namespace {
         }
         banjo_rom = std::move(rom);
         banjo_assets = std::move(assets);
+        banjo_generation++;
         cached_sprite.reset();
+        reset_bold_numbers();
         {
             std::lock_guard models_lock{model_mutex};
             built_models.clear();
@@ -102,6 +165,19 @@ namespace {
         std::vector<uint8_t> texels;
     };
 
+    Rgba16Frame to_rgba16(const jiggy::BkSpriteImage& image) {
+        Rgba16Frame out;
+        out.width = (uint32_t(image.width) + 3) & ~3u;
+        out.height = image.height;
+        const auto packed = jiggy::rgba8888_to_rgba5551(image.rgba);
+        out.texels.assign(size_t(out.width) * out.height * 2, 0);
+        for (uint32_t y = 0; y < out.height; y++) {
+            std::copy_n(packed.begin() + ptrdiff_t(size_t(y) * image.width * 2), size_t(image.width) * 2,
+                        out.texels.begin() + ptrdiff_t(size_t(y) * out.width * 2));
+        }
+        return out;
+    }
+
     std::optional<Rgba16Frame> sprite_frame_rgba16(uint32_t id, uint32_t frame) {
         const jiggy::BkSprite* sprite = load_sprite(id);
         if (!sprite) {
@@ -113,16 +189,49 @@ namespace {
             fprintf(stderr, "[Jiggy] Banjo-Kazooie sprite 0x%X frame %u: %s\n", id, frame, error.c_str());
             return std::nullopt;
         }
-        Rgba16Frame out;
-        out.width = (uint32_t(image->width) + 3) & ~3u;
-        out.height = image->height;
-        const auto packed = jiggy::rgba8888_to_rgba5551(image->rgba);
-        out.texels.assign(size_t(out.width) * out.height * 2, 0);
-        for (uint32_t y = 0; y < out.height; y++) {
-            std::copy_n(packed.begin() + ptrdiff_t(size_t(y) * image->width * 2), size_t(image->width) * 2,
-                        out.texels.begin() + ptrdiff_t(size_t(y) * out.width * 2));
+        return to_rgba16(*image);
+    }
+
+    // Banjo-Kazooie's bold HUD font: the numbers' alpha mask colored by the orange gradient
+    // most levels use (src/core2/print.c).
+    constexpr uint32_t kBoldFontNumbers = 0x6ED;
+    constexpr uint32_t kBoldFontOrangeGradient = 0x6EE;
+    constexpr size_t kBoldFontNumberCount = 10;
+    std::array<std::optional<Rgba16Frame>, kBoldFontNumberCount> bold_numbers;
+    bool bold_numbers_loaded = false;
+
+    void reset_bold_numbers() {
+        bold_numbers = {};
+        bold_numbers_loaded = false;
+    }
+
+    // Expects banjo_mutex to be held.
+    const Rgba16Frame* bold_number_rgba16(uint32_t digit) {
+        if (!bold_numbers_loaded) {
+            bold_numbers_loaded = true;
+            const jiggy::BkSprite* mask_sprite = load_sprite(kBoldFontNumbers);
+            if (!mask_sprite) {
+                return nullptr;
+            }
+            const jiggy::BkSprite mask = *mask_sprite; // load_sprite replaces its cached sprite.
+            const jiggy::BkSprite* texture = load_sprite(kBoldFontOrangeGradient);
+            if (!texture) {
+                return nullptr;
+            }
+            for (size_t i = 0; i < kBoldFontNumberCount; i++) {
+                std::string error;
+                auto letter = jiggy::bk_bold_font_letter(mask, *texture, i, &error);
+                if (!letter) {
+                    fprintf(stderr, "[Jiggy] Banjo-Kazooie bold font number %zu: %s\n", i, error.c_str());
+                    continue;
+                }
+                bold_numbers[i] = to_rgba16(*letter);
+            }
         }
-        return out;
+        if (digit >= kBoldFontNumberCount || !bold_numbers[digit]) {
+            return nullptr;
+        }
+        return &*bold_numbers[digit];
     }
 
     std::optional<std::vector<uint8_t>> load_asset(uint32_t id) {
@@ -140,6 +249,7 @@ namespace {
 }
 
 void jiggy_host::init(const std::filesystem::path& app_folder) {
+    load_save_store(app_folder);
     std::lock_guard lock{banjo_mutex};
     stored_banjo_path = app_folder / stored_banjo_filename;
 
@@ -186,6 +296,26 @@ bool jiggy_host::banjo_rom_loaded() {
 size_t jiggy_host::banjo_asset_count() {
     std::lock_guard lock{banjo_mutex};
     return banjo_assets ? banjo_assets->size() : 0;
+}
+
+uint32_t jiggy_host::banjo_rom_generation() {
+    return banjo_generation.load();
+}
+
+std::optional<std::vector<uint8_t>> jiggy_host::banjo_rom_bytes(uint32_t offset, uint32_t size) {
+    std::lock_guard lock{banjo_mutex};
+    if (!banjo_rom) {
+        return std::nullopt;
+    }
+    const auto data = banjo_rom->data();
+    if (offset > data.size() || size > data.size() - offset) {
+        return std::nullopt;
+    }
+    return std::vector<uint8_t>(data.begin() + offset, data.begin() + offset + size);
+}
+
+std::optional<std::vector<uint8_t>> jiggy_host::banjo_asset(uint32_t id) {
+    return load_asset(id);
 }
 
 // s32 jiggy_bk_available(void)
@@ -258,6 +388,60 @@ extern "C" void jiggy_bk_sprite_frame_rgba16(uint8_t* rdram, recomp_context* ctx
     _return<s32>(ctx, s32((image->width << 16) | image->height));
 }
 
+// s32 jiggy_bk_bold_number_rgba16(u32 digit, void* dst, u32 dst_len): Banjo-Kazooie's HUD
+// number `digit` (0-9) as RGBA16 texels, like jiggy_bk_sprite_frame_rgba16. Returns
+// (width << 16) | height, or -1 without a Banjo-Kazooie ROM.
+extern "C" void jiggy_bk_bold_number_rgba16(uint8_t* rdram, recomp_context* ctx) {
+    u32 digit = _arg<0, u32>(rdram, ctx);
+    PTR(u8) dst = _arg<1, PTR(u8)>(rdram, ctx);
+    u32 dst_len = _arg<2, u32>(rdram, ctx);
+
+    std::lock_guard lock{banjo_mutex};
+    const Rgba16Frame* image = bold_number_rgba16(digit);
+    if (!image || image->width > 0x7FFF || image->height > 0xFFFF) {
+        _return<s32>(ctx, -1);
+        return;
+    }
+    if (dst != NULLPTR && image->texels.size() <= dst_len) {
+        for (size_t i = 0; i < image->texels.size(); i++) {
+            MEM_B(i, dst) = static_cast<s8>(image->texels[i]);
+        }
+    }
+    _return<s32>(ctx, s32((image->width << 16) | image->height));
+}
+
+// u32 jiggy_save_get(u32 file, u32 key): a value kept with DK64 save file `file`, 0 if unset.
+extern "C" void jiggy_save_get(uint8_t* rdram, recomp_context* ctx) {
+    u32 file = _arg<0, u32>(rdram, ctx);
+    u32 key = _arg<1, u32>(rdram, ctx);
+
+    std::lock_guard lock{save_mutex};
+    _return<u32>(ctx, save_store.get(file, key));
+}
+
+// void jiggy_save_set(u32 file, u32 key, u32 value): keeps a value with a save file, written
+// to disk straight away.
+extern "C" void jiggy_save_set(uint8_t* rdram, recomp_context* ctx) {
+    u32 file = _arg<0, u32>(rdram, ctx);
+    u32 key = _arg<1, u32>(rdram, ctx);
+    u32 value = _arg<2, u32>(rdram, ctx);
+
+    std::lock_guard lock{save_mutex};
+    if (save_store.set(file, key, value)) {
+        write_save_store();
+    }
+}
+
+// void jiggy_save_clear(u32 file): forgets a save file's values, when the game starts it afresh.
+extern "C" void jiggy_save_clear(uint8_t* rdram, recomp_context* ctx) {
+    u32 file = _arg<0, u32>(rdram, ctx);
+
+    std::lock_guard lock{save_mutex};
+    if (save_store.clear_file(file)) {
+        write_save_store();
+    }
+}
+
 // s32 jiggy_bk_model_build(u32 asset_id, void* dst, u32 dst_len): converts a Banjo-Kazooie
 // model to a block DK64 can draw (bridge/include/jiggy/bk_gfx.hpp), built to live at dst.
 // The display list is at the start of the block. Returns the block's size, writing it only
@@ -287,6 +471,10 @@ extern "C" void jiggy_bk_model_build(uint8_t* rdram, recomp_context* ctx) {
         return;
     }
     const size_t size = block->bytes.size();
+    if (dst != NULLPTR && size > dst_len) {
+        fprintf(stderr, "[Jiggy] Banjo-Kazooie model 0x%X needs %zu bytes, but its block holds %u\n", id, size,
+                unsigned(dst_len));
+    }
     if (dst != NULLPTR && size <= dst_len && (base & 7) == 0) {
         // RDRAM is stored with 32-bit words byteswapped, so copy through MEM_B.
         for (size_t i = 0; i < size; i++) {
