@@ -41,7 +41,7 @@ Every fused world has, alongside DK64's own content:
 - Save keys in `jiggy_save.bin` (top byte, ORed with the map): 0x41-0x4E are taken (see the
   files), 0x4B is rewards, and each fused world has its own for its characters: Aztec 0x51,
   Factory 0x52, Galleon 0x53, Fungi 0x54, Caves 0x55, Castle 0x56, Isles 0x57, Helm 0x58,
-  Training Grounds 0x59 (character index in bits 16-23).
+  Training Grounds 0x59 (character index in bits 16-23). Story scenes (`jiggy_story.c`) 0x5A.
 - Placement: `tools/dk64-setup/setup_dump.py` lists where DK64 put its own bananas, coins
   and actors in a map, which is ground the player can reach.
 
