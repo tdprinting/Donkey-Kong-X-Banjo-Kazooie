@@ -200,7 +200,7 @@ static const JinjoPlacement jinjos_fungi[JINJO_COLORS] = {
     {2150.0f, 226.0f, 350.0f},  // Green: on the apple area's west plateau, past the beanstalk.
     {620.0f, 99.0f, 760.0f},    // Orange: on the low ground round the giant mushroom.
     {450.0f, 189.0f, 3900.0f},  // Pink: on the barn's plateau, west of the mill.
-    {4530.0f, 83.0f, 4001.0f},  // Yellow: on the owl tree's ring path, south side.
+    {3748.0f, 210.0f, 1675.0f}, // Yellow: by DK64's three Chunky coins east of the entrance.
 };
 
 // DK Isles: one on each of the main island's beaches the player can walk round (the side

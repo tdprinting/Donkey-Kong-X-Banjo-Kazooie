@@ -169,7 +169,7 @@ static const FeatherPlacement feathers_fungi[] = {
     {3500.0f, 166.0f, 2640.0f, FEATHER_RED, 5},  // Among DK's bananas east of the clock's hill.
     {800.0f, 101.0f, 1450.0f, FEATHER_RED, 10},  // South of the giant mushroom, on the low ground.
     {1560.0f, 248.0f, 4040.0f, FEATHER_RED, 15}, // On the mill's plateau, inside the notes' ring.
-    {4776.0f, 83.0f, 3332.0f, FEATHER_GOLD, 3},  // On the owl tree's ring path, north-east.
+    {4130.0f, 115.0f, 2166.0f, FEATHER_GOLD, 3}, // On DK's bananas in the north-east field.
     {2600.0f, 208.0f, 1700.0f, FEATHER_GOLD, 8}, // East of the entrance.
 };
 

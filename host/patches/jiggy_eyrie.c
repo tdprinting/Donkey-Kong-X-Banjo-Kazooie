@@ -1,12 +1,12 @@
 // Eyrie: Click Clock Wood's eaglet, read from the player's Banjo-Kazooie ROM, as an NPC on Fungi
-// Forest's owl tree ring path, where the two worlds have collided; with his caterpillar quest.
+// Forest's field east of the clock tower, where the two worlds have collided; with his caterpillar quest.
 //
 // As in Click Clock Wood's summer (chEyrieBaby, src/CCW/code_3310.c), Eyrie
 // (ASSET_484_MODEL_EAGLE_BABY) waits hungry, flapping and squawking (his waiting animation and
 // its sounds), for caterpillars. Click Clock Wood ties him to its seasons; here he's tied to
 // Fungi Forest's day and night (DK64's PERMFLAG_PROGRESS_IS_NIGHTTIME): by day he's awake, and
 // three caterpillars (ASSET_485_MODEL_CATERPILLAR, crawling about with their crawl animation and
-// squeak, as chcaterpillar does) are out on the ring path round the owl tree; by night the
+// squeak, as chcaterpillar does) are out on the field round him; by night the
 // caterpillars hide and Eyrie sleeps (his sleeping animation, eyes shut), snoring.
 //
 // Touching a caterpillar takes it (Banjo-Kazooie's pop, SFX_C5), shown in the HUD with his
@@ -165,10 +165,9 @@ Gfx *popHUD(Gfx *dl, u8 alignment);
 #define HUD_Y (96 + 3 * 36)
 #define HUD_FADE_STEP 0x20
 
-// Where he is. Fungi Forest: on the wide north side of the owl tree's ring path (DK64's floor
-// at 83), between two of the notes (73 and 101 units off), and the caterpillars on the ring path
-// three quarters of the way between DK64's Tiny bananas (clear of them, the notes and the little
-// mushrooms). His Jiggy lands on the path west of him.
+// Where he is. Fungi Forest: on the dry field east of the clock tower's hill (166 high), each of
+// him, his Jiggy and the caterpillars on or within 15 units of one of DK64's own DK bananas
+// there (the owl tree's ring path is under water).
 typedef struct {
     Maps map;
     f32 x, y, z;
@@ -176,14 +175,14 @@ typedef struct {
     f32 caterpillars[CATERPILLAR_COUNT][3];
 } EyriePlacement;
 static const EyriePlacement eyrie_spots[] = {
-    {MAP_FUNGI, 4450.0f, 83.0f, 3245.0f, 4400.0f, 3250.0f,
-     {{4100.0f, 83.0f, 3324.0f}, {4878.0f, 83.0f, 3658.0f}, {4240.0f, 83.0f, 4135.0f}}},
+    {MAP_FUNGI, 3438.0f, 166.0f, 2580.0f, 3460.0f, 2705.0f,
+     {{3254.0f, 166.0f, 2505.0f}, {3574.0f, 166.0f, 3010.0f}, {3436.0f, 166.0f, 2876.0f}}},
 };
 
 // What he says. Each page is one press of A.
 static const char *const eyrie_ask[] = {
     "CHEEP! I'M EYRIE, AND I'M SOOO HUNGRY!",
-    "CATERPILLARS CRAWL ROUND THIS PATH IN THE DAYTIME.",
+    "CATERPILLARS CRAWL ROUND THIS FIELD IN THE DAYTIME.",
     "BRING ME THREE AND I'LL GROW BIG AND STRONG!",
 };
 static const char *const eyrie_sleep[] = {

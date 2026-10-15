@@ -330,7 +330,8 @@ static const NotePlacement notes_factory[] = {
 //   mound (400 out, over the coins' ring);
 //   round the giant mushroom, on the low ground (99) inside the walkway ring;
 //   round the mill on its plateau (400 out from it, about 245 high);
-//   along the owl tree's ring path (83 high), a quarter of the way between DK64's Tiny bananas
+//   along the owl tree's ring path, which is under water (floor 83; given 110 so the notes
+//   float at the surface for a swimmer), a quarter of the way between DK64's Tiny bananas
 //   so as not to sit on them or the little mushrooms halfway between them.
 static const NotePlacement notes_fungi[] = {
     // From the entrance up the clock's hill.
@@ -406,22 +407,22 @@ static const NotePlacement notes_fungi[] = {
     {1613.0f, 243.0f, 3567.0f, 16},
     {1700.0f, 233.0f, 3697.0f, 5},
     // Along the owl tree's ring path.
-    {3864.0f, 83.0f, 3591.0f, 12},
-    {3997.0f, 83.0f, 3418.0f, 1},
-    {4203.0f, 83.0f, 3270.0f, 8},
-    {4379.0f, 83.0f, 3228.0f, 15},
-    {4549.0f, 83.0f, 3223.0f, 4},
-    {4720.0f, 83.0f, 3277.0f, 11},
-    {4830.0f, 83.0f, 3394.0f, 0},
-    {4900.0f, 83.0f, 3556.0f, 7},
-    {4834.0f, 83.0f, 3742.0f, 14},
-    {4714.0f, 83.0f, 3856.0f, 3},
-    {4470.0f, 83.0f, 4055.0f, 10},
-    {4336.0f, 83.0f, 4137.0f, 17},
-    {4154.0f, 83.0f, 4124.0f, 6},
-    {4006.0f, 83.0f, 4070.0f, 13},
-    {3901.0f, 93.0f, 3944.0f, 2},
-    {3838.0f, 103.0f, 3789.0f, 9},
+    {3864.0f, 110.0f, 3591.0f, 12},
+    {3997.0f, 110.0f, 3418.0f, 1},
+    {4203.0f, 110.0f, 3270.0f, 8},
+    {4379.0f, 110.0f, 3228.0f, 15},
+    {4549.0f, 110.0f, 3223.0f, 4},
+    {4720.0f, 110.0f, 3277.0f, 11},
+    {4830.0f, 110.0f, 3394.0f, 0},
+    {4900.0f, 110.0f, 3556.0f, 7},
+    {4834.0f, 110.0f, 3742.0f, 14},
+    {4714.0f, 110.0f, 3856.0f, 3},
+    {4470.0f, 110.0f, 4055.0f, 10},
+    {4336.0f, 110.0f, 4137.0f, 17},
+    {4154.0f, 110.0f, 4124.0f, 6},
+    {4006.0f, 110.0f, 4070.0f, 13},
+    {3901.0f, 110.0f, 3944.0f, 2},
+    {3838.0f, 110.0f, 3789.0f, 9},
 };
 
 // DK Isles: a trail right round the main island's beach, from the Training Grounds' tunnel
