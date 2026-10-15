@@ -93,6 +93,9 @@ The foundation every later step needs: reading both games' files from the player
   models can pose and animate (bridge/src/bk_anim.cpp, bk_pose.cpp; jiggy_bk_model_pose).
 - [x] Play Banjo-Kazooie's own skeletal animations on its models (no retargeting needed:
   the host evaluates BK's animation assets directly).
+- [ ] Golden Bananas look like Jiggies: Banjo-Kazooie's Jiggy model is drawn in place of
+  every Golden Banana, placed (props) or rewarded (actors), keeping its spin and size
+  (`host/patches/jiggy_collectibles.c`). Built, not yet tested in game.
 - [ ] Animated textures (segments 11-15) for the models that use them. Banjo's doesn't: his
   eyes are geometry picked by selectors, so blinking already works.
 - Texture and palette conversion where formats differ.

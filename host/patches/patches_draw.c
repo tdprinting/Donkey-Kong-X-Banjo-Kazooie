@@ -201,6 +201,7 @@ extern u8  D_global_asm_807444FC;
 Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor);
 s32 jiggy_banjo_replaces(Actor *actor);
 Gfx *jiggy_notes_draw(Gfx *dl, Actor *actor);
+s32 jiggy_golden_banana_actor_draw(Gfx **dl, Actor *actor);
 RECOMP_PATCH Gfx* func_global_asm_80630DCC(s32 arg0, Actor* arg1, Gfx* dl, s32 arg3) {
     f32 temp_f0_2;
     f32 temp_f0_3;
@@ -329,8 +330,9 @@ block_47:
     temp_f0_3 = arg1->shadow_opacity * spB8;
     if (temp_f0_3 != 0.0f) {
         dl = func_global_asm_8065D008(dl, temp_f0_3, 1U);
-        // @jiggy: when Banjo stands in for the player, only Banjo's model is drawn.
-        if (!jiggy_banjo_replaces(arg1)) {
+        // @jiggy: when Banjo stands in for the player, only Banjo's model is drawn, and a
+        // Golden Banana is drawn as a Jiggy (jiggy_collectibles.c).
+        if (!jiggy_banjo_replaces(arg1) && !jiggy_golden_banana_actor_draw(&dl, arg1)) {
             dl = func_global_asm_80614B34(dl, arg1);
         }
     }

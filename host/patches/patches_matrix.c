@@ -253,6 +253,7 @@ typedef struct Struct80636FFC {
 
 extern f32 recomp_filter_draw(f32 value, f32 ratio);
 extern f32 propDrawFilter(s32 prop_type);
+s32 jiggy_golden_banana_prop_draw(Gfx **dl, s32 prop_type, f32 prop_matrix[4][4]);
 
 // @recomp: Model 2 Matrix stuff
 RECOMP_PATCH Gfx* func_global_asm_80636FFC(Struct80636FFC* arg0, Gfx* dl, s32 arg2, s32 arg3, s32 arg4, u8 arg5, s16 arg6) {
@@ -415,9 +416,12 @@ RECOMP_PATCH Gfx* func_global_asm_80636FFC(Struct80636FFC* arg0, Gfx* dl, s32 ar
         dl = set_model_matrix_group(dl, NULL, FALSE, &pushed_matrix_group);
         // cur_drawn_model_skip_interpolation = FALSE;
         // 
-        gSPDisplayList(dl++, osVirtualToPhysical(arg0->unkA0[var_v0]));
-        gDPPipeSync(dl++);
-        gSPDisplayList(dl++, osVirtualToPhysical(arg0->unkA8[var_v0]));
+        // @jiggy: a Golden Banana is drawn as a Jiggy instead (jiggy_collectibles.c).
+        if (!jiggy_golden_banana_prop_draw(&dl, arg0->unkB4, spF8)) {
+            gSPDisplayList(dl++, osVirtualToPhysical(arg0->unkA0[var_v0]));
+            gDPPipeSync(dl++);
+            gSPDisplayList(dl++, osVirtualToPhysical(arg0->unkA8[var_v0]));
+        }
         // @recomp: Mtx untag
         gSPPopMatrix(dl++, G_MTX_MODELVIEW);
         if (pushed_matrix_group) {

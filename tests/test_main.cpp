@@ -775,6 +775,45 @@ TEST(bk_pose_display_list_walks_bones) {
     CHECK(!jiggy::bk_pose_display_list(*model, *block, base, root, std::span<const uint32_t>(bones, 1), selectors, &error));
 }
 
+TEST(bk_pose_display_list_without_skeleton) {
+    // The test model with a geo list of one LOADDL and no skeleton, like a prop's.
+    Bytes bytes = make_test_bk_model();
+    const size_t geo = bytes.size();
+    put_be32(bytes, 0x04, uint32_t(geo));
+    bytes.resize(geo + 0x10, 0);
+    put_be32(bytes, geo, 3); // LOADDL 0
+    std::string error;
+    auto model = jiggy::BkModel::parse(bytes, &error);
+    auto skeleton = jiggy::BkSkeleton::parse(bytes, &error);
+    CHECK(model.has_value() && skeleton.has_value());
+    if (!model || !skeleton) {
+        return;
+    }
+    CHECK(skeleton->bones.empty() && jiggy::bk_skeleton_matrices(*skeleton, {}).empty());
+    const uint32_t base = 0x80400000;
+    auto block = jiggy::bk_model_to_f3dex2(*model, base, &error);
+    CHECK(block.has_value());
+    if (!block) {
+        return;
+    }
+    const uint32_t root = 0x80500000;
+    auto pose = jiggy::bk_pose_display_list(*model, *block, base, root, {}, jiggy::BkSelectors{}, &error);
+    CHECK(pose.has_value());
+    if (!pose) {
+        return;
+    }
+    const std::vector<std::array<uint32_t, 2>> expected = {
+        {0xDE000000, base + block->prologue_offset},
+        {0xDA380002, root}, // everything is drawn with the root matrix
+        {0xDE000000, base + block->commands_offset},
+        {0xD8380002, 0x40},
+        {0xDE000000, base + block->epilogue_offset},
+        {0xDF000000, 0},
+    };
+    CHECK(pose->commands == expected);
+    CHECK(pose->sub_lists == 1);
+}
+
 TEST(bk_animation_poses_skeleton) {
     // Frames 0-10: bone 2 turns from yaw 0 to 90 degrees and moves 1 unit (x 10 scale) in x.
     Bytes anim(8 + 4 + 8 + 4 + 4, 0);
