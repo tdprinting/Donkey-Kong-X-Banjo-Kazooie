@@ -75,9 +75,12 @@ static const u16 bottles_talk_sfx[] = {0xB4, 0xBC, 0xBD};
 // way a frame, at 30 frames a second).
 #define BOTTLES_TURN_RATE 0.25f
 // He talks when the player comes this close (Banjo-Kazooie's 250 units, scaled), on the
-// ground; after a talk, not again until the player has walked this far off.
+// ground; after a talk, not again until the player has walked this far off. Once he's given
+// his welcome, his reminder needs the player to stop by him (standing, not walking past), so
+// fights and walks across the area don't keep setting him off, and comes at most this often.
+#define BOTTLES_REMIND_FRAMES (60 * 30) // A minute.
 #define BOTTLES_TALK_RADIUS 70.0f
-#define BOTTLES_REARM_RADIUS 110.0f
+#define BOTTLES_REARM_RADIUS 250.0f
 #define BOTTLES_TALK_FEET_ABOVE 40.0f
 #define BOTTLES_TALK_FEET_BELOW 40.0f
 #define PLAYER_AIRBORNE_HEIGHT 6.0f
@@ -196,6 +199,7 @@ static f32 bottles_progress; // 0 to 1 through the action's animation.
 static u32 bottles_last_timer;
 static s32 bottles_talked;   // His first talk is done (saved).
 static s32 bottles_armed;    // The player has been away since his last talk.
+static u32 bottles_last_talk; // object_timer when his last talk began.
 static s32 bottles_digging;  // The digging sound's handle, or 0.
 static u32 bottles_random_state = 0x424F5454;
 
@@ -478,15 +482,17 @@ static void bottles_update(Actor *player, u32 frames) {
     switch (bottles_action) {
         case BOTTLES_HIDDEN:
             if (!bottles_armed) {
-                bottles_armed = !bottles_player_near(player, BOTTLES_REARM_RADIUS);
+                bottles_armed = !bottles_player_near(player, BOTTLES_REARM_RADIUS) &&
+                                (!bottles_talked || object_timer - bottles_last_talk >= BOTTLES_REMIND_FRAMES);
                 break;
             }
             if (bottles_player_near(player, BOTTLES_TALK_RADIUS) &&
                 player->y_position - player->floor <= PLAYER_AIRBORNE_HEIGHT &&
-                (player->control_state == STATE_IDLE || player->control_state == STATE_WALK)) {
+                (player->control_state == STATE_IDLE || (!bottles_talked && player->control_state == STATE_WALK))) {
                 s16 to_bottles = func_global_asm_80665DE0(bottles_pos[0], bottles_pos[2], player->x_position, player->z_position);
 
                 bottles_armed = FALSE;
+                bottles_last_talk = object_timer;
                 bottles_lock_player(TRUE);
                 // The player turns to him (func_8028F94C(2, this->position)).
                 player->y_rotation = to_bottles & 0xFFF;
