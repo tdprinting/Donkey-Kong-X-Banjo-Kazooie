@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+            sanitize: "-fsanitize=address,undefined -fno-omit-frame-pointer"
+          - compiler: clang
+            cc: clang
+            cxx: clang++
+            sanitize: ""
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Configure
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="${{ matrix.sanitize }}"
+          -DCMAKE_EXE_LINKER_FLAGS="${{ matrix.sanitize }}"
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  android:
+    name: Android arm64-v8a
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      # Same ABI and minimum platform RT64 targets for Android (android-24, arm64-v8a).
+      - name: Configure
+        run: >
+          cmake -S . -B build-android -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake"
+          -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24
+      - name: Build
+        run: cmake --build build-android
+      - name: Check the output is arm64
+        run: file build-android/jiggy_bridge_tests | tee /dev/stderr | grep -q "ARM aarch64"
+
+  host-sources:
+    name: Host integration sources
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # The full game can't be built in CI: N64Recomp needs the player's DK64 ROM to
+      # generate the game code. This compiles the files Jiggy Jungle changes against the
+      # real runtime, RecompFrontend and RT64 headers instead.
+      - name: Install headers
+        run: sudo apt-get update && sudo apt-get install -y clang libsdl2-dev libcurl4-openssl-dev
+      - name: Fetch submodules
+        run: |
+          git submodule update --init --recursive --depth 1 host/lib/N64ModernRuntime host/lib/RecompFrontend
+          git submodule update --init --depth 1 host/lib/rt64
+          git -C host/lib/rt64 submodule update --init --depth 1 \
+            src/contrib/hlslpp src/contrib/plume src/contrib/nativefiledialog-extended src/contrib/stb
+      - name: Compile host sources
+        run: ci/check-host-sources.sh
+
+  patches:
+    name: Game patches
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # Builds patches.elf, the MIPS code (Jiggy's in-game changes included) that N64Recomp
+      # turns into native code in a full build. Needs only the decomp and RT64 headers, no ROM.
+      - name: Install the MIPS toolchain
+        run: sudo apt-get update && sudo apt-get install -y clang lld
+      - name: Fetch submodules
+        run: git submodule update --init host/lib/dk64_decomp host/lib/rt64
+      - name: Build patches
+        run: make -C host/patches -j"$(nproc)" CC=clang LD=ld.lld
+
+  android-app:
+    name: Android app
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build the APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+      # A debug build anyone can install to try the ROM checks and update screen on a phone.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JiggyJungle-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+
+  android-engine:
+    name: Android engine libraries
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ninja and the patches toolchain
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang lld
+      - name: Fetch submodules
+        run: |
+          git submodule update --init --recursive host/lib/N64ModernRuntime host/lib/RecompFrontend host/lib/rt64
+          # The game's patches build against the DK64 decompilation's headers.
+          git submodule update --init host/lib/dk64_decomp
+          # vcpkg needs its history to find the manifest's baseline.
+          git submodule update --init host/lib/vcpkg
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg
+          key: vcpkg-arm64-android-${{ hashFiles('host/vcpkg.json', '.gitmodules') }}
+      - name: Build
+        run: |
+          set -o pipefail
+          android/engine/build-engine.sh 2>&1 | tee engine-build.log
+      - name: Summarize errors
+        if: failure()
+        run: grep -E "error:|FAILED:|CMake Error" engine-build.log | sort -u | head -150 || true

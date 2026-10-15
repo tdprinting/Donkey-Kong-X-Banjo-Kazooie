@@ -1,0 +1,114 @@
+plugins {
+    id 'com.android.application'
+}
+
+// One version for every platform: host/include/jiggy_version.h. The in-app updater compares
+// against it, and release.yml checks the tag matches.
+def jiggyVersion = (file('../../host/include/jiggy_version.h').text =~ /#define JIGGY_VERSION "([^"]+)"/)[0][1]
+def versionParts = jiggyVersion.tokenize('.-')
+def jiggyVersionCode = versionParts[0].toInteger() * 10000 + versionParts[1].toInteger() * 100 + versionParts[2].toInteger()
+
+def engineLibs = file('engine-libs')
+def hasEngine = file('engine-libs/arm64-v8a/libmain.so').exists()
+def engineAssets = layout.buildDirectory.dir('generated/engine-assets').get().asFile
+
+android {
+    namespace 'io.github.tdprinting.jiggyjungle'
+    compileSdk 35
+
+    // Use an NDK that's already installed (CI runners have one) rather than downloading
+    // AGP's default version on every build.
+    def installedNdk = System.getenv('ANDROID_NDK_LATEST_HOME') ?: System.getenv('ANDROID_NDK_HOME')
+    if (installedNdk) {
+        ndkPath installedNdk
+        // AGP insists ndkVersion matches the NDK at ndkPath.
+        def ndkProps = new Properties()
+        file("${installedNdk}/source.properties").withInputStream { ndkProps.load(it) }
+        ndkVersion ndkProps.getProperty('Pkg.Revision')
+    }
+
+    defaultConfig {
+        applicationId 'io.github.tdprinting.jiggyjungle'
+        // RT64's Android target.
+        minSdk 28 // Android 9: the engine needs aligned_alloc and solid Vulkan 1.1 support.
+        targetSdk 35
+        versionCode jiggyVersionCode
+        versionName jiggyVersion
+        buildConfigField 'boolean', 'HAS_ENGINE', hasEngine.toString()
+        // Read-only token for update checks against the private repository (release.yml passes the
+        // JIGGY_UPDATE_TOKEN secret). Empty in development builds.
+        buildConfigField 'String', 'UPDATE_TOKEN', '"' + (System.getenv('JIGGY_UPDATE_TOKEN') ?: '') + '"'
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_static'
+            }
+        }
+    }
+
+    // Release builds are signed with the project's own key so in-app updates install over
+    // each other (Android refuses an update signed with a different key). release.yml passes
+    // the key in from repository secrets; see the README's "Publishing a release".
+    signingConfigs {
+        release {
+            def keystore = System.getenv('JIGGY_ANDROID_KEYSTORE_FILE')
+            if (keystore) {
+                storeFile file(keystore)
+                storePassword System.getenv('JIGGY_ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('JIGGY_ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('JIGGY_ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv('JIGGY_ANDROID_KEYSTORE_FILE')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+        }
+    }
+
+    // The game itself (libmain.so) is built by android/engine/build-engine.sh DK64Recompiled,
+    // which needs code generated from a DK64 ROM, so it's only in builds made that way
+    // (release.yml does). Without it the app still runs, minus Start Game.
+    sourceSets {
+        main {
+            jniLibs.srcDirs += engineLibs
+            if (hasEngine) {
+                assets.srcDirs += engineAssets
+            }
+        }
+    }
+}
+
+// The engine's UI assets and controller database go in the APK under engine/, and the app
+// unpacks them into its storage, where the engine looks for them.
+tasks.register('copyEngineAssets', Copy) {
+    into engineAssets
+    from('../../host/assets') { into 'engine/assets' }
+    from('../../host/recompcontrollerdb.txt') { into 'engine' }
+}
+tasks.named('preBuild') {
+    if (hasEngine) {
+        dependsOn 'copyEngineAssets'
+    }
+}

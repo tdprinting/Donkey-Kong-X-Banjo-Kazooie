@@ -1,0 +1,16 @@
+diff --git a/recompui/lib/FindFreetype.cmake b/recompui/lib/FindFreetype.cmake
+index bbb8d6a..a8b175a 100644
+--- a/recompui/lib/FindFreetype.cmake
++++ b/recompui/lib/FindFreetype.cmake
+@@ -1,5 +1,11 @@
++if (MINGW AND FREETYPE_MINGW_ROOT)
++    # The bundled binaries are built with MSVC; MinGW builds use their own FreeType.
++    set(FREETYPE_INCLUDE_DIRS ${FREETYPE_MINGW_ROOT}/include/freetype2)
++    set(FREETYPE_LIBRARIES ${FREETYPE_MINGW_ROOT}/lib/libfreetype.a)
++else()
+ set(FREETYPE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../freetype-windows-binaries/include)
+ set(FREETYPE_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/../freetype-windows-binaries/release static/vs2015-2022/win64/freetype.lib")
++endif()
+ add_library(Freetype::Freetype STATIC IMPORTED)
+ set_target_properties(Freetype::Freetype PROPERTIES
+ 	IMPORTED_LOCATION ${FREETYPE_LIBRARIES}

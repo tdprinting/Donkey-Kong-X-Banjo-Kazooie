@@ -1,0 +1,33 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0789c20..a122b7f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -14,6 +14,10 @@ if(APPLE)
+ endif()
+ 
+ string(COMPARE EQUAL ${CMAKE_SYSTEM_NAME} "Linux" IS_LINUX)
++if (ANDROID)
++    # Android apps built on SDL can use the same SDL Vulkan integration as Linux.
++    set(IS_LINUX TRUE)
++endif()
+ 
+ # Project options
+ include(CMakeDependentOption)
+diff --git a/plume_render_interface_types.h b/plume_render_interface_types.h
+index 9dcfedf..25d6d03 100644
+--- a/plume_render_interface_types.h
++++ b/plume_render_interface_types.h
+@@ -37,10 +37,11 @@ namespace plume {
+ #if defined(_WIN64)
+     // Native HWND handle to the target window.
+     typedef HWND RenderWindow;
+-#elif defined(__ANDROID__)
+-    typedef ANativeWindow* RenderWindow;
+ #elif defined(PLUME_SDL_VULKAN_ENABLED)
++    // Checked before Android so an SDL app there renders to its SDL window, as plume_vulkan.cpp expects.
+     typedef SDL_Window *RenderWindow;
++#elif defined(__ANDROID__)
++    typedef ANativeWindow* RenderWindow;
+ #elif defined(__linux__)
+     struct RenderWindow {
+         Display* display;
