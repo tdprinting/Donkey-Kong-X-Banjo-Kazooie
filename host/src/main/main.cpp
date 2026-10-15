@@ -56,6 +56,7 @@
 
 #include "../../patches/graphics.h"
 #include "../../patches/jiggy.h"
+#include "jiggy_audio.h"
 #include "jiggy_host.h"
 #include "jiggy_updates.h"
 #include "jiggy_version.h"
@@ -331,6 +332,11 @@ void queue_samples(int16_t* audio_data, size_t sample_count) {
         swap_buffer[i + 0 + duplicated_input_frames * input_channels] = audio_data[i + 1] * (0.5f / 32768.0f) * cur_main_volume;
         swap_buffer[i + 1 + duplicated_input_frames * input_channels] = audio_data[i + 0] * (0.5f / 32768.0f) * cur_main_volume;
     }
+
+    // Mix in Banjo-Kazooie's sounds at the game's rate, scaled like the game's samples (16-bit
+    // full scale is 1.0 there), before the duplicated frames are saved for the next chunk.
+    jiggy_host::audio::mix(swap_buffer.data() + duplicated_input_frames * input_channels, sample_count / input_channels,
+                           sample_rate, 0.5f * cur_main_volume);
     
     // TODO handle cases where a chunk is smaller than the duplicated frame count.
     assert(sample_count > duplicated_input_frames * input_channels);
@@ -931,6 +937,9 @@ int main(int argc, char** argv) {
     REGISTER_FUNC(jiggy_save_get);
     REGISTER_FUNC(jiggy_save_set);
     REGISTER_FUNC(jiggy_save_clear);
+    REGISTER_FUNC(jiggy_bk_sfx_play);
+    REGISTER_FUNC(jiggy_bk_jingle_play);
+    REGISTER_FUNC(jiggy_bk_sound_stop);
     recompui::register_ui_exports();
     recomputil::register_data_api_exports();
     recomptheme::set_custom_theme();

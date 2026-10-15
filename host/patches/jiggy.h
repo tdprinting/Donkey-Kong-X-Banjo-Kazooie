@@ -56,4 +56,32 @@ typedef struct {
 // pose->block, or the buffers are too small). Call gSPDisplayList on pose->gfx after.
 DECLARE_FUNC(s32, jiggy_bk_model_pose, void *pose); // A JiggyBkPose.
 
+// Banjo-Kazooie sounds from the player's ROM, mixed into DK64's audio (src/game/jiggy_audio.cpp).
+// Plays sound effect `sfx_id` (the decompilation's sfx_e; 0x3E9 and up are music-bank sounds)
+// at `volume` (BK's 0-32767 volume argument / 32767.0f, so 1.0f is full) and `pitch` (BK's
+// pitch argument, 1.0f as recorded). Returns a handle (> 0), or 0 without a Banjo-Kazooie
+// ROM or for an unknown id, so callers can fall back to a DK64 sound.
+DECLARE_FUNC(s32, jiggy_bk_sfx_play, u32 sfx_id, f32 volume, f32 pitch);
+// Plays a short Banjo-Kazooie music track, such as a pickup jingle (comusic_e, below) at
+// `volume` (BK's sequence volume / 32767.0f). At most 8 seconds. Returns like jiggy_bk_sfx_play.
+DECLARE_FUNC(s32, jiggy_bk_jingle_play, u32 track, f32 volume);
+// Stops a sound started by either of the above. Returns 1 if it was still playing.
+DECLARE_FUNC(s32, jiggy_bk_sound_stop, s32 handle);
+
+// Banjo-Kazooie sound effect ids (sfx_e) and how BK plays them: id, volume, pitch.
+#define JIGGY_BK_SFX_FOOTSTEP 0x08          // SFX_8_BANJO_LANDING_04: Talon Trot footfalls on ground,
+                                            // 9000/32767, pitch alternating 1.2 and 1.4 (+-0.025)
+#define JIGGY_BK_SFX_EGGSHELL_BREAK 0x0D    // SFX_D_EGGSHELL_BREAKING: egg hits, 13000/32767, 1.6-1.7
+#define JIGGY_BK_SFX_EGG_POOP 0x3E          // SFX_3E_POOP_NOISE: egg out the back, 28000/32767, 1.4
+#define JIGGY_BK_SFX_KAZOOIE_CHOKE 0x46     // SFX_46_KAZOOIE_CHOKING_UP: egg from the mouth (wind-up), 1.0, 1.0
+#define JIGGY_BK_SFX_KAZOOIE_HEUGH 0x47     // SFX_47_KAZOOIE_HEUGH: Feathery Flap accent, 22000/32767, 1.0
+#define JIGGY_BK_SFX_KAZOOIE_RA 0x49        // SFX_49_KAZOOIE_RA: every Talon Trot step, 22000/32767,
+                                            // pitch 0.96 (walk anim 0.2781) and 1.04 (0.7781)
+#define JIGGY_BK_SFX_FLAP 0x4E              // SFX_4E_KAZOOIE_BRUIII: Feathery Flap, 20000/32767, 1.24
+#define JIGGY_BK_SFX_KAZOOIE_HEGH 0x57      // SFX_57_KAZOOIE_HEGH: egg from the mouth (the shot), 1.0, 1.0
+// Banjo-Kazooie music tracks (comusic_e) for jiggy_bk_jingle_play, with BK's volume.
+#define JIGGY_BK_JINGLE_NOTE 0x09           // COMUSIC_9_NOTE_COLLECTED, 16000/32767
+#define JIGGY_BK_JINGLE_EGG 0x0C            // COMUSIC_C_EGG_COLLECTED, 15000/32767 (track default)
+#define JIGGY_BK_JINGLE_JIGGY 0x0D          // COMUSIC_D_JINGLE_JIGGY_COLLECTED, 28000/32767
+
 #endif

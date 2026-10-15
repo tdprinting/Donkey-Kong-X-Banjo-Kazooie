@@ -175,6 +175,9 @@ To browse what the bridge can load:
 ./build/jiggy-inspect extract dk64.z64 5:0 model.bin
 ./build/jiggy-inspect sprite banjo.z64 0x7ef 0 banjo.png    # Banjo's dialogue portrait, frame 0
 ./build/jiggy-inspect model banjo.z64 0x34e banjo-model/   # Banjo & Kazooie (high poly) as OBJ + PNG textures
+./build/jiggy-inspect sounds banjo.z64        # the sound effect bank (add "music" for the music bank)
+./build/jiggy-inspect sfx banjo.z64 0x4e flap.wav 1.24 20000   # SFX_4E (Feathery Flap) at BK's pitch and volume
+./build/jiggy-inspect jingle banjo.z64 9 note.wav 16000        # COMUSIC_9_NOTE_COLLECTED
 ```
 
 Extracted files are for your own local research and must stay out of this repository.

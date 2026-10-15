@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cstring>
 #include <fstream>
 #include <iterator>
@@ -88,6 +89,7 @@ namespace {
     std::filesystem::path stored_banjo_path;
     std::optional<jiggy::Rom> banjo_rom;
     std::optional<jiggy::BkAssetTable> banjo_assets;
+    std::atomic<uint32_t> banjo_generation{0};
     // The last sprite asked for, so drawing a frame at a time doesn't re-inflate it.
     std::optional<std::pair<uint32_t, jiggy::BkSprite>> cached_sprite;
     // Clears the HUD numbers made from the last ROM (defined with them below).
@@ -122,6 +124,7 @@ namespace {
         }
         banjo_rom = std::move(rom);
         banjo_assets = std::move(assets);
+        banjo_generation++;
         cached_sprite.reset();
         reset_bold_numbers();
         {
@@ -293,6 +296,26 @@ bool jiggy_host::banjo_rom_loaded() {
 size_t jiggy_host::banjo_asset_count() {
     std::lock_guard lock{banjo_mutex};
     return banjo_assets ? banjo_assets->size() : 0;
+}
+
+uint32_t jiggy_host::banjo_rom_generation() {
+    return banjo_generation.load();
+}
+
+std::optional<std::vector<uint8_t>> jiggy_host::banjo_rom_bytes(uint32_t offset, uint32_t size) {
+    std::lock_guard lock{banjo_mutex};
+    if (!banjo_rom) {
+        return std::nullopt;
+    }
+    const auto data = banjo_rom->data();
+    if (offset > data.size() || size > data.size() - offset) {
+        return std::nullopt;
+    }
+    return std::vector<uint8_t>(data.begin() + offset, data.begin() + offset + size);
+}
+
+std::optional<std::vector<uint8_t>> jiggy_host::banjo_asset(uint32_t id) {
+    return load_asset(id);
 }
 
 // s32 jiggy_bk_available(void)

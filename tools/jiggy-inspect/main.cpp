@@ -5,8 +5,13 @@
 //   jiggy-inspect extract <rom> <bk-asset-id | dk64-table:index> <out-file>
 //   jiggy-inspect sprite <bk-rom> <bk-asset-id> <frame> <out.png>
 //   jiggy-inspect model <bk-rom> <bk-asset-id> <out-dir>   (OBJ + MTL + PNG textures)
+//   jiggy-inspect sounds <bk-rom> [music]                   (the sound effect or music bank)
+//   jiggy-inspect sfx <bk-rom> <sfx-id> <out.wav> [pitch] [volume] [rate]
+//   jiggy-inspect jingle <bk-rom> <comusic-id> <out.wav> [volume] [rate]
 //
 // Extracted files are for local research only. Never commit them: they are copyrighted game data.
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -18,6 +23,7 @@
 
 #include "jiggy/bk_assets.hpp"
 #include "jiggy/bk_model.hpp"
+#include "jiggy/bk_sound.hpp"
 #include "jiggy/bk_sprite.hpp"
 #include "jiggy/dk64_tables.hpp"
 #include "jiggy/inflate.hpp"
@@ -36,6 +42,12 @@ void usage() {
                  "  jiggy-inspect extract <rom> <bk-asset-id | dk64-table:index> <out-file>\n"
                  "  jiggy-inspect sprite <bk-rom> <bk-asset-id> <frame> <out.png>\n"
                  "  jiggy-inspect model <bk-rom> <bk-asset-id> <out-dir>\n"
+                 "  jiggy-inspect sounds <bk-rom> [music]\n"
+                 "  jiggy-inspect sfx <bk-rom> <sfx-id> <out.wav> [pitch] [volume] [rate]\n"
+                 "      sfx ids are the decompilation's sfx_e values; 0x3E9 and up use the music bank.\n"
+                 "      volume is BK's 0-32767 argument (default 32767), rate the WAV's (default 48000)\n"
+                 "  jiggy-inspect jingle <bk-rom> <comusic-id> <out.wav> [volume] [rate]\n"
+                 "      a music track (comusic_e, e.g. 9 note collected, 0xD Jiggy collected)\n"
                  "options:\n"
                  "  --allow-unverified   use the US 1.0 offsets on a dump with a different SHA-1\n");
 }
@@ -330,6 +342,140 @@ int cmd_model(const std::string& path, const std::string& id, const std::string&
     return 0;
 }
 
+std::optional<jiggy::BkSoundBank> load_bank(const std::string& path, bool music) {
+    auto rom = load(path);
+    if (!rom || !usable(*rom, path)) {
+        return std::nullopt;
+    }
+    if (rom->info().game != jiggy::Game::BanjoKazooie) {
+        std::fprintf(stderr, "sounds come from the Banjo-Kazooie ROM\n");
+        return std::nullopt;
+    }
+    std::string error;
+    auto bank = jiggy::BkSoundBank::load(rom->data(), music ? jiggy::kBkUs10MusicSoundfont : jiggy::kBkUs10SfxSoundfont,
+                                         &error);
+    if (!bank) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+    }
+    return bank;
+}
+
+int cmd_sounds(const std::string& path, bool music) {
+    auto bank = load_bank(path, music);
+    if (!bank) {
+        return 1;
+    }
+    std::printf("%s bank: %zu instruments, sample rate %d\n", music ? "music" : "sfx", bank->instruments().size(),
+                bank->sample_rate());
+    for (size_t i = 0; i < bank->instruments().size(); i++) {
+        const auto& inst = bank->instruments()[i];
+        std::printf("instrument %zu: volume %u pan %u, %zu sounds\n", i, inst.volume, inst.pan, inst.sounds.size());
+        std::printf("  %-6s %-5s %-8s %-8s %-6s %-4s %-4s %-4s %-4s %-5s %-4s %-4s %-3s %s\n", "sound", "type", "bytes",
+                    "att_us", "dec_ms", "rel_ms", "vmin", "vmax", "kmin", "kmax", "base", "det", "vol", "loop");
+        for (size_t s = 0; s < inst.sounds.size(); s++) {
+            const auto& snd = inst.sounds[s];
+            std::printf("  0x%04zx %-5s %-8u %-8d %-6d %-4d %-4u %-4u 0x%02x 0x%02x %-4u %-4d %-3u",
+                        s, snd.wave.type == jiggy::BkWaveType::Adpcm ? "adpcm" : "raw16", snd.wave.length,
+                        snd.envelope.attack_time, snd.envelope.decay_time < 0 ? -1 : snd.envelope.decay_time / 1000,
+                        snd.envelope.release_time / 1000,
+                        snd.key_map.velocity_min, snd.key_map.velocity_max, snd.key_map.key_min, snd.key_map.key_max,
+                        snd.key_map.key_base, snd.key_map.detune, snd.volume);
+            if (snd.wave.has_loop) {
+                std::printf(" %u-%u x%d", snd.wave.loop_start, snd.wave.loop_end, int32_t(snd.wave.loop_count));
+            }
+            std::printf("\n");
+        }
+    }
+    return 0;
+}
+
+bool write_rendered(const jiggy::BkRenderedSfx& sfx, const std::string& path, const std::string& what, bool notes) {
+    float peak = 0.0f;
+    double sum = 0.0;
+    for (float v : sfx.stereo) {
+        peak = std::max(peak, std::abs(v));
+        sum += double(v) * v;
+    }
+    const double rms = sfx.stereo.empty() ? 0.0 : std::sqrt(sum / double(sfx.stereo.size()));
+    const auto wav = jiggy::bk_stereo_to_wav(sfx.stereo, sfx.sample_rate);
+    std::ofstream out(path, std::ios::binary);
+    out.write(reinterpret_cast<const char*>(wav.data()), std::streamsize(wav.size()));
+    if (!out) {
+        std::fprintf(stderr, "could not write %s\n", path.c_str());
+        return false;
+    }
+    std::printf("%s: %zu %s%s, %.3f s at %u Hz, peak %.1f dBFS, rms %.1f dBFS; wrote %s\n", what.c_str(),
+                sfx.chain_length, notes ? "note(s)" : "sound(s) in its chain",
+                sfx.sustained ? " (cut at the time limit)" : "", double(sfx.frames()) / sfx.sample_rate,
+                sfx.sample_rate, peak > 0 ? 20.0 * std::log10(peak) : -999.0, rms > 0 ? 20.0 * std::log10(rms) : -999.0,
+                path.c_str());
+    return true;
+}
+
+int cmd_jingle(const std::vector<std::string>& args) {
+    auto rom = load(args[1]);
+    if (!rom || !usable(*rom, args[1])) {
+        return 1;
+    }
+    if (rom->info().game != jiggy::Game::BanjoKazooie) {
+        std::fprintf(stderr, "music comes from the Banjo-Kazooie ROM\n");
+        return 1;
+    }
+    const uint32_t track = std::strtoul(args[2].c_str(), nullptr, 0);
+    std::string error;
+    auto table = jiggy::BkAssetTable::parse(rom->data(), jiggy::BkAssetTable::kUs10RomOffset, &error);
+    std::optional<std::vector<uint8_t>> sequence;
+    if (table) {
+        sequence = table->load(rom->data(), jiggy::kBkUs10MusicTrackAssetBase + track, &error);
+    }
+    std::optional<jiggy::BkSoundBank> bank;
+    if (sequence) {
+        bank = jiggy::BkSoundBank::load(rom->data(), jiggy::kBkUs10MusicSoundfont, &error);
+    }
+    jiggy::BkSequenceRenderOptions options;
+    if (args.size() > 4) {
+        options.volume = std::strtof(args[4].c_str(), nullptr) / 32767.0f;
+    }
+    if (args.size() > 5) {
+        options.output_rate = std::strtoul(args[5].c_str(), nullptr, 0);
+    }
+    std::optional<jiggy::BkRenderedSfx> rendered;
+    if (bank) {
+        rendered = jiggy::bk_render_sequence(*bank, *sequence, options, &error);
+    }
+    if (!rendered) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+    return write_rendered(*rendered, args[3], "jingle " + args[2], true) ? 0 : 1;
+}
+
+int cmd_sfx(const std::vector<std::string>& args) {
+    const uint32_t id = std::strtoul(args[2].c_str(), nullptr, 0);
+    const bool music = id >= jiggy::kBkMusicBankSfxBase;
+    auto bank = load_bank(args[1], music);
+    if (!bank) {
+        return 1;
+    }
+    jiggy::BkSfxRenderOptions options;
+    if (args.size() > 4) {
+        options.pitch = std::strtof(args[4].c_str(), nullptr);
+    }
+    if (args.size() > 5) {
+        options.volume = std::strtof(args[5].c_str(), nullptr) / 32767.0f;
+    }
+    if (args.size() > 6) {
+        options.output_rate = std::strtoul(args[6].c_str(), nullptr, 0);
+    }
+    std::string error;
+    auto sfx = jiggy::bk_render_sfx(*bank, music ? id - jiggy::kBkMusicBankSfxBase : id, options, &error);
+    if (!sfx) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+    return write_rendered(*sfx, args[3], "sfx " + args[2], false) ? 0 : 1;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -360,6 +506,15 @@ int main(int argc, char** argv) {
     }
     if (cmd == "model" && args.size() == 4) {
         return cmd_model(args[1], args[2], args[3]);
+    }
+    if (cmd == "sounds" && (args.size() == 2 || (args.size() == 3 && args[2] == "music"))) {
+        return cmd_sounds(args[1], args.size() == 3);
+    }
+    if (cmd == "sfx" && args.size() >= 4 && args.size() <= 7) {
+        return cmd_sfx(args);
+    }
+    if (cmd == "jingle" && args.size() >= 4 && args.size() <= 6) {
+        return cmd_jingle(args);
     }
     usage();
     return 2;

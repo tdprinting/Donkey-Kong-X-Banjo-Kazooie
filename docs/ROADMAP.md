@@ -100,8 +100,14 @@ The foundation every later step needs: reading both games' files from the player
 - [ ] Animated textures (segments 11-15) for the models that use them. Banjo's doesn't: his
   eyes are geometry picked by selectors, so blinking already works.
 - Texture and palette conversion where formats differ.
+- [ ] Banjo-Kazooie sounds: the host renders sound effects (sfx bank, VADPCM, with BK's
+  chains, envelopes and pitch) and pickup jingles (compact MIDI on the music bank) from the
+  player's ROM and mixes them into DK64's audio (`bridge/src/bk_sound.cpp`,
+  `host/src/game/jiggy_audio.cpp`; imports `jiggy_bk_sfx_play`, `jiggy_bk_jingle_play`).
+  Not yet called from the patches or heard in game.
 - Music: Banjo sequences and instruments into DK64's sound bank format, or a second
-  sound bank loaded alongside DK64's.
+  sound bank loaded alongside DK64's. (The jingle renderer above plays whole sequences, but
+  only pre-rendered, so it doesn't follow DK64's music system.)
 
 ## 5. Playable Banjo & Kazooie
 
