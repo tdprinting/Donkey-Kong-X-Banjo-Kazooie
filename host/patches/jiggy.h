@@ -107,6 +107,8 @@ DECLARE_FUNC(s32, jiggy_bk_sound_stop, s32 handle);
                                             // 16000/32767, 0.85-1.15
 #define JIGGY_BK_SFX_FEATHER_SPENT 0x3E9    // SFX_3E9_UNKNOWN: a gold feather spent in the Wonderwing,
                                             // 28000/32767, 0.8
+#define JIGGY_BK_SFX_MUMBO_TOKEN 0x401     // Unnamed in sfx_e: a Mumbo Token collected (chMumboToken_collect),
+                                            // 0x7FFF/32767, 1.0
 // Banjo-Kazooie music tracks (comusic_e) for jiggy_bk_jingle_play, with BK's volume.
 #define JIGGY_BK_JINGLE_NOTE 0x09           // COMUSIC_9_NOTE_COLLECTED, 16000/32767
 #define JIGGY_BK_JINGLE_RED_FEATHER 0x0B    // COMUSIC_B_RED_FEATHER_COLLECTED, 32000/32767
