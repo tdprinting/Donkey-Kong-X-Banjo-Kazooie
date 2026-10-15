@@ -121,6 +121,13 @@ static const TokenPlacement tokens_castle[] = {
     {350.0f, 728.0f, 1250.0f, 4},
     {1250.0f, 1731.0f, 1250.0f, 8},
 };
+
+// Frantic Factory: the Foyer's south-east, the west walkway and the north room's north-west.
+static const TokenPlacement tokens_factory[] = {
+    {1420.0f, 831.0f, 2625.0f, 0}, // The Foyer, between the notes' ring and the corner.
+    {790.0f, 802.0f, 2440.0f, 4},  // The west walkway, between two of DK64's bananas.
+    {1110.0f, 840.0f, 2090.0f, 8}, // The north room, by the whistle switches.
+};
 #define TOKEN_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -131,6 +138,7 @@ static const struct {
     TOKEN_MAP_SPOTS(MAP_JAPES, tokens_japes),
     TOKEN_MAP_SPOTS(MAP_GALLEON, tokens_galleon),
     TOKEN_MAP_SPOTS(MAP_CASTLE, tokens_castle),
+    TOKEN_MAP_SPOTS(MAP_FACTORY, tokens_factory),
 };
 // The most tokens on one map (collected bits are one u32).
 #define TOKEN_COUNT_MAX 8

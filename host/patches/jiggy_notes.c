@@ -291,6 +291,35 @@ static const NotePlacement notes_castle[] = {
     {1533.0f, 1706.0f, 960.0f, 6},
     {1490.0f, 1712.0f, 960.0f, 9},
 };
+
+// Frantic Factory: around the Foyer (where the player comes in from the lobby) and on every
+// floor joined to it, each spot over the floor in the map's own floor file and clear of DK64's
+// bananas and objects. The entrance corridor and a ring round the Foyer; the doorway north and
+// a U round the north room's east side; the west walkway (between DK64's bananas), its bridge
+// and a ring on the round platform at its end, round the pole hole; the east corridor, its ramp
+// and a ring in the round room at its end.
+static const NotePlacement notes_factory[] = {
+    {1263.0f, 826.0f, 2755.0f, 0},  {1263.0f, 826.0f, 2715.0f, 3},  {1263.0f, 826.0f, 2675.0f, 6},
+    {1250.0f, 831.0f, 2633.0f, 0},  {1162.0f, 831.0f, 2617.0f, 3},  {1098.0f, 831.0f, 2574.0f, 6},
+    {1075.0f, 831.0f, 2515.0f, 9},  {1098.0f, 831.0f, 2456.0f, 12}, {1162.0f, 831.0f, 2413.0f, 15},
+    {1250.0f, 831.0f, 2397.0f, 0},  {1338.0f, 831.0f, 2413.0f, 3},  {1402.0f, 831.0f, 2456.0f, 6},
+    {1425.0f, 831.0f, 2515.0f, 9},  {1402.0f, 831.0f, 2574.0f, 12}, {1338.0f, 831.0f, 2617.0f, 15},
+    {1265.0f, 836.0f, 2306.0f, 0},
+    {1330.0f, 840.0f, 2245.0f, 0},  {1390.0f, 840.0f, 2245.0f, 3},  {1450.0f, 840.0f, 2245.0f, 6},
+    {1465.0f, 840.0f, 2195.0f, 9},  {1465.0f, 840.0f, 2150.0f, 12}, {1465.0f, 840.0f, 2105.0f, 15},
+    {1410.0f, 840.0f, 2090.0f, 2},  {1370.0f, 840.0f, 2090.0f, 5},  {1330.0f, 840.0f, 2090.0f, 8},
+    {915.0f, 812.0f, 2500.0f, 0},   {880.0f, 802.0f, 2490.0f, 3},   {806.0f, 802.0f, 2414.0f, 6},
+    {716.0f, 802.0f, 2320.0f, 9},   {660.0f, 804.0f, 2235.0f, 12},  {660.0f, 804.0f, 2185.0f, 15},
+    {685.0f, 804.0f, 2140.0f, 2},
+    {591.0f, 804.0f, 2034.0f, 0},   {516.0f, 804.0f, 1959.0f, 3},   {516.0f, 804.0f, 1851.0f, 6},
+    {591.0f, 804.0f, 1776.0f, 9},   {699.0f, 804.0f, 1776.0f, 12},  {774.0f, 804.0f, 1851.0f, 15},
+    {774.0f, 804.0f, 1959.0f, 2},   {699.0f, 804.0f, 2034.0f, 5},
+    {1495.0f, 838.0f, 2470.0f, 0},  {1560.0f, 836.0f, 2510.0f, 3},  {1610.0f, 836.0f, 2505.0f, 6},
+    {1662.0f, 836.0f, 2510.0f, 9},  {1690.0f, 836.0f, 2345.0f, 12}, {1735.0f, 836.0f, 2310.0f, 15},
+    {1805.0f, 850.0f, 2390.0f, 2},
+    {2046.0f, 862.0f, 2425.0f, 0},  {1985.0f, 862.0f, 2460.0f, 3},  {1924.0f, 862.0f, 2425.0f, 6},
+    {1924.0f, 862.0f, 2355.0f, 9},  {1985.0f, 862.0f, 2320.0f, 12}, {2046.0f, 862.0f, 2355.0f, 15},
+};
 #define NOTE_TRAIL(map, notes) {map, notes, sizeof(notes) / sizeof(notes[0])}
 static const struct {
     Maps map;
@@ -301,6 +330,7 @@ static const struct {
     NOTE_TRAIL(MAP_JAPES, notes_japes),
     NOTE_TRAIL(MAP_GALLEON, notes_galleon),
     NOTE_TRAIL(MAP_CASTLE, notes_castle),
+    NOTE_TRAIL(MAP_FACTORY, notes_factory),
 };
 // The most notes on one map, and the u32s of collected bits that takes (each saved under its own
 // key: NOTE_SAVE_MAP_KEY for the first, NOTE_SAVE_MAP_WORD_KEY for the rest).

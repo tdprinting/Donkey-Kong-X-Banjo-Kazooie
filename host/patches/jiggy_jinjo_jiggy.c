@@ -18,6 +18,7 @@
 // (an id from the world's range in docs/GAME_PLAN.md), which keeps its own flag and save key:
 //   reward 0x40  Gloomy Galleon's Jinjo Jiggy.
 //   reward 0x70  Creepy Castle's Jinjo Jiggy.
+//   reward 0x30  Frantic Factory's Jinjo Jiggy.
 //
 // The reward is kept with the save file (jiggy_save_get/set) so it's given once: earned, and
 // where it stands. While it's earned and its flag isn't set, it's spawned again on every visit,
@@ -72,6 +73,7 @@ static const struct {
     {MAP_JAPES, 0x31F, NO_REWARD},
     {MAP_GALLEON, NO_FLAG, 0x40},
     {MAP_CASTLE, NO_FLAG, 0x70},
+    {MAP_FACTORY, NO_FLAG, 0x30},
 };
 
 static s32 jiggy_map = -1;

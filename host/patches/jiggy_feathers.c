@@ -151,6 +151,16 @@ static const FeatherPlacement feathers_castle[] = {
     {1506.0f, 1731.0f, 1395.0f, FEATHER_RED, 15}, // The top, by the castle door.
     {1230.0f, 1731.0f, 1450.0f, FEATHER_GOLD, 3}, // The top, west side.
 };
+
+// Frantic Factory: in the Foyer, the north room, the east corridor and on the round platform
+// at the end of the west walkway, between notes and Jinjos.
+static const FeatherPlacement feathers_factory[] = {
+    {1180.0f, 831.0f, 2465.0f, FEATHER_RED, 0},  // The Foyer, north-west, inside the notes' ring.
+    {1200.0f, 840.0f, 2245.0f, FEATHER_RED, 5},  // The north room, by the doorway.
+    {1745.0f, 836.0f, 2440.0f, FEATHER_RED, 10}, // The east corridor's bend.
+    {645.0f, 804.0f, 2070.0f, FEATHER_RED, 7},   // The round platform, by the bridge.
+    {1920.0f, 862.0f, 2470.0f, FEATHER_GOLD, 3}, // The round room at the end of the east corridor.
+};
 #define FEATHER_MAP_SPOTS(map, spots) {map, spots, sizeof(spots) / sizeof(spots[0])}
 static const struct {
     Maps map;
@@ -161,6 +171,7 @@ static const struct {
     FEATHER_MAP_SPOTS(MAP_JAPES, feathers_japes),
     FEATHER_MAP_SPOTS(MAP_GALLEON, feathers_galleon),
     FEATHER_MAP_SPOTS(MAP_CASTLE, feathers_castle),
+    FEATHER_MAP_SPOTS(MAP_FACTORY, feathers_factory),
 };
 #define FEATHER_COUNT_MAX 16
 // The current map's feathers, or none.

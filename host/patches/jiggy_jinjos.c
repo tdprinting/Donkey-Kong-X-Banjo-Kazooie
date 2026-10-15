@@ -182,6 +182,16 @@ static const JinjoPlacement jinjos_castle[JINJO_COLORS] = {
     {900.0f, 648.0f, 1680.0f},  // Pink
     {1480.0f, 1731.0f, 1450.0f}, // Yellow
 };
+
+// Frantic Factory: one in each area joined to the Foyer (where the player comes in), each over
+// the floor in the map's own floor file and clear of DK64's bananas and objects.
+static const JinjoPlacement jinjos_factory[JINJO_COLORS] = {
+    {1420.0f, 831.0f, 2420.0f}, // Blue: the Foyer, north-east.
+    {1395.0f, 840.0f, 2165.0f}, // Green: the north room, inside the notes' U.
+    {2040.0f, 862.0f, 2480.0f}, // Orange: the round room at the end of the east corridor.
+    {500.0f, 804.0f, 1905.0f},  // Pink: the round platform at the end of the west walkway.
+    {1700.0f, 836.0f, 2460.0f}, // Yellow: the east corridor's bend.
+};
 static const struct {
     Maps map;
     const JinjoPlacement *spots;
@@ -190,6 +200,7 @@ static const struct {
     {MAP_JAPES, jinjos_japes},
     {MAP_GALLEON, jinjos_galleon},
     {MAP_CASTLE, jinjos_castle},
+    {MAP_FACTORY, jinjos_factory},
 };
 
 typedef enum {

@@ -158,6 +158,16 @@ static const HoneycombPlacement pieces_castle[] = {
 static const HoneycombPlacement combs_castle[] = {
     {1065.0f, 472.0f, 354.0f},
 };
+
+// Frantic Factory: the north room's south-west corner, the round platform at the end of the
+// west walkway (east of the pole hole) and the round room at the end of the east corridor.
+static const HoneycombPlacement pieces_factory[] = {
+    {1090.0f, 840.0f, 2245.0f},
+    {800.0f, 804.0f, 1905.0f},
+};
+static const HoneycombPlacement combs_factory[] = {
+    {1925.0f, 862.0f, 2290.0f},
+};
 #define HONEYCOMB_MAP(map, pieces, combs) \
     {map, pieces, sizeof(pieces) / sizeof(pieces[0]), combs, sizeof(combs) / sizeof(combs[0])}
 static const struct {
@@ -171,6 +181,7 @@ static const struct {
     HONEYCOMB_MAP(MAP_JAPES, pieces_japes, combs_japes),
     HONEYCOMB_MAP(MAP_GALLEON, pieces_galleon, combs_galleon),
     HONEYCOMB_MAP(MAP_CASTLE, pieces_castle, combs_castle),
+    HONEYCOMB_MAP(MAP_FACTORY, pieces_factory, combs_factory),
 };
 // The most of each on one map (collected bits are one u32).
 #define PIECE_COUNT_MAX 8
