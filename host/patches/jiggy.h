@@ -69,13 +69,17 @@ DECLARE_FUNC(s32, jiggy_bk_jingle_play, u32 track, f32 volume);
 DECLARE_FUNC(s32, jiggy_bk_sound_stop, s32 handle);
 
 // Banjo-Kazooie sound effect ids (sfx_e) and how BK plays them: id, volume, pitch.
+#define JIGGY_BK_SFX_WING_BEAT 0x02         // SFX_2_CLAW_SWIPE: each wing beat in flight, 10000-12000/32767,
+                                            // pitch 0.6-0.7
 #define JIGGY_BK_SFX_FOOTSTEP 0x08          // SFX_8_BANJO_LANDING_04: Talon Trot and Wonderwing footfalls on
                                             // ground, 9000/32767, pitch alternating 1.2 and 1.4 (trot) or
                                             // 1.0 and 1.2 (Wonderwing) (+-0.025)
+#define JIGGY_BK_SFX_FLIGHT_LIFTOFF 0x0C    // SFX_C_TAKING_FLIGHT_LIFTOFF: off a Flight pad, 22000/32767, 0.7
 #define JIGGY_BK_SFX_EGGSHELL_BREAK 0x0D    // SFX_D_EGGSHELL_BREAKING: egg hits, 13000/32767, 1.6-1.7
 #define JIGGY_BK_SFX_SHOCKSPRING_BOING 0x0E // SFX_E_SHOCKSPRING_BOING: Shock Spring Jump launch, 22000/32767, 1.0
 #define JIGGY_BK_SFX_PULLING_NOISE 0x2C     // SFX_2C_PULLING_NOISE: Shock Spring Jump crouch, 22000/32767,
                                             // pitch 1.4 sliding down
+#define JIGGY_BK_SFX_BANJO_OHHWAAOOO 0x31   // SFX_31_BANJO_OHHWAAOOO: a Beak Bomb flying out, 0x7FFF/32767, 1.0
 #define JIGGY_BK_SFX_BANJO_AHOO 0x33        // SFX_33_BANJO_AHOO: jump off a Shock Spring Jump pad, 0x7FF8/32767, 1.0
 #define JIGGY_BK_SFX_EGG_POOP 0x3E          // SFX_3E_POOP_NOISE: egg out the back, 28000/32767, 1.4
 #define JIGGY_BK_SFX_KAZOOIE_AUW 0x44       // SFX_44_KAZOOIE_AUW: Wonderwing and Shock Spring Jump start,
@@ -85,17 +89,22 @@ DECLARE_FUNC(s32, jiggy_bk_sound_stop, s32 handle);
 #define JIGGY_BK_SFX_KAZOOIE_RA 0x49        // SFX_49_KAZOOIE_RA: every Talon Trot step, 22000/32767,
                                             // pitch 0.96 (walk anim 0.2781) and 1.04 (0.7781)
 #define JIGGY_BK_SFX_FLAP 0x4E              // SFX_4E_KAZOOIE_BRUIII: Feathery Flap, 20000/32767, 1.24
+#define JIGGY_BK_SFX_KAZOOIE_RRRUH 0x50     // SFX_50_KAZOOIE_RRRUH: the Beak Bomb's dash, 0x7FFF/32767, 1.3
+#define JIGGY_BK_SFX_BANJO_YAH_OH 0x52      // SFX_52_BANJO_YAH_OH: a Beak Bomb starts, 28000/32767, 1.0
 #define JIGGY_BK_SFX_BANJO_HUIII 0x53       // SFX_53_BANJO_HUIII: Shock Spring Jump, 22000/32767, 1.0
 #define JIGGY_BK_SFX_KAZOOIE_HEGH 0x57      // SFX_57_KAZOOIE_HEGH: egg from the mouth (the shot), 1.0, 1.0
+#define JIGGY_BK_SFX_CARTOONY_FALL 0x61     // SFX_61_CARTOONY_FALL: a Beak Bomb flying out, 0x7FFF/32767, 1.0
 #define JIGGY_BK_SFX_SWITCH_PRESS 0x90      // SFX_90_SWITCH_PRESS: an empty Honeycomb piece settling in
                                             // its HUD ring, 0x7FF8/32767, 1.3
 #define JIGGY_BK_SFX_FEATHER_SPENT 0x3E9    // SFX_3E9_UNKNOWN: a gold feather spent in the Wonderwing,
                                             // 28000/32767, 0.8
 // Banjo-Kazooie music tracks (comusic_e) for jiggy_bk_jingle_play, with BK's volume.
 #define JIGGY_BK_JINGLE_NOTE 0x09           // COMUSIC_9_NOTE_COLLECTED, 16000/32767
+#define JIGGY_BK_JINGLE_RED_FEATHER 0x0B    // COMUSIC_B_RED_FEATHER_COLLECTED, 32000/32767
 #define JIGGY_BK_JINGLE_EGG 0x0C            // COMUSIC_C_EGG_COLLECTED, 15000/32767 (track default)
-#define JIGGY_BK_JINGLE_JINJO 0x0A           // COMUSIC_A_JINJO_COLLECTED
+#define JIGGY_BK_JINGLE_JINJO 0x0A          // COMUSIC_A_JINJO_COLLECTED
 #define JIGGY_BK_JINGLE_JIGGY 0x0D          // COMUSIC_D_JINGLE_JIGGY_COLLECTED, 28000/32767
+#define JIGGY_BK_JINGLE_GOLD_FEATHER 0x14   // COMUSIC_14_GOLD_FEATHER_COLLECTED, 32000/32767
 #define JIGGY_BK_JINGLE_HONEYCOMB 0x16      // COMUSIC_16_HONEYCOMB_COLLECTED, 28000/32767
 #define JIGGY_BK_JINGLE_EMPTY_HONEYCOMB 0x17 // COMUSIC_17_EMPTY_HONEYCOMB_COLLECTED, 28000/32767
 #define JIGGY_BK_JINGLE_GOLD_FEATHERS 0x25  // COMUSIC_25_USING_GOLD_FEATHERS: the Wonderwing, 28000/32767

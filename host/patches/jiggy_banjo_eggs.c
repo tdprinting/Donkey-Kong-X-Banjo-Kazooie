@@ -116,6 +116,7 @@ Gfx *simple_set_model_matrix(Gfx *dl, u8 *pushed, s32 id, s32 sub_id);
 Gfx *simple_pop_model_matrix(Gfx *dl, u8 pushed);
 s32 jiggy_banjo_wonderwing_owns_c_right(void); // jiggy_banjo_wonderwing.c
 u16 jiggy_banjo_shock_buttons(void);            // jiggy_banjo_shock.c
+u16 jiggy_banjo_fly_masked_buttons(void);       // jiggy_banjo_fly.c
 
 typedef enum {
     EGGS_UNLOADED,
@@ -549,7 +550,7 @@ static s32 eggs_own_c_buttons(void) {
 // Without C-up and C-down there, DK64's own actions for them (first-person view, camera zoom,
 // Shockwave camera) stay out of the way of Egg Firing, and without C-right DK64's camera turn
 // stays out of the way of the Wonderwing. Both read the raw buttons. The Shock Spring Jump
-// hands DK an A press here for its spring.
+// hands DK an A press here for its spring, and Flight keeps A, B and Z from DK while flying.
 RECOMP_PATCH u16 func_global_asm_806DFF34(u16 arg0, u16 *arg1) {
     u16 i;
     u16 j;
@@ -570,5 +571,6 @@ RECOMP_PATCH u16 func_global_asm_806DFF34(u16 arg0, u16 *arg1) {
     } else if (jiggy_banjo_wonderwing_owns_c_right()) {
         buttons &= ~R_CBUTTONS;
     }
+    buttons &= ~jiggy_banjo_fly_masked_buttons();
     return buttons | jiggy_banjo_shock_buttons();
 }

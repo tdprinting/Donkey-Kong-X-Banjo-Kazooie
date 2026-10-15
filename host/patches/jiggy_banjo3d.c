@@ -7,7 +7,8 @@
 // again in the air and hold it to Feathery Flap, B for the Rat-a-tat Rap, Z for the Beak
 // Buster. Crouched, C-left Talon Trots (jiggy_banjo_trot.c), C-right Wonderwings
 // (jiggy_banjo_wonderwing.c) and C-up and C-down fire eggs (jiggy_banjo_eggs.c); A on the
-// Shock Spring Jump pad springs (jiggy_banjo_shock.c).
+// Shock Spring Jump pad springs (jiggy_banjo_shock.c) and A on the Flight pad flies
+// (jiggy_banjo_fly.c).
 //
 // The host converts the model once (jiggy_bk_model_build) and, every frame, poses it with
 // an animation and writes the display list and bone matrices that draw it
@@ -114,6 +115,13 @@ s32 jiggy_banjo_shock_animate(Actor *player, s32 is_player, s32 airborne, f32 se
 void jiggy_banjo_shock_selectors(s32 *selectors);
 f32 jiggy_banjo_shock_lift(Actor *player);
 Gfx *jiggy_banjo_shock_pad_draw(Gfx *dl, Actor *player);
+// Flight (jiggy_banjo_fly.c).
+s32 jiggy_banjo_fly_animate(Actor *player, s32 is_player, s32 airborne, f32 seconds, s32 *animation, f32 *progress);
+void jiggy_banjo_fly_selectors(s32 *selectors);
+f32 jiggy_banjo_fly_pitch(void);
+f32 jiggy_banjo_fly_roll(void);
+f32 jiggy_banjo_fly_lift(Actor *player);
+Gfx *jiggy_banjo_fly_pad_draw(Gfx *dl, Actor *player);
 
 typedef enum {
     BANJO_UNLOADED,
@@ -267,7 +275,8 @@ static void banjo_animate(Actor *player) {
 
     if (jiggy_banjo_trot_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress) ||
         jiggy_banjo_wonderwing_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress) ||
-        jiggy_banjo_shock_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress)) {
+        jiggy_banjo_shock_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress) ||
+        jiggy_banjo_fly_animate(player, banjo_is_player, airborne, seconds, &banjo_animation, &banjo_progress)) {
         return;
     }
     banjo_air_moves(player, airborne, seconds);
@@ -358,6 +367,7 @@ static void banjo_set_selectors(void) {
     jiggy_banjo_trot_selectors(banjo_pose.selectors);
     jiggy_banjo_wonderwing_selectors(banjo_pose.selectors);
     jiggy_banjo_shock_selectors(banjo_pose.selectors);
+    jiggy_banjo_fly_selectors(banjo_pose.selectors);
     if (blink < sizeof(blink_frames)) {
         eyes = blink_frames[blink];
     }
@@ -386,6 +396,9 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     f32 offset;
     f32 rotate[4][4];
     f32 scale[4][4];
+    f32 tilt[4][4];
+    f32 tilted[4][4];
+    f32 lift;
     s32 buffer = D_global_asm_807444FC;
 
     if (!banjo_here(actor)) {
@@ -412,10 +425,17 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
     x = actor->x_position + func_global_asm_80612790(actor->y_rotation) * offset;
     z = actor->z_position - func_global_asm_80612794(actor->y_rotation) * offset;
     guScaleF(scale, BANJO_SCALE, BANJO_SCALE, BANJO_SCALE);
+    // Flying, Banjo banks (about where he faces) and pitches (about his side) first
+    // (jiggy_banjo_fly.c).
+    guRotateF(tilt, jiggy_banjo_fly_roll(), 0.0f, 0.0f, 1.0f);
+    guMtxCatF(scale, tilt, tilted);
+    guRotateF(tilt, jiggy_banjo_fly_pitch(), 1.0f, 0.0f, 0.0f);
+    guMtxCatF(tilted, tilt, scale);
     guRotateF(rotate, yaw, 0.0f, 1.0f, 0.0f);
     guMtxCatF(scale, rotate, banjo_pose.world);
+    lift = banjo_is_player ? jiggy_banjo_shock_lift(actor) + jiggy_banjo_fly_lift(actor) : 0.0f;
     banjo_pose.world[3][0] = x;
-    banjo_pose.world[3][1] = actor->y_position + (banjo_is_player ? jiggy_banjo_shock_lift(actor) : 0.0f);
+    banjo_pose.world[3][1] = actor->y_position + lift;
     banjo_pose.world[3][2] = z;
 
     banjo_pose.model = JIGGY_BANJO_MODEL;
@@ -430,7 +450,8 @@ Gfx *jiggy_banjo_draw(Gfx *dl, Actor *actor) {
         gDPPipeSync(dl++);
         gSPDisplayList(dl++, banjo_gfx[buffer]);
     }
-    // The Wonderwing's sparkles and the Shock Spring Jump pad.
+    // The Wonderwing's sparkles, the Shock Spring Jump pad and the Flight pad.
     dl = jiggy_banjo_wonderwing_draw(dl, actor);
-    return jiggy_banjo_shock_pad_draw(dl, actor);
+    dl = jiggy_banjo_shock_pad_draw(dl, actor);
+    return jiggy_banjo_fly_pad_draw(dl, actor);
 }

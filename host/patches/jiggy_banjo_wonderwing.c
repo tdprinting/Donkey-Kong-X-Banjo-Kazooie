@@ -7,12 +7,10 @@
 // and press C-right to start it, and press C-right again to stop (Z, or DK's attacks and
 // backflip, stop it at once). Swapping back to DK stops it too.
 //
-// Banjo-Kazooie spends a gold feather to start it and another every 2 seconds, ending it when
-// they run out (func_802AA58C, func_80346C10). There's no feather counter yet, so it lasts as
-// one feather does: 2 seconds, then Banjo-Kazooie's out-of-feathers buzzer and the exit.
-// TODO: a gold feather counter. It would hook in at wonderwing_start (spend one, or play the
-// buzzer and don't start when empty) and wonderwing_feather_due (spend one and play
-// JIGGY_BK_SFX_FEATHER_SPENT, ending only when empty).
+// It burns Gold Feathers (jiggy_feathers.c), as Banjo-Kazooie does (crouch.c, func_802AA58C,
+// func_80346C10): one to start it, or, with none, Banjo-Kazooie's buzzer and no Wonderwing;
+// then another every 2 seconds, with SFX_3E9, until they run out, when the buzzer plays and
+// the wings fold away. The gold feather counter stays up while it's on.
 //
 // Banjo still uses DK's movement and physics (jiggy_banjo3d.c): the Wonderwing sets DK's top
 // speed (PlayerAdditionalActorData unk38, as the trot does) to Banjo-Kazooie's, a little under
@@ -99,6 +97,11 @@ static const u8 sparkle_sizes[SPARKLE_LIFE + 1] = {10, 10, 15, 20, 25, 30, 35, 4
 // Kazooie's upper half (head and wings), out of the backpack (src/core2/modelappendages.c).
 static const u8 ww_selectors[] = {0x01, 0x09, 0x0C, 0x0F};
 
+// Feathers (jiggy_feathers.c): kind 1 is gold.
+#define FEATHER_GOLD 1
+s32 jiggy_feathers_spend(s32 kind);
+void jiggy_feathers_hud_hold(s32 kind);
+
 extern u16 newly_pressed_input[];
 extern f32 D_global_asm_807531FC[]; // Kong walking top speed.
 extern s16 D_global_asm_807FD584;   // Current Kong, an index into the Kong tables.
@@ -151,8 +154,8 @@ static f32 ww_walk_top_speed(void) {
 }
 
 // Kazooie's "auw" as the wings come out (basfx_80299BD4) and Banjo-Kazooie's gold feather
-// music (COMUSIC_25_USING_GOLD_FEATHERS, coMusicPlayer_playMusic(0x25, 0x6D60)).
-// TODO: spend a gold feather here (see the top of the file).
+// music (COMUSIC_25_USING_GOLD_FEATHERS, coMusicPlayer_playMusic(0x25, 0x6D60)). The caller has
+// spent the first gold feather.
 static void wonderwing_start(Actor *player) {
     ww_state = WW_ENTER;
     ww_feather_seconds = 0.0f;
@@ -173,13 +176,15 @@ static void wonderwing_stop(Actor *player) {
     }
 }
 
-// A feather's time is up. With no feather counter, the feathers have run out: Banjo-Kazooie's
-// buzzer (func_80346C10, COMUSIC_2C_BUZZER at 22000) and the exit.
-// TODO: spend a gold feather here instead while there are any, playing
-// JIGGY_BK_SFX_FEATHER_SPENT (SFX_3E9, pitch 0.8, 28000).
+// A feather's time is up: spend the next, with SFX_3E9_UNKNOWN (FUNC_8030E624: pitch 0.8,
+// 28000), or, out of them, the exit (jiggy_feathers_spend plays Banjo-Kazooie's buzzer,
+// func_80346C10's COMUSIC_2C_BUZZER at 22000).
 static void wonderwing_feather_due(void) {
-    jiggy_bk_jingle_play(JIGGY_BK_JINGLE_BUZZER, 22000.0f / 32767.0f);
-    ww_state = WW_EXIT;
+    if (jiggy_feathers_spend(FEATHER_GOLD)) {
+        jiggy_bk_sfx_play(JIGGY_BK_SFX_FEATHER_SPENT, 28000.0f / 32767.0f, 0.8f);
+    } else {
+        ww_state = WW_EXIT;
+    }
 }
 
 // Banjo-Kazooie's Wonderwing speed on the ground, and no faster in the air.
@@ -252,6 +257,10 @@ s32 jiggy_banjo_wonderwing_animate(Actor *player, s32 is_player, s32 airborne, f
         if (!(pressed & R_CBUTTONS) || airborne || (state != STATE_CROUCH_ENTER && state != STATE_CROUCH)) {
             return FALSE;
         }
+        // A gold feather to start, or the buzzer and no Wonderwing.
+        if (!jiggy_feathers_spend(FEATHER_GOLD)) {
+            return FALSE;
+        }
         wonderwing_start(player);
     } else if ((pressed & Z_TRIG) || state == STATE_ATTACK || state == STATE_RUNNING_ATTACK ||
                state == STATE_BACKFLIP) {
@@ -268,6 +277,7 @@ s32 jiggy_banjo_wonderwing_animate(Actor *player, s32 is_player, s32 airborne, f
     }
     ww_guard(player);
     ww_set_speed(player);
+    jiggy_feathers_hud_hold(FEATHER_GOLD);
 
     switch (ww_state) {
         case WW_ENTER:

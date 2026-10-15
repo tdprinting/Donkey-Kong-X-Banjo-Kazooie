@@ -122,7 +122,12 @@ The foundation every later step needs: reading both games' files from the player
   (`host/patches/jiggy_banjo3d.c`), tested in game.
 - [x] Talon Trot (`jiggy_banjo_trot.c`) and Egg Firing (`jiggy_banjo_eggs.c`, eggs are DK's
   coconut shots drawn as Banjo-Kazooie's eggs), tested in game.
-- Rebuild the rest of the moveset (Wonderwing, Shock Spring Jump, Flight, swimming) as DK64
+- [x] Wonderwing (`jiggy_banjo_wonderwing.c`) and Shock Spring Jump (`jiggy_banjo_shock.c`),
+  tested in game; the Wonderwing now burns Gold Feathers (needs a test in game).
+- [x] Flight from a Flight pad in the Training Grounds (`jiggy_banjo_fly.c`): flaps on Red
+  Feathers, stick steering and pitch, Beak Bomb; drives DK's own jump physics. Needs a test
+  in game.
+- Rebuild the rest of the moveset (swimming, the Beak Bomb's crash and knockback) as DK64
   patches, using the BK decompilation as the behaviour reference.
 - Add the duo to DK64's character swap, then a quick-swap wheel in place of Tag Barrels.
 
@@ -155,7 +160,8 @@ both play through every mission together.
   Done so far, in the Training Grounds: Music Notes, Jinjos, empty Honeycomb pieces (with
   Banjo-Kazooie's piece ring; six pieces don't give anything yet) and Honeycombs (a slice of
   DK64 health each), all saved per save file but the Honeycombs, which come back like
-  Banjo-Kazooie's.
+  Banjo-Kazooie's. Red and Gold Feathers (`jiggy_feathers.c`, saved per save file, capped at
+  50 and 10, counters on the right) need a test in game.
 - Fused worlds (for example, Fungi Forest with Click Clock Wood's seasons): each one blends
   both games' map elements into one world, fun to play and completable from start to finish,
   with its own cutscenes and NPCs. Built from the two games' own maps, models and characters,
